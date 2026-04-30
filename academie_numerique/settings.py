@@ -87,7 +87,7 @@ TEMPLATES = [
 WSGI_APPLICATION = 'academie_numerique.wsgi.application'
 
 # Database
-DB_ENGINE = os.environ.get('DB_ENGINE', 'mysql')
+DB_ENGINE = os.environ.get('DB_ENGINE', 'postgresql')
 
 if DB_ENGINE == 'sqlite3':
     DATABASES = {
@@ -100,7 +100,7 @@ elif DB_ENGINE == 'postgresql':
     import dj_database_url
     DATABASES = {
         'default': dj_database_url.config(
-            default=os.environ.get('DATABASE_URL', 'postgres://user:password@host:port/dbname'),
+            default=os.environ.get('DATABASE_URL', ''),
             conn_max_age=600
         )
     }
