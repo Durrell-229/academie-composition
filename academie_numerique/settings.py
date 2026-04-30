@@ -87,7 +87,7 @@ TEMPLATES = [
 WSGI_APPLICATION = 'academie_numerique.wsgi.application'
 
 # Database
-DB_ENGINE = os.environ.get('DB_ENGINE', 'postgresql')
+DB_ENGINE = os.environ.get('DB_ENGINE', 'sqlite3')
 
 if DB_ENGINE == 'sqlite3':
     DATABASES = {
@@ -104,7 +104,7 @@ elif DB_ENGINE == 'postgresql':
             conn_max_age=600
         )
     }
-else: # assumes mysql
+else: # mysql
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.mysql',
