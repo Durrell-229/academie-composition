@@ -57,9 +57,8 @@ coverage.xml
 localflavor/
 db.sqlite3
 db.sqlite3-journal
-media/ # Assuming media files are not committed directly
+# Assuming media files are not committed directly
 *.pot
-media/
 
 # Virtual environment
 venv/
