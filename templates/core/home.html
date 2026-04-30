@@ -2,6 +2,22 @@
 {% block title %}Académie Numérique - Composition & Évaluation Intelligente{% endblock %}
 {% block content %}
 
+<!-- Video Intro Section -->
+<section class="relative w-full bg-bg-primary py-12">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-8">
+            <h2 class="text-2xl sm:text-3xl font-bold mb-2">Découvrez notre plateforme</h2>
+            <p class="text-text-muted">Regardez comment Académie Numérique révolutionne l'évaluation</p>
+        </div>
+        <div class="relative rounded-2xl overflow-hidden shadow-2xl border border-border-standard">
+            <video class="w-full h-auto" controls preload="metadata" poster="">
+                <source src="{% static 'videos/promo_video.mp4' %}" type="video/mp4">
+                Votre navigateur ne supporte pas la vidéo.
+            </video>
+        </div>
+    </div>
+</section>
+
 <!-- Hero Section -->
 <section class="relative overflow-hidden min-h-[90vh] flex items-center">
     <!-- Animated Background -->
