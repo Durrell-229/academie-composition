@@ -19,13 +19,14 @@ logger = logging.getLogger(__name__)
 def start_qcm(request):
     """Page de configuration et génération d'un QCM par IA."""
     if request.method == 'POST':
-        matiere_slug = request.POST.get('matiere', '')
+        matiere_nom = request.POST.get('matiere', '')
         classe = request.POST.get('classe', '')
         nb_questions = int(request.POST.get('nb_questions', 10))
         difficulte = request.POST.get('difficulte', 'moyen')
         theme = request.POST.get('theme', '')
 
-        matiere = Matiere.objects.filter(slug=matiere_slug).first()
+        # Chercher par nom
+        matiere = Matiere.objects.filter(nom=matiere_nom).first()
 
         try:
             # Générer le QCM via IA
@@ -45,7 +46,7 @@ def start_qcm(request):
         # Stocker en session pour la page de réponse
         request.session['qcm_context'] = {
             'matiere': matiere.nom if matiere else 'Général',
-            'matiere_slug': matiere_slug,
+            'matiere_slug': matiere_nom,
             'classe': classe,
             'nb_questions': nb_questions,
             'difficulte': difficulte,
