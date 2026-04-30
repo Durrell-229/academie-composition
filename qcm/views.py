@@ -27,12 +27,21 @@ def start_qcm(request):
 
         matiere = Matiere.objects.filter(slug=matiere_slug).first()
 
-        # Générer le QCM via IA
-        qcm_text = multi_ai.generate_qcm(matiere.nom if matiere else 'Général', classe, nb_questions, difficulte, theme)
-        
+        try:
+            # Générer le QCM via IA
+            qcm_text = multi_ai.generate_qcm(matiere.nom if matiere else 'Général', classe, nb_questions, difficulte, theme)
+        except Exception as e:
+            logger.error(f"Erreur génération QCM: {e}")
+            messages.error(request, "Erreur lors de la génération du QCM. Veuillez réessayer plus tard.")
+            return render(request, 'qcm/start.html')
+
         # Parser les questions depuis le texte généré
         questions_data = _parse_qcm_text(qcm_text, nb_questions)
-        
+
+        if not questions_data:
+            messages.error(request, "Le QCM généré est vide. Veuillez réessayer.")
+            return render(request, 'qcm/start.html')
+
         # Stocker en session pour la page de réponse
         request.session['qcm_context'] = {
             'matiere': matiere.nom if matiere else 'Général',
