@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% block title %}Notifications | Académie Numérique{% endblock %}
+{% block breadcrumb %}
+  <a href="{% url 'dashboard' %}" class="hover:text-primary transition">Dashboard</a>
+  <span class="mx-2 text-text-muted">/</span>
+  <span class="text-text-primary font-semibold">Notifications</span>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto space-y-6">
+
+  <div class="animate-in flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-black tracking-tight text-text-primary">Mes <span class="text-primary">Notifications</span></h1>
+      <p class="text-sm text-text-muted mt-1">{{ notifications|length }} notification{{ notifications|length|pluralize }}</p>
+    </div>
+    {% if notifications %}
+    <form method="post" action="{% url 'notification_list' %}">
+      {% csrf_token %}
+      <input type="hidden" name="mark_all_read" value="1">
+      <button type="submit" class="px-4 py-2 rounded-xl bg-bg-card border border-border-standard text-xs font-bold text-text-muted hover:text-text-primary hover:bg-bg-tertiary transition flex items-center gap-2">
+        <i class="fa-solid fa-check-double"></i> Tout marquer comme lu
+      </button>
+    </form>
+    {% endif %}
+  </div>
+
+  <div class="space-y-3 animate-in delay-1">
+    {% for notif in notifications %}
+    <div class="bg-bg-card rounded-2xl border {% if not notif.is_read %}border-primary/30 bg-primary/10{% else %}border-border-standard{% endif %} p-5 flex items-start gap-4 transition hover:bg-bg-tertiary">
+      <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0
+        {% if notif.type == 'BULLETIN' %}bg-success/15 text-success
+        {% elif notif.type == 'APPROBATION' %}bg-warning/15 text-warning
+        {% else %}bg-primary/10 text-primary{% endif %}">
+        {% if notif.type == 'BULLETIN' %}
+          <i class="fa-solid fa-file-invoice"></i>
+        {% elif notif.type == 'APPROBATION' %}
+          <i class="fa-solid fa-clipboard-check"></i>
+        {% else %}
+          <i class="fa-solid fa-bell"></i>
+        {% endif %}
+      </div>
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2">
+          <p class="font-bold text-sm text-text-primary">{{ notif.title }}</p>
+          {% if not notif.is_read %}
+          <span class="w-2 h-2 rounded-full bg-primary flex-shrink-0"></span>
+          {% endif %}
+        </div>
+        <p class="text-sm text-text-secondary mt-1">{{ notif.message }}</p>
+        <p class="text-[10px] text-text-muted mt-2 font-mono">{{ notif.created_at|date:"d/m/Y à H:i" }}</p>
+      </div>
+      <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest flex-shrink-0
+        {% if notif.type == 'BULLETIN' %}bg-success/15 text-success
+        {% elif notif.type == 'APPROBATION' %}bg-warning/15 text-warning
+        {% else %}bg-primary/10 text-primary{% endif %}">
+        {{ notif.get_type_display }}
+      </span>
+    </div>
+    {% empty %}
+    <div class="bg-bg-card rounded-2xl border border-border-standard py-16 text-center">
+      <div class="w-16 h-16 rounded-2xl bg-bg-tertiary flex items-center justify-center mx-auto mb-4">
+        <i class="fa-solid fa-bell-slash text-2xl text-text-muted"></i>
+      </div>
+      <p class="text-sm text-text-primary font-bold">Aucune notification pour le moment</p>
+      <p class="text-xs text-text-muted mt-1">Vous serez notifié lorsqu'une épreuve sera corrigée ou qu'une action sera requise.</p>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @page { size: A4; margin: 15mm 20mm; }
+        body { font-family: 'Times New Roman', serif; color: #000; font-size: 10pt; line-height: 1.3; margin: 0; padding: 0; }
+        
+        .header-officiel { text-align: center; margin-bottom: 15px; border-bottom: 3px double #000; padding-bottom: 10px; }
+        .republique { font-size: 11pt; font-weight: bold; text-transform: uppercase; margin-bottom: 2px; }
+        .ministere { font-size: 9pt; font-weight: bold; margin-bottom: 2px; }
+        .etablissement { font-size: 10pt; font-weight: bold; font-style: italic; margin-bottom: 5px; }
+        .annee-scolaire { font-size: 9pt; font-weight: bold; }
+        
+        .titre { text-align: center; font-size: 16pt; font-weight: bold; text-transform: uppercase; margin: 15px 0; padding: 8px; border: 2px solid #000; letter-spacing: 3px; }
+        
+        .info-eleve { margin-bottom: 15px; }
+        .info-eleve table { width: 100%; border: none; }
+        .info-eleve td { border: none; padding: 2px 5px; font-size: 9pt; }
+        .label { font-weight: bold; }
+        .valeur { font-weight: normal; }
+        
+        .table-notes { width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 9pt; }
+        .table-notes th { background-color: #f0f0f0; border: 1px solid #000; padding: 5px 4px; text-align: center; font-size: 8pt; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }
+        .table-notes th:first-child { text-align: left; }
+        .table-notes td { border: 1px solid #000; padding: 5px 4px; text-align: center; }
+        .table-notes td:first-child { text-align: left; font-weight: bold; }
+        .table-notes tfoot td { background-color: #f8f8f8; font-weight: bold; }
+        .note-excellente { color: #006600; font-weight: bold; }
+        .note-moyenne { color: #cc6600; font-weight: bold; }
+        .note-faible { color: #cc0000; font-weight: bold; }
+        
+        .resultat-final { margin: 15px 0; padding: 10px; border: 2px solid #000; text-align: center; background-color: #f8f8f8; }
+        .moyenne-generale { font-size: 18pt; font-weight: bold; color: #000; }
+        .mention { font-size: 12pt; font-weight: bold; margin-top: 5px; }
+        .mention-excellente { color: #006600; }
+        .mention-bien { color: #0066cc; }
+        .mention-assez-bien { color: #009900; }
+        .mention-passable { color: #cc6600; }
+        .mention-insuffisante { color: #cc0000; }
+        .rang { font-size: 10pt; margin-top: 3px; }
+        .decision { font-size: 11pt; font-weight: bold; margin-top: 5px; text-transform: uppercase; }
+        
+        .appreciation-ia { margin: 15px 0; padding: 10px; border-left: 4px solid #4F46E5; background-color: #f5f5f5; font-size: 9pt; font-style: italic; }
+        .appreciation-ia strong { font-style: normal; }
+        
+        .footer-officiel { margin-top: 30px; display: table; width: 100%; border: none; }
+        .footer-officiel td { border: none; vertical-align: top; width: 50%; }
+        .signature-block { text-align: center; padding: 10px; }
+        .signature-block .titre-signature { font-weight: bold; margin-bottom: 40px; }
+        .signature-block .signature-img { font-family: 'Brush Script MT', cursive; font-size: 18pt; color: #333; margin-bottom: 5px; }
+        .signature-block .mention { font-size: 7pt; color: #666; }
+        
+        .verification { font-family: 'Courier New', monospace; font-size: 7pt; color: #666; margin-top: 15px; padding: 5px; border: 1px solid #ccc; background-color: #fafafa; text-align: center; }
+        .verification strong { color: #000; }
+    </style>
+</head>
+<body>
+    <!-- En-tête Officiel -->
+    <div class="header-officiel">
+        <div class="republique">RÉPUBLIQUE DU BÉNIN</div>
+        <div class="ministere">MINISTÈRE DE L'ENSEIGNEMENT SECONDAIRE, TECHNIQUE ET DE LA FORMATION PROFESSIONNELLE</div>
+        <div class="etablissement">ACADÉMIE NUMÉRIQUE INTELLIGENTE — IA</div>
+        <div class="annee-scolaire">ANNÉE SCOLAIRE : {{ annee_scolaire }}</div>
+    </div>
+    
+    <!-- Titre -->
+    <div class="titre">BULLETIN DE NOTES — {{ periode }}</div>
+    
+    <!-- Informations Élève -->
+    <div class="info-eleve">
+        <table>
+            <tr>
+                <td style="width: 50%;"><span class="label">NOM ET PRÉNOM :</span> <span class="valeur">{{ eleve.last_name }} {{ eleve.first_name }}</span></td>
+                <td style="width: 50%;"><span class="label">MATRICULE :</span> <span class="valeur">{{ eleve.matricule|default:"N/A" }}</span></td>
+            </tr>
+            <tr>
+                <td><span class="label">CLASSE :</span> <span class="valeur">{{ classe }}</span></td>
+                <td><span class="label">DATE DE GÉNÉRATION :</span> <span class="valeur">{{ bulletin.created_at|date:"d/m/Y" }}</span></td>
+            </tr>
+        </table>
+    </div>
+    
+    <!-- Tableau des Notes -->
+    <table class="table-notes">
+        <thead>
+            <tr>
+                <th style="width: 30%;">Discipline</th>
+                <th style="width: 10%;">Coefficient</th>
+                <th style="width: 12%;">Note / 20</th>
+                <th style="width: 12%;">Moy. Classe</th>
+                <th style="width: 12%;">Écart</th>
+                <th style="width: 24%;">Appréciation</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ligne in lignes %}
+            <tr>
+                <td>{{ ligne.matiere }}</td>
+                <td>{{ ligne.coefficient|default:"1" }}</td>
+                <td class="{% if ligne.note >= 16 %}note-excellente{% elif ligne.note >= 10 %}note-moyenne{% else %}note-faible{% endif %}">{{ ligne.note }}</td>
+                <td>{{ ligne.moyenne_classe }}</td>
+                <td>{{ ligne.note|add:"-"|add:ligne.moyenne_classe|default:"-" }}</td>
+                <td style="font-size: 8pt; text-align: left;">{{ ligne.appreciation|truncatechars:60 }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" style="text-align: center; padding: 20px;">Aucune note enregistrée</td></tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="2" style="text-align: right;">MOYENNE GÉNÉRALE :</td>
+                <td class="moyenne-generale">{{ moyenne }}/20</td>
+                <td colspan="3"></td>
+            </tr>
+        </tfoot>
+    </table>
+    
+    <!-- Résultat Final -->
+    <div class="resultat-final">
+        <div class="moyenne-generale">MOYENNE GÉNÉRALE : {{ moyenne }}/20</div>
+        {% if moyenne >= 16 %}
+        <div class="mention mention-excellente">MENTION : EXCELLENT</div>
+        {% elif moyenne >= 14 %}
+        <div class="mention mention-bien">MENTION : TRÈS BIEN</div>
+        {% elif moyenne >= 12 %}
+        <div class="mention mention-assez-bien">MENTION : BIEN</div>
+        {% elif moyenne >= 10 %}
+        <div class="mention mention-passable">MENTION : ASSEZ BIEN</div>
+        {% else %}
+        <div class="mention mention-insuffisante">MENTION : INSUFFISANT</div>
+        {% endif %}
+        <div class="rang">RANG : {{ rang }} / {{ effectif|default:"N/A" }}</div>
+        {% if decision %}
+        <div class="decision">{{ decision }}</div>
+        {% endif %}
+    </div>
+    
+    <!-- Appréciation IA -->
+    {% if appreciation %}
+    <div class="appreciation-ia">
+        <strong>Synthèse Pédagogique — Intelligence Artificielle :</strong><br>
+        {{ appreciation }}
+    </div>
+    {% endif %}
+    
+    <!-- Footer Officiel -->
+    <table class="footer-officiel">
+        <tr>
+            <td>
+                <div class="verification">
+                    <strong>VÉRIFICATION NUMÉRIQUE</strong><br>
+                    AUTH-ID: {{ verification_token }}<br>
+                    HASH: {{ signature }}<br>
+                    Document certifié conforme — Plateforme Académie Numérique IA
+                </div>
+            </td>
+            <td>
+                <div class="signature-block">
+                    <div class="titre-signature">Le Responsable de l'Établissement</div>
+                    <div class="signature-img">Signature Numérique</div>
+                    <div class="mention">Document signé et certifié conforme</div>
+                </div>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

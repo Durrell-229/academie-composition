@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @page { size: A4; margin: 15mm 20mm; }
+        body { font-family: 'Helvetica', 'Arial', sans-serif; color: #1e293b; font-size: 10pt; line-height: 1.4; margin: 0; padding: 0; }
+        
+        .header-corporate { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 3px solid #4F46E5; }
+        .logo-section { flex: 1; }
+        .logo-title { font-size: 22pt; font-weight: bold; color: #4F46E5; margin: 0; letter-spacing: 1px; }
+        .logo-subtitle { font-size: 9pt; color: #64748b; margin: 3px 0 0 0; text-transform: uppercase; letter-spacing: 2px; }
+        .meta-section { text-align: right; font-size: 8pt; color: #64748b; }
+        .meta-section strong { color: #1e293b; }
+        
+        .titre { text-align: center; font-size: 16pt; font-weight: bold; color: #4F46E5; margin: 20px 0; text-transform: uppercase; letter-spacing: 2px; background: linear-gradient(90deg, #4F46E5, #7C3AED); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        
+        .info-card { background-color: #f8fafc; border-radius: 8px; padding: 12px 15px; margin-bottom: 20px; border-left: 4px solid #4F46E5; }
+        .info-grid { display: table; width: 100%; border: none; }
+        .info-grid tr { border: none; }
+        .info-grid td { border: none; padding: 3px 5px; font-size: 9pt; }
+        .label { font-weight: bold; color: #475569; }
+        .valeur { color: #1e293b; font-weight: 500; }
+        
+        .table-notes { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 9pt; }
+        .table-notes th { background-color: #4F46E5; color: white; border: none; padding: 8px 6px; text-align: center; font-size: 8pt; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }
+        .table-notes th:first-child { text-align: left; border-radius: 4px 0 0 0; }
+        .table-notes th:last-child { border-radius: 0 4px 0 0; }
+        .table-notes tbody tr { border-bottom: 1px solid #e2e8f0; }
+        .table-notes tbody tr:nth-child(even) { background-color: #f8fafc; }
+        .table-notes td { padding: 8px 6px; text-align: center; border: none; }
+        .table-notes td:first-child { text-align: left; font-weight: 600; color: #334155; }
+        .note-bar { display: inline-block; height: 6px; border-radius: 3px; margin-left: 5px; }
+        .note-excellente { color: #059669; font-weight: bold; }
+        .note-excellente .note-bar { background-color: #059669; }
+        .note-moyenne { color: #d97706; font-weight: bold; }
+        .note-moyenne .note-bar { background-color: #d97706; }
+        .note-faible { color: #dc2626; font-weight: bold; }
+        .note-faible .note-bar { background-color: #dc2626; }
+        .niveau-badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 7pt; font-weight: bold; text-transform: uppercase; }
+        .niveau-expert { background-color: #dcfce7; color: #166534; }
+        .niveau-intermediaire { background-color: #dbeafe; color: #1e40af; }
+        .niveau-debutant { background-color: #fef3c7; color: #92400e; }
+        .niveau-insuffisant { background-color: #fee2e2; color: #991b1b; }
+        
+        .resultat-card { background: linear-gradient(135deg, #4F46E5, #7C3AED); color: white; border-radius: 12px; padding: 20px; margin: 20px 0; text-align: center; }
+        .moyenne-generale { font-size: 28pt; font-weight: bold; margin: 0; }
+        .mention { font-size: 12pt; font-weight: bold; margin-top: 5px; text-transform: uppercase; letter-spacing: 1px; }
+        .rang { font-size: 10pt; margin-top: 5px; opacity: 0.9; }
+        .decision { font-size: 14pt; font-weight: bold; margin-top: 8px; padding: 5px 15px; background-color: rgba(255,255,255,0.2); border-radius: 8px; display: inline-block; }
+        
+        .appreciation-card { background-color: #f0f9ff; border-left: 4px solid #0891b2; padding: 12px 15px; margin: 15px 0; border-radius: 0 8px 8px 0; }
+        .appreciation-card strong { color: #0891b2; }
+        .appreciation-card p { margin: 5px 0 0 0; color: #334155; font-size: 9pt; line-height: 1.5; }
+        
+        .competences-section { margin: 15px 0; }
+        .competences-section h3 { font-size: 11pt; font-weight: bold; color: #4F46E5; margin-bottom: 10px; border-bottom: 2px solid #e2e8f0; padding-bottom: 5px; }
+        .competence-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #f1f5f9; }
+        .competence-name { font-size: 9pt; font-weight: 500; color: #334155; }
+        .competence-level { font-size: 8pt; font-weight: bold; padding: 2px 10px; border-radius: 10px; }
+        
+        .footer-corporate { margin-top: 30px; padding-top: 15px; border-top: 2px solid #e2e8f0; display: table; width: 100%; }
+        .footer-corporate td { border: none; vertical-align: top; width: 50%; }
+        .verification { font-family: 'Courier New', monospace; font-size: 7pt; color: #94a3b8; padding: 8px; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; }
+        .verification strong { color: #475569; }
+        .signature-block { text-align: center; padding: 10px; }
+        .signature-block .titre-signature { font-weight: bold; color: #475569; margin-bottom: 30px; font-size: 9pt; }
+        .signature-block .signature-img { font-family: 'Brush Script MT', cursive; font-size: 16pt; color: #4F46E5; margin-bottom: 5px; }
+        .signature-block .mention { font-size: 7pt; color: #94a3b8; }
+    </style>
+</head>
+<body>
+    <!-- En-tête Corporate -->
+    <div class="header-corporate">
+        <div class="logo-section">
+            <div class="logo-title">ACADÉMIE NUMÉRIQUE IA</div>
+            <div class="logo-subtitle">Plateforme d'Évaluation Intelligente</div>
+        </div>
+        <div class="meta-section">
+            <strong>{{ periode }}</strong><br>
+            Année scolaire : {{ annee_scolaire }}<br>
+            Généré le : {{ bulletin.created_at|date:"d/m/Y à H:i" }}
+        </div>
+    </div>
+    
+    <!-- Titre -->
+    <div class="titre">Relevé de Compétences & Performance</div>
+    
+    <!-- Carte Informations -->
+    <div class="info-card">
+        <table class="info-grid">
+            <tr>
+                <td style="width: 50%;"><span class="label">Apprenant :</span> <span class="valeur">{{ eleve.first_name }} {{ eleve.last_name }}</span></td>
+                <td style="width: 50%;"><span class="label">ID Unique :</span> <span class="valeur">{{ eleve.matricule|default:"N/A" }}</span></td>
+            </tr>
+            <tr>
+                <td><span class="label">Formation / Classe :</span> <span class="valeur">{{ classe }}</span></td>
+                <td><span class="label">Effectif :</span> <span class="valeur">{{ effectif|default:"N/A" }} apprenants</span></td>
+            </tr>
+        </table>
+    </div>
+    
+    <!-- Tableau des Résultats -->
+    <table class="table-notes">
+        <thead>
+            <tr>
+                <th style="width: 30%;">Module / Discipline</th>
+                <th style="width: 12%;">Score / 20</th>
+                <th style="width: 15%;">Niveau</th>
+                <th style="width: 12%;">Moy. Groupe</th>
+                <th style="width: 12%;">Performance</th>
+                <th style="width: 19%;">Feedback</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ligne in lignes %}
+            <tr>
+                <td>{{ ligne.matiere }}</td>
+                <td>
+                    <span class="{% if ligne.note >= 16 %}note-excellente{% elif ligne.note >= 10 %}note-moyenne{% else %}note-faible{% endif %}">
+                        {{ ligne.note }}
+                    </span>
+                    <span class="note-bar" style="width: {{ ligne.note|floatformat:0|add:"0" }}px;"></span>
+                </td>
+                <td>
+                    {% if ligne.note >= 16 %}
+                    <span class="niveau-badge niveau-expert">Expert</span>
+                    {% elif ligne.note >= 12 %}
+                    <span class="niveau-badge niveau-intermediaire">Intermédiaire</span>
+                    {% elif ligne.note >= 10 %}
+                    <span class="niveau-badge niveau-debutant">Débutant</span>
+                    {% else %}
+                    <span class="niveau-badge niveau-insuffisant">À renforcer</span>
+                    {% endif %}
+                </td>
+                <td style="color: #64748b;">{{ ligne.moyenne_classe }}</td>
+                <td>
+                    {% if ligne.note >= ligne.moyenne_classe %}
+                    <span style="color: #059669; font-weight: bold;">+{{ ligne.note|add:"-"|add:ligne.moyenne_classe|default:"0" }}</span>
+                    {% else %}
+                    <span style="color: #dc2626; font-weight: bold;">{{ ligne.note|add:"-"|add:ligne.moyenne_classe|default:"0" }}</span>
+                    {% endif %}
+                </td>
+                <td style="font-size: 8pt; color: #64748b; text-align: left;">{{ ligne.appreciation|truncatechars:50 }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" style="text-align: center; padding: 20px; color: #94a3b8;">Aucune donnée disponible</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <!-- Résultat Global -->
+    <div class="resultat-card">
+        <div class="moyenne-generale">{{ moyenne }}/20</div>
+        {% if moyenne >= 16 %}
+        <div class="mention">EXCELLENT</div>
+        {% elif moyenne >= 14 %}
+        <div class="mention">TRÈS BIEN</div>
+        {% elif moyenne >= 12 %}
+        <div class="mention">BIEN</div>
+        {% elif moyenne >= 10 %}
+        <div class="mention">ACQUIS</div>
+        {% else %}
+        <div class="mention">EN COURS D'ACQUISITION</div>
+        {% endif %}
+        <div class="rang">Classement : {{ rang }} / {{ effectif|default:"N/A" }}</div>
+        {% if decision %}
+        <div class="decision">{{ decision }}</div>
+        {% endif %}
+    </div>
+    
+    <!-- Synthèse IA -->
+    {% if appreciation %}
+    <div class="appreciation-card">
+        <strong>Synthèse Intelligente — Analyse IA :</strong>
+        <p>{{ appreciation }}</p>
+    </div>
+    {% endif %}
+    
+    <!-- Footer Corporate -->
+    <table class="footer-corporate">
+        <tr>
+            <td>
+                <div class="verification">
+                    <strong>CERTIFICATION NUMÉRIQUE</strong><br>
+                    ID : {{ verification_token }}<br>
+                    HASH : {{ signature }}<br>
+                    Document vérifiable sur la plateforme Académie Numérique IA
+                </div>
+            </td>
+            <td>
+                <div class="signature-block">
+                    <div class="titre-signature">Direction Académique</div>
+                    <div class="signature-img">Signature Numérique</div>
+                    <div class="mention">Document certifié et authentifié</div>
+                </div>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

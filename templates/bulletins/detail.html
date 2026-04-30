@@ -1,0 +1,240 @@
+{% extends 'base.html' %}
+{% block title %}Bulletin {{ bulletin.periode }} — {{ bulletin.eleve.full_name }} | Académie Numérique{% endblock %}
+{% block breadcrumb %}
+  <a href="{% url 'dashboard' %}" class="hover:text-primary transition">Dashboard</a>
+  <span class="mx-2 text-text-muted">/</span>
+  <a href="{% url 'bulletins:index' %}" class="hover:text-primary transition">Bulletins</a>
+  <span class="mx-2 text-text-muted">/</span>
+  <span class="text-white font-semibold">{{ bulletin.get_periode_display }}</span>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- HEADER -->
+  <div class="animate-in flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div>
+      <div class="flex items-center gap-3 mb-1">
+        <h1 class="text-2xl font-black tracking-tight">Bulletin <span class="gradient-text">{{ bulletin.get_periode_display }}</span></h1>
+        <span class="px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider
+          {% if bulletin.type_bulletin == 'administratif' %}bg-primary/10 text-primary{% else %}bg-accent/10 text-accent{% endif %}">
+          {% if bulletin.type_bulletin == 'administratif' %}<i class="fa-solid fa-landmark mr-1"></i>Ministère{% else %}<i class="fa-solid fa-briefcase mr-1"></i>Entreprise{% endif %}
+        </span>
+      </div>
+      <p class="text-sm text-text-muted mt-1">{{ bulletin.eleve.full_name }} • {{ bulletin.classe }} • {{ bulletin.annee_scolaire }}</p>
+    </div>
+    <div class="flex items-center gap-3">
+      <a href="{% url 'bulletins:download' bulletin.id %}" class="px-5 py-2.5 rounded-xl bg-button-gradient text-white text-sm font-bold shadow-lg shadow-primary/20 hover:opacity-90 transition flex items-center gap-2">
+        <i class="fa-solid fa-download"></i> Télécharger PDF
+      </a>
+      <a href="{% url 'bulletins:generate' bulletin.id %}" class="px-4 py-2.5 rounded-xl glass border border-border-standard text-sm font-bold hover:bg-bg-tertiary/50 transition flex items-center gap-2">
+        <i class="fa-solid fa-rotate"></i> Regénérer
+      </a>
+      <a href="{% url 'bulletins:index' %}" class="px-4 py-2.5 rounded-xl glass border border-border-standard text-sm font-bold hover:bg-bg-tertiary/50 transition">
+        <i class="fa-solid fa-arrow-left"></i>
+      </a>
+    </div>
+  </div>
+
+  <!-- CARTE MOYENNE -->
+  <div class="animate-in delay-1 grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div class="glass p-5 rounded-2xl border border-border-standard">
+      <div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary mb-3">
+        <i class="fa-solid fa-chart-line"></i>
+      </div>
+      <p class="text-3xl font-black {% if bulletin.moyenne_generale >= 16 %}note-excellent{% elif bulletin.moyenne_generale >= 10 %}note-moyen{% else %}note-insuffisant{% endif %}">
+        {{ bulletin.moyenne_generale }}<span class="text-sm text-text-muted">/20</span>
+      </p>
+      <p class="text-[9px] font-black uppercase tracking-widest text-text-muted mt-1">Moyenne Générale</p>
+    </div>
+
+    <div class="glass p-5 rounded-2xl border border-border-standard">
+      <div class="w-10 h-10 rounded-xl bg-warning/10 flex items-center justify-center text-warning mb-3">
+        <i class="fa-solid fa-trophy"></i>
+      </div>
+      <p class="text-3xl font-black text-warning">{{ bulletin.rang }}<span class="text-sm text-text-muted">/{{ bulletin.effectif_total }}</span></p>
+      <p class="text-[9px] font-black uppercase tracking-widest text-text-muted mt-1">Rang / Effectif</p>
+    </div>
+
+    <div class="glass p-5 rounded-2xl border border-border-standard">
+      <div class="w-10 h-10 rounded-xl bg-success/10 flex items-center justify-center text-success mb-3">
+        <i class="fa-solid fa-award"></i>
+      </div>
+      <p class="text-xl font-black {% if bulletin.moyenne_generale >= 16 %}note-excellent{% elif bulletin.moyenne_generale >= 14 %}note-bien{% elif bulletin.moyenne_generale >= 12 %}note-moyen{% else %}note-insuffisant{% endif %}">
+        {% if bulletin.moyenne_generale >= 18 %}Excellent{% elif bulletin.moyenne_generale >= 16 %}Très Bien{% elif bulletin.moyenne_generale >= 14 %}Bien{% elif bulletin.moyenne_generale >= 12 %}Assez Bien{% elif bulletin.moyenne_generale >= 10 %}Passable{% else %}Insuffisant{% endif %}
+      </p>
+      <p class="text-[9px] font-black uppercase tracking-widest text-text-muted mt-1">Mention</p>
+    </div>
+
+    <div class="glass p-5 rounded-2xl border border-border-standard">
+      <div class="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center text-accent mb-3">
+        <i class="fa-solid fa-calendar"></i>
+      </div>
+      <p class="text-sm font-bold text-white">{{ bulletin.get_periode_display }}</p>
+      <p class="text-[9px] font-black uppercase tracking-widest text-text-muted mt-1">{{ bulletin.annee_scolaire }}</p>
+    </div>
+  </div>
+
+  <!-- TABLEAU DES NOTES -->
+  <div class="animate-in delay-2 glass rounded-2xl border border-border-standard overflow-hidden">
+    <div class="flex items-center justify-between px-6 py-4 border-b border-border-standard">
+      <h3 class="font-black text-sm uppercase tracking-wider flex items-center gap-2">
+        <i class="fa-solid fa-list-check text-primary"></i> Détail par Matière
+      </h3>
+      <span class="text-xs text-text-muted">{{ bulletin.lignes.count }} matière{{ bulletin.lignes.count|pluralize }}</span>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-border-standard">
+            <th class="text-left py-3 px-6 text-[9px] font-black uppercase tracking-widest text-text-muted">Matière</th>
+            <th class="text-center py-3 px-4 text-[9px] font-black uppercase tracking-widest text-text-muted">Note / 20</th>
+            <th class="text-center py-3 px-4 text-[9px] font-black uppercase tracking-widest text-text-muted">Moy. Classe</th>
+            <th class="text-center py-3 px-4 text-[9px] font-black uppercase tracking-widest text-text-muted">Écart</th>
+            <th class="text-left py-3 px-6 text-[9px] font-black uppercase tracking-widest text-text-muted">Appréciation</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-border-standard">
+          {% for ligne in bulletin.lignes.all %}
+          <tr class="hover:bg-bg-tertiary/30 transition">
+            <td class="py-3 px-6 font-semibold">{{ ligne.matiere }}</td>
+            <td class="py-3 px-4 text-center">
+              <span class="inline-flex items-center px-3 py-1 rounded-lg text-sm font-black
+                {% if ligne.note >= 16 %}bg-success/10 note-excellent
+                {% elif ligne.note >= 12 %}bg-info/10 note-bien
+                {% elif ligne.note >= 10 %}bg-warning/10 note-moyen
+                {% else %}bg-danger/10 note-insuffisant{% endif %}">
+                {{ ligne.note }}
+              </span>
+            </td>
+            <td class="py-3 px-4 text-center text-text-muted">{{ ligne.moyenne_classe }}</td>
+            <td class="py-3 px-4 text-center">
+              {% with diff=ligne.note|add:"-0"|add:ligne.moyenne_classe|default:"0" %}
+              {% if ligne.note >= ligne.moyenne_classe %}
+              <span class="text-success font-bold">+{{ diff }}</span>
+              {% else %}
+              <span class="text-danger font-bold">{{ diff }}</span>
+              {% endif %}
+              {% endwith %}
+            </td>
+            <td class="py-3 px-6 text-xs text-text-muted">{{ ligne.appreciation|truncatechars:60|default:"-" }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="5" class="py-10 text-center text-text-muted">
+              <i class="fa-solid fa-inbox text-2xl opacity-20 block mb-2"></i>
+              Aucune note enregistrée
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- APPRÉCIATION IA -->
+  {% if bulletin.appreciation_ia %}
+  <div class="animate-in delay-3 glass rounded-2xl border border-border-standard overflow-hidden">
+    <div class="px-6 py-4 border-b border-border-standard">
+      <h3 class="font-black text-sm uppercase tracking-wider flex items-center gap-2">
+        <i class="fa-solid fa-robot text-accent"></i> Synthèse Intelligente IA
+      </h3>
+    </div>
+    <div class="p-6">
+      <div class="bg-bg-tertiary/30 rounded-xl p-5 text-sm leading-relaxed text-text-secondary border border-border-standard">
+        {{ bulletin.appreciation_ia|linebreaks }}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- GRAPHIQUE ÉVOLUTION -->
+  <div class="animate-in delay-3 glass rounded-2xl border border-border-standard p-6">
+    <h3 class="font-black text-sm uppercase tracking-wider flex items-center gap-2 mb-5">
+      <i class="fa-solid fa-chart-area text-primary"></i> Évolution des Performances
+    </h3>
+    <canvas id="perfChart" height="150"></canvas>
+  </div>
+
+  <!-- VERIFICATION -->
+  <div class="animate-in delay-4 glass rounded-2xl border border-border-standard overflow-hidden">
+    <div class="px-6 py-4 border-b border-border-standard">
+      <h3 class="font-black text-sm uppercase tracking-wider flex items-center gap-2">
+        <i class="fa-solid fa-shield-halved text-success"></i> Vérification & Authenticité
+      </h3>
+    </div>
+    <div class="p-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+        <div class="p-3 rounded-xl bg-bg-tertiary/30 border border-border-standard">
+          <p class="text-[9px] font-black uppercase tracking-widest text-text-muted mb-1">Token de vérification</p>
+          <p class="font-mono text-white break-all">{{ bulletin.verification_token }}</p>
+        </div>
+        <div class="p-3 rounded-xl bg-bg-tertiary/30 border border-border-standard">
+          <p class="text-[9px] font-black uppercase tracking-widest text-text-muted mb-1">Signature numérique</p>
+          <p class="font-mono text-white break-all">{{ bulletin.signature_numerique|default:"Non signé" }}</p>
+        </div>
+      </div>
+      <p class="text-xs text-text-muted mt-4 flex items-center gap-2">
+        <i class="fa-solid fa-circle-check text-success"></i>
+        Ce bulletin est certifié conforme par l'Académie Numérique IA. Il peut être vérifié en ligne via le token ci-dessus.
+      </p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// Graphique performances par matière
+const matieres = [{% for l in bulletin.lignes.all %}'{{ l.matiere|escapejs }}',{% endfor %}];
+const notes = [{% for l in bulletin.lignes.all %}{{ l.note|default:0 }},{% endfor %}];
+const moyennes = [{% for l in bulletin.lignes.all %}{{ l.moyenne_classe|default:0 }},{% endfor %}];
+
+if (matieres.length > 0) {
+    new Chart(document.getElementById('perfChart'), {
+        type: 'bar',
+        data: {
+            labels: matieres,
+            datasets: [
+                {
+                    label: 'Note Élève',
+                    data: notes,
+                    backgroundColor: 'rgba(99,102,241,0.6)',
+                    borderColor: '#6366F1',
+                    borderWidth: 1,
+                    borderRadius: 4
+                },
+                {
+                    label: 'Moyenne Classe',
+                    data: moyennes,
+                    backgroundColor: 'rgba(148,163,184,0.3)',
+                    borderColor: '#94A3B8',
+                    borderWidth: 1,
+                    borderRadius: 4
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: { labels: { color: '#CBD5E1', font: { size: 11 } } }
+            },
+            scales: {
+                y: {
+                    min: 0, max: 20,
+                    grid: { color: 'rgba(71,85,105,0.3)' },
+                    ticks: { color: '#94A3B8', font: { size: 10 } }
+                },
+                x: {
+                    grid: { display: false },
+                    ticks: { color: '#94A3B8', font: { size: 10 }, maxRotation: 45 }
+                }
+            }
+        }
+    });
+} else {
+    document.getElementById('perfChart').parentElement.innerHTML =
+        '<div class="h-40 flex items-center justify-center text-center text-text-muted"><p class="text-xs">Aucune donnée disponible</p></div>';
+}
+</script>
+{% endblock %}

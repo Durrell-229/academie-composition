@@ -1,0 +1,724 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Académie Numérique IA — L'Excellence Réinventée</title>
+    <meta name="description" content="Plateforme mondiale de composition et d'évaluation intelligente propulsée par l'IA">
+
+    <!-- Tailwind CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4F46E5',
+                        secondary: '#7C3AED',
+                        accent: '#0891B2',
+                        success: '#059669',
+                        warning: '#D97706',
+                        danger: '#DC2626',
+                        'bg-primary': '#030712',
+                        'bg-secondary': '#0F172A',
+                        'text-primary': '#F8FAFC',
+                        'text-muted': '#94A3B8',
+                    },
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: #030712;
+            color: #F8FAFC;
+            overflow-x: hidden;
+        }
+
+        /* ═══ VIDEO GALLERY OBLIQUE ═══ */
+        .promo-section {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            padding: 80px 20px 120px;
+        }
+
+        .video-carousel {
+            width: 100%;
+            max-width: 1400px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .video-track {
+            display: flex;
+            gap: 24px;
+            transform: skewY(-4deg) skewX(-2deg);
+            transform-origin: center center;
+            padding: 40px 0;
+            animation: scrollVideos 40s linear infinite;
+        }
+
+        .video-track:hover {
+            animation-play-state: paused;
+        }
+
+        @keyframes scrollVideos {
+            0% { transform: skewY(-4deg) skewX(-2deg) translateX(0); }
+            100% { transform: skewY(-4deg) skewX(-2deg) translateX(calc(-320px * 3 - 72px)); }
+        }
+
+        .video-card {
+            flex-shrink: 0;
+            width: 320px;
+            height: 180px;
+            border-radius: 16px;
+            overflow: hidden;
+            position: relative;
+            background: linear-gradient(135deg, rgba(79,70,229,0.2), rgba(124,58,237,0.1));
+            border: 1px solid rgba(79,70,229,0.3);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 40px rgba(79,70,229,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .video-card:hover {
+            transform: scale(1.05) skewY(0) skewX(0);
+            box-shadow: 0 30px 80px rgba(0,0,0,0.6), 0 0 60px rgba(79,70,229,0.2);
+            border-color: rgba(79,70,229,0.6);
+        }
+
+        .video-card video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .video-card .overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, rgba(3,7,18,0.9) 0%, transparent 50%);
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: 16px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .video-card:hover .overlay {
+            opacity: 1;
+        }
+
+        .video-card .overlay h4 {
+            font-size: 14px;
+            font-weight: 800;
+            margin-bottom: 4px;
+        }
+
+        .video-card .overlay p {
+            font-size: 11px;
+            color: #94A3B8;
+        }
+
+        .video-card .badge {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            padding: 4px 10px;
+            border-radius: 99px;
+            font-size: 9px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .badge-new { background: #4F46E5; color: white; }
+        .badge-promo { background: #D97706; color: white; }
+        .badge-demo { background: #059669; color: white; }
+
+        /* ═══ SECOND ROW (reverse direction) ═══ */
+        .video-track-reverse {
+            display: flex;
+            gap: 24px;
+            transform: skewY(3deg) skewX(1deg);
+            transform-origin: center center;
+            padding: 40px 0;
+            animation: scrollVideosReverse 45s linear infinite;
+        }
+
+        .video-track-reverse:hover {
+            animation-play-state: paused;
+        }
+
+        @keyframes scrollVideosReverse {
+            0% { transform: skewY(3deg) skewX(1deg) translateX(calc(-320px * 3 - 72px)); }
+            100% { transform: skewY(3deg) skewX(1deg) translateX(0); }
+        }
+
+        /* ═══ HERO HEADER ═══ */
+        .hero-header {
+            text-align: center;
+            padding: 60px 20px 40px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 20px;
+            border-radius: 99px;
+            background: rgba(79,70,229,0.1);
+            border: 1px solid rgba(79,70,229,0.3);
+            font-size: 11px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            color: #818CF8;
+            margin-bottom: 24px;
+        }
+
+        .hero-badge .pulse {
+            width: 8px;
+            height: 8px;
+            background: #4F46E5;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(79,70,229,0.5); }
+            50% { box-shadow: 0 0 0 8px rgba(79,70,229,0); }
+        }
+
+        .hero-title {
+            font-size: clamp(2.5rem, 6vw, 4.5rem);
+            font-weight: 900;
+            line-height: 1;
+            letter-spacing: -0.03em;
+            margin-bottom: 16px;
+        }
+
+        .hero-title span {
+            background: linear-gradient(135deg, #4F46E5, #7C3AED, #0891B2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-subtitle {
+            font-size: clamp(1rem, 2vw, 1.25rem);
+            color: #94A3B8;
+            max-width: 600px;
+            margin: 0 auto 32px;
+            font-weight: 500;
+        }
+
+        /* ═══ CTA BUTTON ═══ */
+        .cta-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 24px;
+            background: linear-gradient(to top, #030712 60%, transparent);
+            z-index: 100;
+            display: flex;
+            justify-content: center;
+        }
+
+        .cta-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            padding: 18px 48px;
+            background: linear-gradient(135deg, #4F46E5, #7C3AED);
+            color: white;
+            font-size: 16px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            border-radius: 16px;
+            text-decoration: none;
+            box-shadow: 0 20px 60px rgba(79,70,229,0.4);
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 30px 80px rgba(79,70,229,0.5);
+        }
+
+        .cta-button i {
+            font-size: 20px;
+        }
+
+        /* ═══ BACKGROUND EFFECTS ═══ */
+        .bg-effects {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .bg-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(120px);
+            opacity: 0.15;
+        }
+
+        .bg-orb-1 {
+            width: 500px;
+            height: 500px;
+            background: #4F46E5;
+            top: -10%;
+            left: -10%;
+            animation: float1 8s ease-in-out infinite;
+        }
+
+        .bg-orb-2 {
+            width: 400px;
+            height: 400px;
+            background: #7C3AED;
+            top: 30%;
+            right: -10%;
+            animation: float2 10s ease-in-out infinite;
+        }
+
+        .bg-orb-3 {
+            width: 600px;
+            height: 600px;
+            background: #0891B2;
+            bottom: -10%;
+            left: 20%;
+            animation: float3 12s ease-in-out infinite;
+        }
+
+        @keyframes float1 {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(40px, 30px); }
+        }
+
+        @keyframes float2 {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(-30px, 40px); }
+        }
+
+        @keyframes float3 {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(50px, -20px); }
+        }
+
+        /* ═══ STATS BAR ═══ */
+        .stats-bar {
+            display: flex;
+            justify-content: center;
+            gap: 48px;
+            flex-wrap: wrap;
+            padding: 32px 20px;
+            margin-bottom: 20px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #4F46E5, #0891B2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: #94A3B8;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            font-weight: 700;
+            margin-top: 4px;
+        }
+
+        /* ═══ RESPONSIVE ═══ */
+        @media (max-width: 768px) {
+            .video-card {
+                width: 280px;
+                height: 158px;
+            }
+
+            .video-track, .video-track-reverse {
+                gap: 16px;
+            }
+
+            @keyframes scrollVideos {
+                0% { transform: skewY(-4deg) skewX(-2deg) translateX(0); }
+                100% { transform: skewY(-4deg) skewX(-2deg) translateX(calc(-296px * 3 - 48px)); }
+            }
+
+            @keyframes scrollVideosReverse {
+                0% { transform: skewY(3deg) skewX(1deg) translateX(calc(-296px * 3 - 48px)); }
+                100% { transform: skewY(3deg) skewX(1deg) translateX(0); }
+            }
+
+            .stats-bar {
+                gap: 24px;
+            }
+
+            .cta-button {
+                padding: 16px 32px;
+                font-size: 14px;
+            }
+        }
+
+        /* Video placeholder for when no video */
+        .video-placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, rgba(79,70,229,0.3), rgba(124,58,237,0.2));
+        }
+
+        .video-placeholder i {
+            font-size: 48px;
+            color: rgba(255,255,255,0.6);
+            margin-bottom: 8px;
+        }
+
+        .video-placeholder span {
+            font-size: 11px;
+            color: rgba(255,255,255,0.4);
+            font-weight: 700;
+        }
+
+        /* Scroll indicator */
+        .scroll-indicator {
+            position: absolute;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateX(-50%) translateY(0); }
+            50% { transform: translateX(-50%) translateY(10px); }
+        }
+
+        .scroll-indicator span {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            color: #94A3B8;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Background Effects -->
+    <div class="bg-effects">
+        <div class="bg-orb bg-orb-1"></div>
+        <div class="bg-orb bg-orb-2"></div>
+        <div class="bg-orb bg-orb-3"></div>
+    </div>
+
+    <!-- Hero Header -->
+    <div class="hero-header">
+        <div class="hero-badge">
+            <span class="pulse"></span>
+            Plateforme propulsée par l'IA
+        </div>
+        <h1 class="hero-title">
+            L'AVENIR DE<br><span>L'EXCELLENCE</span>
+        </h1>
+        <p class="hero-subtitle">
+            Découvrez comment l'Académie Numérique révolutionne l'évaluation scolaire avec l'intelligence artificielle de pointe.
+        </p>
+    </div>
+
+    <!-- Stats Bar -->
+    <div class="stats-bar">
+        <div class="stat-item">
+            <div class="stat-number">10K+</div>
+            <div class="stat-label">Élèves actifs</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number">500+</div>
+            <div class="stat-label">Professeurs</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number">98%</div>
+            <div class="stat-label">Satisfaction</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number">24/7</div>
+            <div class="stat-label">Disponibilité IA</div>
+        </div>
+    </div>
+
+    <!-- Promo Video Section -->
+    <section class="promo-section">
+        <div class="video-carousel">
+            <!-- ROW 1: Skewed left, scrolling right -->
+            <div class="video-track">
+                <!-- Video 1 -->
+                <div class="video-card">
+                    <video autoplay muted loop playsinline>
+                        <source src="{% static 'videos/promo_1.mp4' %}" type="video/mp4">
+                    </video>
+                    <span class="badge badge-new">Nouveau</span>
+                    <div class="overlay">
+                        <h4>Correction IA en direct</h4>
+                        <p>Précision chirurgicale garantie</p>
+                    </div>
+                </div>
+
+                <!-- Video 2 -->
+                <div class="video-card">
+                    <video autoplay muted loop playsinline>
+                        <source src="{% static 'videos/promo_2.mp4' %}" type="video/mp4">
+                    </video>
+                    <span class="badge badge-demo">Démo</span>
+                    <div class="overlay">
+                        <h4>Anti-triche intelligent</h4>
+                        <p>Surveillance en temps réel</p>
+                    </div>
+                </div>
+
+                <!-- Video 3 -->
+                <div class="video-card">
+                    <video autoplay muted loop playsinline>
+                        <source src="{% static 'videos/promo_3.mp4' %}" type="video/mp4">
+                    </video>
+                    <span class="badge badge-promo">Promo</span>
+                    <div class="overlay">
+                        <h4>Bulletins PDF officiels</h4>
+                        <p>Génération automatique</p>
+                    </div>
+                </div>
+
+                <!-- Duplicate for infinite scroll -->
+                <div class="video-card">
+                    <video autoplay muted loop playsinline>
+                        <source src="{% static 'videos/promo_1.mp4' %}" type="video/mp4">
+                    </video>
+                    <span class="badge badge-new">Nouveau</span>
+                    <div class="overlay">
+                        <h4>Correction IA en direct</h4>
+                        <p>Précision chirurgicale garantie</p>
+                    </div>
+                </div>
+
+                <div class="video-card">
+                    <video autoplay muted loop playsinline>
+                        <source src="{% static 'videos/promo_2.mp4' %}" type="video/mp4">
+                    </video>
+                    <span class="badge badge-demo">Démo</span>
+                    <div class="overlay">
+                        <h4>Anti-triche intelligent</h4>
+                        <p>Surveillance en temps réel</p>
+                    </div>
+                </div>
+
+                <div class="video-card">
+                    <video autoplay muted loop playsinline>
+                        <source src="{% static 'videos/promo_3.mp4' %}" type="video/mp4">
+                    </video>
+                    <span class="badge badge-promo">Promo</span>
+                    <div class="overlay">
+                        <h4>Bulletins PDF officiels</h4>
+                        <p>Génération automatique</p>
+                    </div>
+                </div>
+
+                <div class="video-card">
+                    <video autoplay muted loop playsinline>
+                        <source src="{% static 'videos/promo_1.mp4' %}" type="video/mp4">
+                    </video>
+                    <span class="badge badge-new">Nouveau</span>
+                    <div class="overlay">
+                        <h4>Correction IA en direct</h4>
+                        <p>Précision chirurgicale garantie</p>
+                    </div>
+                </div>
+
+                <div class="video-card">
+                    <video autoplay muted loop playsinline>
+                        <source src="{% static 'videos/promo_2.mp4' %}" type="video/mp4">
+                    </video>
+                    <span class="badge badge-demo">Démo</span>
+                    <div class="overlay">
+                        <h4>Anti-triche intelligent</h4>
+                        <p>Surveillance en temps réel</p>
+                    </div>
+                </div>
+
+                <div class="video-card">
+                    <video autoplay muted loop playsinline>
+                        <source src="{% static 'videos/promo_3.mp4' %}" type="video/mp4">
+                    </video>
+                    <span class="badge badge-promo">Promo</span>
+                    <div class="overlay">
+                        <h4>Bulletins PDF officiels</h4>
+                        <p>Génération automatique</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ROW 2: Skewed right, scrolling left -->
+            <div class="video-track-reverse">
+                <div class="video-card">
+                    <video autoplay muted loop playsinline>
+                        <source src="{% static 'videos/promo_4.mp4' %}" type="video/mp4">
+                    </video>
+                    <span class="badge badge-new">Excellence</span>
+                    <div class="overlay">
+                        <h4>Certificats vérifiables</h4>
+                        <p>Validation par QR code</p>
+                    </div>
+                </div>
+
+                <div class="video-card">
+                    <video autoplay muted loop playsinline>
+                        <source src="{% static 'videos/promo_5.mp4' %}" type="video/mp4">
+                    </video>
+                    <span class="badge badge-demo">QCM IA</span>
+                    <div class="overlay">
+                        <h4>QCM générés par IA</h4>
+                        <p>Entraînement personnalisé</p>
+                    </div>
+                </div>
+
+                <div class="video-card">
+                    <video autoplay muted loop playsinline>
+                        <source src="{% static 'videos/promo_6.mp4' %}" type="video/mp4">
+                    </video>
+                    <span class="badge badge-promo">Gamification</span>
+                    <div class="overlay">
+                        <h4>Badges & Classement</h4>
+                        <p>Motivation et progression</p>
+                    </div>
+                </div>
+
+                <!-- Duplicates -->
+                <div class="video-card">
+                    <video autoplay muted loop playsinline>
+                        <source src="{% static 'videos/promo_4.mp4' %}" type="video/mp4">
+                    </video>
+                    <span class="badge badge-new">Excellence</span>
+                    <div class="overlay">
+                        <h4>Certificats vérifiables</h4>
+                        <p>Validation par QR code</p>
+                    </div>
+                </div>
+
+                <div class="video-card">
+                    <video autoplay muted loop playsinline>
+                        <source src="{% static 'videos/promo_5.mp4' %}" type="video/mp4">
+                    </video>
+                    <span class="badge badge-demo">QCM IA</span>
+                    <div class="overlay">
+                        <h4>QCM générés par IA</h4>
+                        <p>Entraînement personnalisé</p>
+                    </div>
+                </div>
+
+                <div class="video-card">
+                    <video autoplay muted loop playsinline>
+                        <source src="{% static 'videos/promo_6.mp4' %}" type="video/mp4">
+                    </video>
+                    <span class="badge badge-promo">Gamification</span>
+                    <div class="overlay">
+                        <h4>Badges & Classement</h4>
+                        <p>Motivation et progression</p>
+                    </div>
+                </div>
+
+                <div class="video-card">
+                    <video autoplay muted loop playsinline>
+                        <source src="{% static 'videos/promo_4.mp4' %}" type="video/mp4">
+                    </video>
+                    <span class="badge badge-new">Excellence</span>
+                    <div class="overlay">
+                        <h4>Certificats vérifiables</h4>
+                        <p>Validation par QR code</p>
+                    </div>
+                </div>
+
+                <div class="video-card">
+                    <video autoplay muted loop playsinline>
+                        <source src="{% static 'videos/promo_5.mp4' %}" type="video/mp4">
+                    </video>
+                    <span class="badge badge-demo">QCM IA</span>
+                    <div class="overlay">
+                        <h4>QCM générés par IA</h4>
+                        <p>Entraînement personnalisé</p>
+                    </div>
+                </div>
+
+                <div class="video-card">
+                    <video autoplay muted loop playsinline>
+                        <source src="{% static 'videos/promo_6.mp4' %}" type="video/mp4">
+                    </video>
+                    <span class="badge badge-promo">Gamification</span>
+                    <div class="overlay">
+                        <h4>Badges & Classement</h4>
+                        <p>Motivation et progression</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Fixed CTA Button -->
+    <div class="cta-container">
+        <a href="{% url 'home' %}" class="cta-button">
+            <i class="fa-solid fa-arrow-right"></i>
+            Accéder à l'application
+        </a>
+    </div>
+
+    <!-- Auto-play all videos script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const videos = document.querySelectorAll('.video-card video');
+            videos.forEach(video => {
+                video.play().catch(() => {
+                    // Autoplay blocked, video will play on user interaction
+                    video.muted = true;
+                    video.play();
+                });
+            });
+        });
+    </script>
+
+</body>
+</html>

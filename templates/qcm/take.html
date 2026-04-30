@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+{% block title %}QCM en Cours | Académie Numérique{% endblock %}
+{% block breadcrumb %}
+  <a href="{% url 'dashboard' %}" class="hover:text-primary transition">Dashboard</a>
+  <span class="mx-2 text-text-muted">/</span>
+  <a href="{% url 'qcm_start' %}" class="hover:text-primary transition">QCM</a>
+  <span class="mx-2 text-text-muted">/</span>
+  <span class="text-white font-semibold">Composition</span>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto" x-data="qcmApp()">
+
+  <!-- HEADER + TIMER -->
+  <div class="animate-in flex items-center justify-between mb-6">
+    <div>
+      <h1 class="text-xl font-black tracking-tight">QCM <span class="gradient-text">{{ matiere }}</span></h1>
+      <p class="text-xs text-text-muted mt-0.5">{{ nb_questions }} questions • Niveau {{ difficulte|default:"moyen" }}{% if theme %} • Thème : {{ theme }}{% endif %}</p>
+    </div>
+    <div class="flex items-center gap-3">
+      <div class="glass px-4 py-2 rounded-xl border border-border-standard flex items-center gap-2">
+        <i class="fa-solid fa-clock text-warning text-sm"></i>
+        <span class="font-black text-warning font-mono text-sm" x-text="formatTime(timeLeft)"></span>
+      </div>
+      <span class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-danger/10 border border-danger/20 text-danger text-xs font-black">
+        <span class="live-dot" style="background:#DC2626; box-shadow:0 0 0 4px rgba(220,38,38,0.15);"></span>
+        Live
+      </span>
+    </div>
+  </div>
+
+  <!-- PROGRESS BAR -->
+  <div class="animate-in delay-1 mb-6">
+    <div class="flex items-center justify-between text-xs text-text-muted mb-2">
+      <span>Progression</span>
+      <span x-text="answeredCount + '/' + questions.length"></span>
+    </div>
+    <div class="h-2 bg-bg-tertiary/30 rounded-full overflow-hidden">
+      <div class="h-full bg-gradient-to-r from-primary to-accent rounded-full transition-all duration-300"
+           :style="'width: ' + (answeredCount / questions.length * 100) + '%'"></div>
+    </div>
+  </div>
+
+  <form method="post" action="{% url 'qcm_submit' %}" @submit.prevent="submitting = true; $nextTick(() => $el.submit())">
+    {% csrf_token %}
+
+    <!-- QUESTIONS -->
+    <div class="space-y-6 animate-in delay-2">
+      <template x-for="(q, index) in questions" :key="index">
+        <div class="glass rounded-2xl border border-border-standard overflow-hidden"
+             :class="{'border-primary/50': answers[index] !== ''}">
+          <!-- Numéro de question -->
+          <div class="px-6 py-4 border-b border-border-standard flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-black text-sm" x-text="index + 1"></div>
+            <div class="flex-1">
+              <p class="text-xs font-black uppercase tracking-widest text-text-muted">Question <span x-text="index + 1"></span></p>
+            </div>
+            <span class="px-2 py-0.5 rounded text-[9px] font-bold"
+                  :class="answers[index] ? 'bg-success/10 text-success' : 'bg-text-muted/10 text-text-muted'"
+                  x-text="answers[index] ? 'Répondu' : 'Non répondu'"></span>
+          </div>
+
+          <!-- Question -->
+          <div class="p-6">
+            <p class="text-base font-bold text-white mb-5" x-text="q.question"></p>
+
+            <!-- Choix multiples -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <template x-for="(choix, cIndex) in q.choix" :key="cIndex">
+                <label class="relative flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all"
+                       :class="answers[index] === choix.label ? 'border-primary bg-primary/10' : 'border-border-standard hover:bg-bg-tertiary/30'">
+                  <input type="radio" :name="'reponse_' + index" :value="choix.label"
+                         class="hidden"
+                         @change="answers[index] = choix.label">
+                  <div class="w-8 h-8 rounded-lg flex items-center justify-center font-black text-sm shrink-0"
+                       :class="answers[index] === choix.label ? 'bg-primary text-white' : 'bg-bg-tertiary text-text-muted'"
+                       x-text="choix.label"></div>
+                  <span class="text-sm font-medium" :class="answers[index] === choix.label ? 'text-white' : 'text-text-secondary'" x-text="choix.texte"></span>
+                  <div class="absolute top-2 right-2 w-4 h-4 rounded-full border-2 transition-all"
+                       :class="answers[index] === choix.label ? 'border-primary bg-primary' : 'border-border-standard'">
+                    <div x-show="answers[index] === choix.label" class="w-2 h-2 rounded-full bg-white absolute top-1 left-1"></div>
+                  </div>
+                </label>
+              </template>
+            </div>
+          </div>
+        </div>
+      </template>
+    </div>
+
+    <!-- Hidden inputs for form submission -->
+    <template x-for="(answer, index) in answers" :key="'hidden-' + index">
+      <input type="hidden" :name="'reponse_' + index" :value="answer">
+    </template>
+
+    <!-- ACTIONS -->
+    <div class="animate-in delay-3 flex items-center justify-between gap-4 mt-8 pt-6 border-t border-border-standard">
+      <a href="{% url 'qcm_start' %}" class="px-5 py-3 rounded-xl glass border border-border-standard text-sm font-bold text-text-muted hover:text-danger hover:border-danger/30 transition flex items-center gap-2">
+        <i class="fa-solid fa-xmark"></i> Abandonner
+      </a>
+      <button type="submit" class="px-8 py-3 rounded-xl bg-button-gradient text-white text-sm font-black shadow-lg shadow-primary/20 hover:opacity-90 transition flex items-center gap-2"
+              :disabled="submitting">
+        <template x-if="!submitting">
+          <span class="flex items-center gap-2"><i class="fa-solid fa-paper-plane"></i> Soumettre (<span x-text="answeredCount"></span> réponses)</span>
+        </template>
+        <template x-if="submitting">
+          <span class="flex items-center gap-2">
+            <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+            </svg>
+            Correction en cours...
+          </span>
+        </template>
+      </button>
+    </div>
+  </form>
+</div>
+
+<script>
+function qcmApp() {
+    return {
+        questions: {{ questions|safe }},
+        answers: new Array({{ questions|length }}).fill(''),
+        submitting: false,
+        timeLeft: {{ nb_questions|default:10 }} * 90, // 1.5 min par question
+        timer: null,
+        get answeredCount() {
+            return this.answers.filter(a => a !== '').length;
+        },
+        init() {
+            this.timer = setInterval(() => {
+                if (this.timeLeft > 0) this.timeLeft--;
+                else {
+                    clearInterval(this.timer);
+                    if (!this.submitting) {
+                        this.submitting = true;
+                        this.$nextTick(() => document.querySelector('form').submit());
+                    }
+                }
+            }, 1000);
+        },
+        formatTime(seconds) {
+            const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+            const s = (seconds % 60).toString().padStart(2, '0');
+            return m + ':' + s;
+        }
+    }
+}
+</script>
+{% endblock %}
