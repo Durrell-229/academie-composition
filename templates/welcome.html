@@ -36,22 +36,10 @@
             </a>
         </div>
 
-        <!-- Section Vidéo de démonstration -->
+        <!-- Section Image de démonstration -->
         <div id="demo" class="max-w-5xl mx-auto mb-24">
             <div class="glass rounded-3xl overflow-hidden border border-border-standard shadow-2xl">
-                <div class="relative w-full" style="padding-top: 56.25%;">
-                    <video
-                        class="absolute inset-0 w-full h-full object-cover"
-                        preload="metadata"
-                        poster=""
-                        autoplay
-                        muted
-                        loop
-                    >
-                        <source src="{% static 'videos/promo_video.mp4' %}" type="video/mp4">
-                        Votre navigateur ne supporte pas la lecture vidéo.
-                    </video>
-                </div>
+                <img src="{% static 'images/demo_hero.jpg' %}" alt="Démo Académie Numérique IA" class="w-full h-auto object-cover">
             </div>
             <p class="mt-6 text-sm text-text-muted">
                 <i class="fa-solid fa-circle-info mr-1"></i>
