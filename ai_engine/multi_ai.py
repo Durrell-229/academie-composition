@@ -223,12 +223,14 @@ FORMAT DE RÉPONSE EXIGÉ — JSON valide UNIQUEMENT, rien d'autre :
         "B": "Texte du choix B",
         "C": "Texte du choix C",
         "D": "Texte du choix D"
-      }}
+      }},
+      "correcte": "A"
     }}
   ]
 }}
 ```
 
+Le champ "correcte" indique la lettre (A, B, C ou D) de la bonne réponse.
 Retourne UNIQUEMENT le JSON, sans texte avant ni après."""
 
         return self.generate(prompt, expect_json=True)

@@ -113,21 +113,63 @@ def submit_qcm(request):
     # Construire le texte des réponses pour l'IA
     reponses_text = '\n'.join([f'{k}: {v}' for k, v in reponses.items()])
 
-    # Correction IA
-    qcm_original = ctx.get('qcm_original', '')
-    if not qcm_original:
-        qcm_original = '\n\n'.join([f"{q.get('question', '')}\n" + '\n'.join([f"{c.get('label', '')}) {c.get('texte', '')}" for c in q.get('choix', [])]) for q in questions])
+    # Correction : calcul déterministe basé sur les réponses stockées
+    bonnes_reponses_count = 0
+    total = len(questions)
+    for i, q in enumerate(questions):
+        rep = request.POST.get(f'reponse_{i}', '')
+        if _check_answer(q, rep):
+            bonnes_reponses_count += 1
 
-    feedback = multi_ai.correct_qcm(reponses_text, qcm_original, ctx)
-    note = feedback.get('note', 0)
-    bonnes_reponses = feedback.get('bonnes_reponses', 0)
+    note = round((bonnes_reponses_count / total) * 20, 1) if total > 0 else 0
+
+    # Générer le feedback (IA optionnelle + fallback déterministe)
+    appreciation_levels = {
+        (0, 5): 'Insuffisant',
+        (5, 8): 'Passable',
+        (8, 10): 'Assez Bien',
+        (10, 14): 'Bien',
+        (14, 18): 'Très Bien',
+        (18, 21): 'Excellent',
+    }
+    appreciation = 'Insuffisant'
+    for low, high, label in appreciation_levels.items():
+        if low <= note < high:
+            appreciation = label
+            break
+
+    feedback = {
+        'note': note,
+        'bonnes_reponses': bonnes_reponses_count,
+        'total_questions': total,
+        'appreciation': appreciation,
+        'details': [],
+        'points_forts': [],
+        'axes_amelioration': [],
+        'remediation': 'Continuez à réviser pour améliorer vos résultats.',
+    }
+
+    # Tentative IA pour enrichir le feedback (sans bloquer si timeout)
+    try:
+        qcm_original = ctx.get('qcm_original', '')
+        if not qcm_original:
+            qcm_original = '\n\n'.join([
+                f"{q.get('question', '')}\n" + '\n'.join([f"{c.get('label', '')}) {c.get('texte', '')}" for c in q.get('choix', [])])
+                for q in questions
+            ])
+        ai_feedback = multi_ai.correct_qcm(reponses_text, qcm_original, ctx)
+        feedback['remediation'] = ai_feedback.get('remediation', feedback['remediation'])
+        feedback['points_forts'] = ai_feedback.get('points_forts', [])
+        feedback['axes_amelioration'] = ai_feedback.get('axes_amelioration', [])
+        if ai_feedback.get('appreciation'):
+            feedback['appreciation'] = ai_feedback['appreciation']
+    except Exception as e:
+        logger.warning(f"IA feedback skipped: {e}")
 
     # Préparer les détails des questions/réponses
     for i, q in enumerate(questions):
         rep = request.POST.get(f'reponse_{i}', '')
         est_correct = _check_answer(q, rep)
-        if est_correct:
-            bonnes_reponses_detail = bonnes_reponses  # approximation
         details_questions.append({
             'question': q.get('question', ''),
             'reponse_eleve': rep,
@@ -174,7 +216,7 @@ def submit_qcm(request):
                 classe=ctx.get('classe', ''),
                 theme=ctx.get('theme', ''),
                 note_sur_20=note,
-                bonnes_reponses=feedback.get('bonnes_reponses', len([r for r in reponses.values() if r])),
+                bonnes_reponses=bonnes_reponses_count,
                 total_questions=len(questions),
                 questions_data={'questions': details_questions, 'reponses': reponses},
                 feedback_ia=feedback,
@@ -216,6 +258,7 @@ def _parse_qcm_text(text, nb_questions):
             for i, q in enumerate(data['questions']):
                 q_text = q.get('question', '').strip()
                 choix_raw = q.get('choix', {})
+                correcte = q.get('correcte', '').strip().upper()
                 choix = []
                 for label in ['A', 'B', 'C', 'D']:
                     choix.append({'label': label, 'texte': choix_raw.get(label, f'Choix {label}')})
@@ -225,6 +268,7 @@ def _parse_qcm_text(text, nb_questions):
                         'id': str(uuid.uuid4())[:8],
                         'question': q_text,
                         'choix': choix,
+                        'correcte': correcte,
                     })
             if questions:
                 return questions[:nb_questions]
@@ -277,33 +321,11 @@ def _parse_qcm_text(text, nb_questions):
 
 
 def _check_answer(question, reponse):
-    """Vérifie si une réponse est correcte selon les connaissances académiques."""
-    from ai_engine.multi_ai import multi_ai
-
-    choix = question.get('choix', [])
-    question_text = question.get('question', '')
-
-    # Construire le prompt pour l'IA
-    prompt_check = f"""Question: {question_text}
-Choix:
-A) {choix[0]['texte'] if len(choix) > 0 else ''}
-B) {choix[1]['texte'] if len(choix) > 1 else ''}
-C) {choix[2]['texte'] if len(choix) > 2 else ''}
-D) {choix[3]['texte'] if len(choix) > 3 else ''}
-
-Réponse de l'élève: {reponse}
-
-Quelle est la bonne réponse (A, B, C ou D) ? Retourne UNIQUEMENT la lettre de la bonne réponse, rien d'autre."""
-
-    try:
-        bonne_reponse = multi_ai.generate(prompt_check).strip().upper()
-        # Extraire juste la lettre
-        for lettre in ['A', 'B', 'C', 'D']:
-            if lettre in bonne_reponse:
-                return reponse.upper() == lettre
+    """Vérifie si une réponse est correcte en comparant avec la réponse stockée."""
+    correcte = question.get('correcte', '').strip().upper()
+    if not correcte:
         return False
-    except Exception:
-        return False
+    return reponse.strip().upper() == correcte
 
 
 @login_required
