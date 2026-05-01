@@ -23,7 +23,11 @@ def start_qcm(request):
         classe = request.POST.get('classe', '')
         nb_questions = int(request.POST.get('nb_questions', 10))
         difficulte = request.POST.get('difficulte', 'moyen')
-        theme = request.POST.get('theme', '')
+        theme = request.POST.get('theme', '').strip()
+
+        if not theme:
+            messages.error(request, "Veuillez préciser un thème ou chapitre pour des questions cohérentes.")
+            return render(request, 'qcm/start.html')
 
         # Chercher par nom
         matiere = Matiere.objects.filter(nom=matiere_nom).first()
@@ -196,38 +200,71 @@ def submit_qcm(request):
 
 
 def _parse_qcm_text(text, nb_questions):
-    """Parse le texte généré par l'IA en structure de questions."""
+    """Parse le texte ou JSON généré par l'IA en structure de questions."""
+    # 1. Essayer de parser en JSON d'abord
+    try:
+        clean = text.strip()
+        # Enlever les backticks markdown si présents
+        if '```json' in clean:
+            clean = clean.split('```json')[1].split('```')[0]
+        elif '```' in clean:
+            clean = clean.split('```')[1].split('```')[0]
+
+        data = json.loads(clean.strip())
+        if 'questions' in data and isinstance(data['questions'], list):
+            questions = []
+            for i, q in enumerate(data['questions']):
+                q_text = q.get('question', '').strip()
+                choix_raw = q.get('choix', {})
+                choix = []
+                for label in ['A', 'B', 'C', 'D']:
+                    choix.append({'label': label, 'texte': choix_raw.get(label, f'Choix {label}')})
+
+                if q_text:
+                    questions.append({
+                        'id': str(uuid.uuid4())[:8],
+                        'question': q_text,
+                        'choix': choix,
+                    })
+            if questions:
+                return questions[:nb_questions]
+    except (json.JSONDecodeError, KeyError, IndexError):
+        pass
+
+    # 2. Fallback : parser le format texte Q1. A) B) C) D)
     questions = []
     lines = text.strip().split('\n')
     current_q = None
     current_choices = []
-    
+
     for line in lines:
         line = line.strip()
         if not line:
             continue
-        
-        # Détection nouvelle question : Q1. Q2. etc.
-        if line.startswith('Q') and '.' in line[:4]:
+
+        # Détection nouvelle question : Q1. Q2. etc. ou 1. 2. etc.
+        import re
+        q_match = re.match(r'^(?:Q)?(\d+)\.\s+(.+)', line)
+        if q_match:
             if current_q:
                 current_q['choix'] = current_choices
                 questions.append(current_q)
-            current_q = {'question': line.split('.', 1)[1].strip() if '.' in line else line, 'id': str(uuid.uuid4())[:8]}
+            current_q = {'question': q_match.group(2).strip(), 'id': str(uuid.uuid4())[:8]}
             current_choices = []
         elif line.startswith(('A)', 'B)', 'C)', 'D)', 'a)', 'b)', 'c)', 'd)')):
             label = line[0].upper()
             texte = line[2:].strip()
             current_choices.append({'label': label, 'texte': texte})
-    
+
     if current_q:
         current_q['choix'] = current_choices
         questions.append(current_q)
-    
-    # Compléter si moins de questions que demandé
+
+    # 3. Compléter si moins de questions que demandé
     while len(questions) < nb_questions:
         questions.append({
             'id': str(uuid.uuid4())[:8],
-            'question': f'Question {len(questions) + 1} (non générée)',
+            'question': f'Question {len(questions) + 1} (non générée par l\'IA)',
             'choix': [
                 {'label': 'A', 'texte': 'Choix A'},
                 {'label': 'B', 'texte': 'Choix B'},
@@ -235,7 +272,7 @@ def _parse_qcm_text(text, nb_questions):
                 {'label': 'D', 'texte': 'Choix D'},
             ]
         })
-    
+
     return questions[:nb_questions]
 
 

@@ -186,43 +186,52 @@ FORMAT DE RÉPONSE EXIGÉ (JSON valide UNIQUEMENT) :
 
     def generate_qcm(self, matiere: str, classe: str, nb_questions: int = 10,
                      difficulte: str = 'moyen', theme: str = '') -> str:
-        """Génère un QCM complet basé sur le programme éducatif béninois."""
-        theme_str = f" sur le thème spécifique : {theme}" if theme else ""
-        prompt = f"""Tu es un professeur expert de l'ÉDUCATION NATIONALE DU BÉNIN, spécialiste en {matiere} pour la classe {classe}{theme_str}.
+        """Génère un QCM complet strictement sur le chapitre demandé."""
+        if not theme:
+            theme = f"Programme général de {matiere} pour {classe}"
 
-CONTEXTE PÉDAGOGIQUE :
-- Tu suis STRICTEMENT le programme officiel béninois en vigueur pour {matiere} en classe de {classe}
-- Les questions doivent correspondre EXACTEMENT aux contenus enseignés dans les écoles du Bénin
-- NE JAMAIS mélanger avec des programmes d'autres pays (France, Canada, etc.)
-- Utilise la terminologie et les références du système éducatif béninois
+        theme_str = theme.strip()
+
+        prompt = f"""Tu es un professeur expert en {matiere} pour la classe de {classe}.
+
+CHAPITRE CIBLE : {theme_str}
+
+CONTRAINTE ABSOLUE :
+- TOUTES les questions doivent porter EXCLUSIVEMENT sur le chapitre "{theme_str}"
+- NE JAMAIS poser de questions sur un autre chapitre
+- Si tu ne connais pas le contenu de ce chapitre, adapte-toi mais reste DANS le thème
+- Niveau de difficulté : {difficulte}
 
 OBJECTIF :
-Génère un QCM de {nb_questions} questions de niveau {difficulte} basé UNIQUEMENT sur le programme béninois.
+Génère exactement {nb_questions} questions QCM sur "{theme_str}".
 
 RÈGLES STRICTES :
 1. Chaque question a exactement 4 choix : A, B, C, D
 2. Une SEULE bonne réponse par question
-3. Numérote chaque question : Q1, Q2, Q3...
-4. Questions précises, pédagogiques et adaptées au niveau {classe}
-5. Les distracteurs (mauvaises réponses) doivent être plausibles
+3. Questions précises, pédagogiques, adaptées au niveau {classe}
+4. Les distracteurs (mauvaises réponses) doivent être plausibles
+5. Numérote les questions de 1 à {nb_questions}
 
-FORMAT EXACT À RESPECTER :
-Q1. [Question] ?
-A) [Choix A]
-B) [Choix B]
-C) [Choix C]
-D) [Choix D]
+FORMAT DE RÉPONSE EXIGÉ — JSON valide UNIQUEMENT, rien d'autre :
+```json
+{{
+  "questions": [
+    {{
+      "question": "Texte de la question 1 ?",
+      "choix": {{
+        "A": "Texte du choix A",
+        "B": "Texte du choix B",
+        "C": "Texte du choix C",
+        "D": "Texte du choix D"
+      }}
+    }}
+  ]
+}}
+```
 
-Q2. [Question] ?
-A) [Choix A]
-B) [Choix B]
-C) [Choix C]
-D) [Choix D]
+Retourne UNIQUEMENT le JSON, sans texte avant ni après."""
 
-... et ainsi de suite pour les {nb_questions} questions.
-
-AUCUNE introduction, AUCUN texte avant ou après les questions. Uniquement le QCM."""
-        return self.generate(prompt)
+        return self.generate(prompt, expect_json=True)
 
     def correct_qcm(self, reponses: str, qcm_original: str, ctx: dict) -> dict:
         """Corrige les réponses à un QCM et retourne un JSON structuré."""
