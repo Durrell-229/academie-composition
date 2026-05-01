@@ -3,7 +3,7 @@
 {% block breadcrumb %}<span class="text-text-primary font-semibold">Administration</span>{% endblock %}
 
 {% block content %}
-<div class="space-y-6">
+<div class="space-y-6" x-data="{ showNotifModal: false, showEmailModal: false, showBadgeModal: false, showXPModal: false, showCustomEmail: false }">
 
   <!-- ═══ HEADER ADMIN ═══ -->
   <div class="animate-in relative overflow-hidden rounded-2xl p-6 md:p-8 bg-bg-card border border-border-standard">
@@ -457,6 +457,210 @@
     </div>
   </div>
   {% endif %}
+
+  <!-- ═══ OUTILS ADMIN ═══ -->
+  <div class="animate-in delay-5 glass rounded-2xl border border-border-standard overflow-hidden">
+    <div class="flex items-center justify-between px-6 py-4 border-b border-border-standard bg-primary/5">
+      <h3 class="font-black text-sm uppercase tracking-wider flex items-center gap-2">
+        <i class="fa-solid fa-screwdriver-wrench text-primary"></i> Outils d'Administration
+      </h3>
+    </div>
+    <div class="p-6">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <!-- Notification -->
+        <button @click="showNotifModal = true" class="flex flex-col items-center gap-3 p-5 rounded-xl bg-bg-tertiary/30 border border-border-standard hover:border-primary/50 hover:bg-primary/5 transition group">
+          <div class="w-10 h-10 rounded-xl bg-primary/10 group-hover:bg-primary/20 flex items-center justify-center text-primary transition">
+            <i class="fa-solid fa-bell"></i>
+          </div>
+          <p class="text-xs font-black text-white">Envoyer Notification</p>
+          <p class="text-[9px] text-text-muted mt-0.5">In-app alerts</p>
+        </button>
+        <!-- Email -->
+        <button @click="showEmailModal = true" class="flex flex-col items-center gap-3 p-5 rounded-xl bg-bg-tertiary/30 border border-border-standard hover:border-accent/50 hover:bg-accent/5 transition group">
+          <div class="w-10 h-10 rounded-xl bg-accent/10 group-hover:bg-accent/20 flex items-center justify-center text-accent transition">
+            <i class="fa-solid fa-envelope"></i>
+          </div>
+          <p class="text-xs font-black text-white">Envoyer Email</p>
+          <p class="text-[9px] text-text-muted mt-0.5">SMTP gratuit</p>
+        </button>
+        <!-- Badge -->
+        <button @click="showBadgeModal = true" class="flex flex-col items-center gap-3 p-5 rounded-xl bg-bg-tertiary/30 border border-border-standard hover:border-warning/50 hover:bg-warning/5 transition group">
+          <div class="w-10 h-10 rounded-xl bg-warning/10 group-hover:bg-warning/20 flex items-center justify-center text-warning transition">
+            <i class="fa-solid fa-medal"></i>
+          </div>
+          <p class="text-xs font-black text-white">Attribuer Badge</p>
+          <p class="text-[9px] text-text-muted mt-0.5">Gamification</p>
+        </button>
+        <!-- XP -->
+        <button @click="showXPModal = true" class="flex flex-col items-center gap-3 p-5 rounded-xl bg-bg-tertiary/30 border border-border-standard hover:border-success/50 hover:bg-success/5 transition group">
+          <div class="w-10 h-10 rounded-xl bg-success/10 group-hover:bg-success/20 flex items-center justify-center text-success transition">
+            <i class="fa-solid fa-star"></i>
+          </div>
+          <p class="text-xs font-black text-white">Attribuer XP</p>
+          <p class="text-[9px] text-text-muted mt-0.5">Points d'expérience</p>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ MODALS ═══ -->
+  <!-- Notification Modal -->
+  <div x-show="showNotifModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4"
+       x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+       x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
+    <div class="fixed inset-0 bg-black/70 backdrop-blur-sm" @click="showNotifModal = false"></div>
+    <div class="relative glass rounded-2xl border border-border-standard w-full max-w-lg p-6 z-10"
+         x-transition:enter="transition ease-out duration-200" x-transition:enter-start="scale-95 translate-y-4" x-transition:enter-end="scale-100 translate-y-0">
+      <h3 class="font-black text-lg mb-4 flex items-center gap-2"><i class="fa-solid fa-bell text-primary"></i> Envoyer une Notification</h3>
+      <form method="POST" action="{% url 'create_notification' %}" class="space-y-4">
+        {% csrf_token %}
+        <div>
+          <label class="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-1.5">Titre</label>
+          <input type="text" name="title" required class="w-full bg-bg-secondary border border-border-standard rounded-xl px-4 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary/30 transition outline-none" placeholder="Ex : Nouveau bulletin disponible">
+        </div>
+        <div>
+          <label class="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-1.5">Message</label>
+          <textarea name="message" rows="3" required class="w-full bg-bg-secondary border border-border-standard rounded-xl px-4 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary/30 transition outline-none resize-none" placeholder="Contenu de la notification..."></textarea>
+        </div>
+        <div>
+          <label class="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-1.5">Destinataires</label>
+          <select name="recipient_role" class="w-full bg-bg-secondary border border-border-standard rounded-xl px-4 py-3 text-sm focus:border-primary transition outline-none">
+            <option value="all">Tous les utilisateurs</option>
+            <option value="eleve">Élèves uniquement</option>
+            <option value="professeur">Professeurs uniquement</option>
+            <option value="conseiller">Conseillers uniquement</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-1.5">Type</label>
+          <select name="type" class="w-full bg-bg-secondary border border-border-standard rounded-xl px-4 py-3 text-sm focus:border-primary transition outline-none">
+            <option value="INSCRIPTION">Inscription</option>
+            <option value="BULLETIN">Bulletin</option>
+            <option value="APPROBATION">Approbation</option>
+          </select>
+        </div>
+        <div class="flex gap-3 pt-2">
+          <button type="button" @click="showNotifModal = false" class="flex-1 py-3 rounded-xl glass border border-border-standard text-sm font-bold text-text-muted hover:bg-bg-tertiary/50 transition">Annuler</button>
+          <button type="submit" class="flex-1 py-3 rounded-xl bg-button-gradient text-white text-sm font-black shadow-lg shadow-primary/20 hover:opacity-90 transition">Envoyer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Email Modal -->
+  <div x-show="showEmailModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4"
+       x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+       x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
+    <div class="fixed inset-0 bg-black/70 backdrop-blur-sm" @click="showEmailModal = false"></div>
+    <div class="relative glass rounded-2xl border border-border-standard w-full max-w-lg p-6 z-10"
+         x-transition:enter="transition ease-out duration-200" x-transition:enter-start="scale-95 translate-y-4" x-transition:enter-end="scale-100 translate-y-0">
+      <h3 class="font-black text-lg mb-4 flex items-center gap-2"><i class="fa-solid fa-envelope text-accent"></i> Envoyer un Email</h3>
+      <form method="POST" action="{% url 'email_compose' %}" class="space-y-4">
+        {% csrf_token %}
+        <div>
+          <label class="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-1.5">Destinataires</label>
+          <select name="recipient_role" id="emailRecipientSelect" @change="showCustomEmail = ($event.target.value === 'custom')" class="w-full bg-bg-secondary border border-border-standard rounded-xl px-4 py-3 text-sm focus:border-accent transition outline-none">
+            <option value="all">Tous les utilisateurs</option>
+            <option value="eleve">Élèves uniquement</option>
+            <option value="professeur">Professeurs uniquement</option>
+            <option value="conseiller">Conseillers uniquement</option>
+            <option value="custom">Email personnalisé</option>
+          </select>
+        </div>
+        <div x-show="showCustomEmail" x-transition>
+          <label class="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-1.5">Email personnalisé</label>
+          <input type="email" name="custom_email" class="w-full bg-bg-secondary border border-border-standard rounded-xl px-4 py-3 text-sm focus:border-accent transition outline-none" placeholder="exemple@email.com">
+        </div>
+        <div>
+          <label class="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-1.5">Sujet</label>
+          <input type="text" name="subject" required class="w-full bg-bg-secondary border border-border-standard rounded-xl px-4 py-3 text-sm focus:border-accent transition outline-none" placeholder="Ex : Votre bulletin est disponible">
+        </div>
+        <div>
+          <label class="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-1.5">Message</label>
+          <textarea name="body_text" rows="4" required class="w-full bg-bg-secondary border border-border-standard rounded-xl px-4 py-3 text-sm focus:border-accent transition outline-none resize-none" placeholder="Contenu de l'email..."></textarea>
+        </div>
+        <div class="flex gap-3 pt-2">
+          <button type="button" @click="showEmailModal = false" class="flex-1 py-3 rounded-xl glass border border-border-standard text-sm font-bold text-text-muted hover:bg-bg-tertiary/50 transition">Annuler</button>
+          <button type="submit" class="flex-1 py-3 rounded-xl bg-gradient-to-r from-accent to-primary text-white text-sm font-black shadow-lg shadow-accent/20 hover:opacity-90 transition">Envoyer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Badge Modal -->
+  <div x-show="showBadgeModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4"
+       x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+       x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
+    <div class="fixed inset-0 bg-black/70 backdrop-blur-sm" @click="showBadgeModal = false"></div>
+    <div class="relative glass rounded-2xl border border-border-standard w-full max-w-lg p-6 z-10"
+         x-transition:enter="transition ease-out duration-200" x-transition:enter-start="scale-95 translate-y-4" x-transition:enter-end="scale-100 translate-y-0">
+      <h3 class="font-black text-lg mb-4 flex items-center gap-2"><i class="fa-solid fa-medal text-warning"></i> Attribuer un Badge</h3>
+      <form method="POST" action="{% url 'grant_badge' %}" class="space-y-4">
+        {% csrf_token %}
+        <div>
+          <label class="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-1.5">Utilisateur</label>
+          <select name="user_id" required class="w-full bg-bg-secondary border border-border-standard rounded-xl px-4 py-3 text-sm focus:border-warning transition outline-none">
+            <option value="">Sélectionner un utilisateur</option>
+            {% for u in all_users %}
+            <option value="{{ u.id }}">{{ u.full_name }} ({{ u.email }}) — {{ u.get_role_display }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-1.5">Badge</label>
+          <select name="badge_id" required class="w-full bg-bg-secondary border border-border-standard rounded-xl px-4 py-3 text-sm focus:border-warning transition outline-none">
+            <option value="">Sélectionner un badge</option>
+            {% for b in all_badges %}
+            <option value="{{ b.id }}">{{ b.icone }} {{ b.nom }} — {{ b.get_rarete_display }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="flex gap-3 pt-2">
+          <button type="button" @click="showBadgeModal = false" class="flex-1 py-3 rounded-xl glass border border-border-standard text-sm font-bold text-text-muted hover:bg-bg-tertiary/50 transition">Annuler</button>
+          <button type="submit" class="flex-1 py-3 rounded-xl bg-gradient-to-r from-warning to-accent text-white text-sm font-black shadow-lg shadow-warning/20 hover:opacity-90 transition">Attribuer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- XP Modal -->
+  <div x-show="showXPModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4"
+       x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+       x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
+    <div class="fixed inset-0 bg-black/70 backdrop-blur-sm" @click="showXPModal = false"></div>
+    <div class="relative glass rounded-2xl border border-border-standard w-full max-w-lg p-6 z-10"
+         x-transition:enter="transition ease-out duration-200" x-transition:enter-start="scale-95 translate-y-4" x-transition:enter-end="scale-100 translate-y-0">
+      <h3 class="font-black text-lg mb-4 flex items-center gap-2"><i class="fa-solid fa-star text-success"></i> Attribuer des XP</h3>
+      <form method="POST" action="{% url 'grant_xp' %}" class="space-y-4">
+        {% csrf_token %}
+        <div>
+          <label class="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-1.5">Utilisateur</label>
+          <select name="user_id" required class="w-full bg-bg-secondary border border-border-standard rounded-xl px-4 py-3 text-sm focus:border-success transition outline-none">
+            <option value="">Sélectionner un utilisateur</option>
+            {% for u in all_users %}
+            <option value="{{ u.id }}">{{ u.full_name }} ({{ u.email }}) — {{ u.get_role_display }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-1.5">Points XP</label>
+          <input type="number" name="points" min="1" max="10000" value="100" required class="w-full bg-bg-secondary border border-border-standard rounded-xl px-4 py-3 text-sm focus:border-success transition outline-none">
+        </div>
+        <div>
+          <label class="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-1.5">Action</label>
+          <input type="text" name="action" value="Attribution manuelle" class="w-full bg-bg-secondary border border-border-standard rounded-xl px-4 py-3 text-sm focus:border-success transition outline-none">
+        </div>
+        <div>
+          <label class="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-1.5">Description (optionnel)</label>
+          <textarea name="description" rows="2" class="w-full bg-bg-secondary border border-border-standard rounded-xl px-4 py-3 text-sm focus:border-success transition outline-none resize-none" placeholder="Raison de l'attribution..."></textarea>
+        </div>
+        <div class="flex gap-3 pt-2">
+          <button type="button" @click="showXPModal = false" class="flex-1 py-3 rounded-xl glass border border-border-standard text-sm font-bold text-text-muted hover:bg-bg-tertiary/50 transition">Annuler</button>
+          <button type="submit" class="flex-1 py-3 rounded-xl bg-gradient-to-r from-success to-primary text-white text-sm font-black shadow-lg shadow-success/20 hover:opacity-90 transition">Attribuer</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
 </div>
 

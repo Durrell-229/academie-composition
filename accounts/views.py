@@ -433,6 +433,14 @@ def dashboard_view(request):
             pro_count = 0
             bulletins_mois = 0
 
+        # 7. Users et Badges pour modals admin
+        all_users = list(User.objects.filter(is_active=True).order_by('first_name')[:200])
+        try:
+            from gamification.models import Badge
+            all_badges = list(Badge.objects.filter(est_actif=True).order_by('nom'))
+        except Exception:
+            all_badges = []
+
         context.update({
             'is_admin': True,
             'total_users': total_users,
@@ -473,6 +481,8 @@ def dashboard_view(request):
             'admin_count': admin_count,
             'pro_count': pro_count,
             'bulletins_mois': bulletins_mois,
+            'all_users': all_users,
+            'all_badges': all_badges,
         })
         return render(request, 'accounts/dashboard_admin.html', context)
 
@@ -551,6 +561,7 @@ def profile_edit_view(request):
                     messages.error(request, "Le fichier doit être une image valide.")
                     return render(request, 'accounts/profile_edit.html', {'form': form})
             form.save()
+            request.user.refresh_from_db()
             messages.success(request, "Votre profil a été mis à jour avec succès.")
             return redirect('profile_edit')
         else:

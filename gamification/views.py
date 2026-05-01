@@ -1,10 +1,12 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
+from django.contrib import messages
 from django.http import JsonResponse
 from django.utils import timezone
 from datetime import date
 
 from .models import Badge, UserBadge, GlobalLeaderboard, XPAction, StreakRecord
+from accounts.models import User
 
 
 @login_required
@@ -82,3 +84,71 @@ def leaderboard_api(request):
         'compositions': e.nb_compositions,
     } for e in entries]
     return JsonResponse({'leaderboard': data})
+
+
+@login_required
+def grant_badge_view(request):
+    """Permet à un admin d'attribuer un badge à un utilisateur."""
+    if request.user.role != 'admin':
+        messages.error(request, "Accès refusé.")
+        return redirect('dashboard')
+
+    if request.method == 'POST':
+        user_id = request.POST.get('user_id')
+        badge_id = request.POST.get('badge_id')
+
+        if not user_id or not badge_id:
+            messages.error(request, "Utilisateur et badge requis.")
+            return redirect('dashboard')
+
+        user = User.objects.filter(id=user_id).first()
+        badge = Badge.objects.filter(id=badge_id, est_actif=True).first()
+
+        if not user or not badge:
+            messages.error(request, "Utilisateur ou badge introuvable.")
+            return redirect('dashboard')
+
+        _, created = UserBadge.objects.get_or_create(user=user, badge=badge)
+        if created:
+            messages.success(request, f"Badge '{badge.nom}' attribué à {user.full_name}.")
+        else:
+            messages.info(request, f"{user.full_name} a déjà ce badge.")
+
+        return redirect('dashboard')
+
+    return redirect('dashboard')
+
+
+@login_required
+def grant_xp_view(request):
+    """Permet à un admin d'attribuer des points XP à un utilisateur."""
+    if request.user.role != 'admin':
+        messages.error(request, "Accès refusé.")
+        return redirect('dashboard')
+
+    if request.method == 'POST':
+        user_id = request.POST.get('user_id')
+        points = request.POST.get('points', 0)
+        action = request.POST.get('action', 'Attribution manuelle')
+        description = request.POST.get('description', '')
+
+        if not user_id or not points:
+            messages.error(request, "Utilisateur et points requis.")
+            return redirect('dashboard')
+
+        user = User.objects.filter(id=user_id).first()
+        if not user:
+            messages.error(request, "Utilisateur introuvable.")
+            return redirect('dashboard')
+
+        XPAction.objects.create(
+            user=user,
+            action=action,
+            points_gagnes=int(points),
+            description=description,
+        )
+
+        messages.success(request, f"{points} XP attribués à {user.full_name}.")
+        return redirect('dashboard')
+
+    return redirect('dashboard')
