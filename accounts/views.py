@@ -144,6 +144,17 @@ def dashboard_view(request):
             leaderboard_top10 = []
             total_players = 0
 
+        # Logs anti-triche visibles pour l'élève
+        try:
+            from compositions.models import AntiCheatLog
+            cheat_logs = AntiCheatLog.objects.filter(
+                session__eleve=user
+            ).select_related('session__exam').order_by('-timestamp')[:10]
+            cheat_total = AntiCheatLog.objects.filter(session__eleve=user).count()
+        except Exception:
+            cheat_logs = []
+            cheat_total = 0
+
         context.update({
             'assigned_exams': assigned_qs,
             'upcoming_exams': upcoming_exams,
@@ -169,6 +180,8 @@ def dashboard_view(request):
             'qcm_results': qcm_results,
             'qcm_avg': round(float(qcm_avg), 1),
             'qcm_count': qcm_count,
+            'cheat_logs': cheat_logs,
+            'cheat_total': cheat_total,
         })
         return render(request, 'accounts/dashboard_eleve.html', context)
 

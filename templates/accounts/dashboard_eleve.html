@@ -365,6 +365,65 @@
   </div>
   {% endif %}
 
+  <!-- ═══ ACTIVITÉ ANTI-TRICHE ═══ -->
+  <div class="animate-in delay-4 glass rounded-2xl border {% if cheat_total == 0 %}border-success/20{% else %}border-danger/20{% endif %} overflow-hidden">
+    <div class="flex items-center justify-between px-6 py-4 border-b border-border-standard {% if cheat_total == 0 %}bg-success/5{% else %}bg-danger/5{% endif %}">
+      <h3 class="font-black text-sm uppercase tracking-wider flex items-center gap-2">
+        <i class="fa-solid fa-shield-halved {% if cheat_total == 0 %}text-success{% else %}text-danger{% endif %}"></i>
+        Activité Anti-Triche — {{ cheat_total }} violation{{ cheat_total|pluralize }}
+      </h3>
+    </div>
+    <div class="p-6">
+      {% if cheat_total == 0 %}
+      <!-- Aucune violation -->
+      <div class="text-center py-6">
+        <div class="w-16 h-16 rounded-full bg-success/10 flex items-center justify-center text-success text-2xl mx-auto mb-3">
+          <i class="fa-solid fa-circle-check"></i>
+        </div>
+        <p class="text-sm font-bold text-success mb-1">Aucune violation détectée</p>
+        <p class="text-xs text-text-muted">Bonne conduite ! Continuez à respecter les règles pendant vos compositions.</p>
+      </div>
+      {% else %}
+      <!-- Tableau des violations -->
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-border-standard">
+              <th class="text-left py-3 px-4 text-[9px] font-black uppercase tracking-widest text-text-muted">Date</th>
+              <th class="text-left py-3 px-4 text-[9px] font-black uppercase tracking-widest text-text-muted">Épreuve</th>
+              <th class="text-left py-3 px-4 text-[9px] font-black uppercase tracking-widest text-text-muted">Type</th>
+              <th class="text-left py-3 px-4 text-[9px] font-black uppercase tracking-widest text-text-muted">Description</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-border-standard">
+            {% for log in cheat_logs %}
+            <tr class="hover:bg-bg-tertiary/30 transition">
+              <td class="py-3 px-4 text-xs text-text-muted whitespace-nowrap">{{ log.timestamp|date:"d/m/Y H:i" }}</td>
+              <td class="py-3 px-4">
+                <p class="font-semibold text-sm">{{ log.session.exam.titre|truncatechars:25|default:"-" }}</p>
+              </td>
+              <td class="py-3 px-4">
+                <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider
+                  {% if log.type_event == 'camera_off' %}bg-danger/10 text-danger
+                  {% elif log.type_event == 'fullscreen_exit' or log.type_event == 'tab_change' %}bg-warning/10 text-warning
+                  {% elif log.type_event == 'multiple_faces' %}bg-danger/10 text-danger
+                  {% else %}bg-text-muted/10 text-text-muted{% endif %}">
+                  {{ log.get_type_event_display }}
+                </span>
+              </td>
+              <td class="py-3 px-4 text-xs text-text-secondary">{{ log.description|default:"-"|truncatechars:50 }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% if cheat_total > 10 %}
+      <p class="text-xs text-text-muted text-center mt-3">Affichage des 10 dernières violations sur {{ cheat_total }} au total.</p>
+      {% endif %}
+      {% endif %}
+    </div>
+  </div>
+
   <!-- ═══ DERNIER BULLETIN ═══ -->
   {% if user.bulletins.exists %}
   {% with dernier_bulletin=user.bulletins.first %}

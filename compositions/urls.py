@@ -7,4 +7,5 @@ urlpatterns = [
     path('result/<str:session_id>/', views.result_view, name='result_detail'),
     path('ia-corrections/', views.ia_corrections_list_view, name='ia_corrections_list'),
     path('api/log-cheat/', views.log_cheat_event, name='log_cheat'),
+    path('api/upload-screenshot/', views.upload_screenshot, name='upload_screenshot'),
 ]

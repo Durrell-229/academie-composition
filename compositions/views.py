@@ -188,3 +188,37 @@ def log_cheat_event(request):
         return JsonResponse({'error': 'JSON invalide'}, status=400)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
+
+@require_POST
+@login_required
+def upload_screenshot(request):
+    """API pour recevoir les screenshots périodiques anti-triche."""
+    try:
+        session_id = request.POST.get('session_id')
+        screenshot = request.FILES.get('screenshot')
+
+        if not session_id or not screenshot:
+            return JsonResponse({'status': 'error', 'message': 'session_id et screenshot requis'}, status=400)
+
+        session = get_object_or_404(CompositionSession, id=session_id, eleve=request.user)
+
+        if session.statut != CompositionSession.Statut.EN_COURS:
+            return JsonResponse({'status': 'error', 'message': 'Session non active'}, status=400)
+
+        # Créer un log avec screenshot
+        cheat_log = AntiCheatLog.objects.create(
+            session=session,
+            type_event=AntiCheatLog.TypeEvent.SUSPICIOUS_MOVEMENT,
+            description='Screenshot périodique automatique',
+        )
+        cheat_log.screenshot.save(
+            f'screenshot_{session.id.hex[:8]}_{timezone.now().strftime("%Y%m%d_%H%M%S")}.png',
+            screenshot,
+            save=True
+        )
+
+        return JsonResponse({'status': 'ok', 'log_id': str(cheat_log.id)})
+
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)

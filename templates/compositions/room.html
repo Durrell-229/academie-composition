@@ -166,6 +166,11 @@
     </div>
 </div>
 
+<!-- html2canvas CDN (Screenshot périodique) -->
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<!-- face-api.js CDN (Détection de visage) -->
+<script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/dist/face-api.min.js"></script>
+
 <!-- TinyMCE CDN -->
 <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
 
@@ -324,11 +329,39 @@
         }
     }
 
-    // ─── FULLSCREEN OBLIGATOIRE ───
+    // Désactiver sélection texte
+    document.body.style.userSelect = 'none';
+    document.body.style.webkitUserSelect = 'none';
+    document.body.style.mozUserSelect = 'none';
+
+    // ─── OVERLAY DE VIOLATION (nouveau) ───
+    function showViolationOverlay(message) {
+        let overlay = document.getElementById('violation-overlay');
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'violation-overlay';
+            overlay.style.cssText = 'position:fixed;inset:0;background:rgba(220,38,38,0.15);z-index:9999;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0;transition:opacity 0.3s;';
+            overlay.innerHTML = '<div style="background:rgba(220,38,38,0.9);color:white;padding:20px 40px;border-radius:16px;font-size:24px;font-weight:900;text-transform:uppercase;letter-spacing:0.1em;text-align:center;box-shadow:0 0 60px rgba(220,38,38,0.5);">' +
+                '<i class="fa-solid fa-triangle-exclamation" style="font-size:48px;display:block;margin-bottom:12px;"></i>' +
+                '<span id="violation-text"></span></div>';
+            document.body.appendChild(overlay);
+        }
+        document.getElementById('violation-text').textContent = message;
+        overlay.style.opacity = '1';
+        setTimeout(() => { overlay.style.opacity = '0'; }, 3000);
+    }
+
+    // ─── FULLSCREEN RENFORCÉ AVEC RETRIES ───
+    let fullscreenRetries = 0;
+    const MAX_FULLSCREEN_RETRIES = 5;
+
     async function requestFullscreen() {
         try {
-            await document.documentElement.requestFullscreen();
-            fullscreenActive = true;
+            if (!document.fullscreenElement) {
+                await document.documentElement.requestFullscreen();
+                fullscreenActive = true;
+                fullscreenRetries = 0;
+            }
         } catch (err) {
             console.warn('Fullscreen non supporté ou refusé:', err);
         }
@@ -339,8 +372,12 @@
         if (!fullscreenActive && document.getElementById('webcam').srcObject) {
             sendCheatLog('fullscreen_exit', 'Sortie du mode plein écran', 'medium');
             cheatScore++;
-            // Tenter de restaurer le fullscreen
-            setTimeout(() => requestFullscreen(), 1000);
+            showViolationOverlay('SORTIE DU PLEIN ÉCRAN');
+            // Tenter de restaurer le fullscreen (max 5 fois)
+            if (fullscreenRetries < MAX_FULLSCREEN_RETRIES) {
+                fullscreenRetries++;
+                setTimeout(() => requestFullscreen(), 2000);
+            }
         }
     });
 
@@ -369,7 +406,66 @@
         if (document.hidden) {
             sendCheatLog('tab_change', 'Changement d\'onglet détecté', 'medium');
             cheatScore++;
+            showViolationOverlay('CHANGEMENT D\'ONGLET DÉTECTÉ');
         }
+    });
+
+    // ─── BLUR / PERTE DE FOCUS (nouveau) ───
+    let blurCount = 0;
+    window.addEventListener('blur', () => {
+        blurCount++;
+        sendCheatLog('fullscreen_exit', `Perte de focus détectée (${blurCount})`, blurCount >= 3 ? 'high' : 'medium');
+        cheatScore++;
+        showViolationOverlay(`PERTE DE FOCUS (${blurCount}/3)`);
+        if (blurCount >= 3) {
+            alert('⛔ Exclusion : trop de pertes de focus détectées.');
+            window.location.href = '{% url "dashboard" %}';
+        }
+    });
+
+    // ─── BLOCAGE TOUCHES RENFORCÉ ───
+    document.addEventListener('keydown', e => {
+        // F11 (toggle fullscreen)
+        if (e.key === 'F11') {
+            e.preventDefault();
+            sendCheatLog('fullscreen_exit', 'Touche F11 bloquée', 'medium');
+        }
+        // Meta/Windows key
+        if (e.key === 'Meta' || e.key === 'OS') {
+            e.preventDefault();
+            sendCheatLog('tab_change', 'Touche Windows/Meta bloquée', 'medium');
+        }
+        // Alt+Tab, Alt+F4
+        if (e.altKey && (e.key === 'Tab' || e.key === 'F4')) {
+            e.preventDefault();
+            sendCheatLog('tab_change', 'Alt+Tab/Alt+F4 bloqué', 'high');
+        }
+        // Ctrl+W (close tab)
+        if (e.ctrlKey && e.key === 'w') {
+            e.preventDefault();
+            sendCheatLog('tab_change', 'Fermeture d\'onglet bloquée', 'high');
+        }
+        if ((e.ctrlKey && (e.key === 'p' || e.key === 'P')) || e.key === 'PrintScreen') {
+            e.preventDefault();
+            sendCheatLog('print_attempt', 'Tentative d\'impression bloquée', 'medium');
+        }
+        // DevTools
+        if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I') || (e.ctrlKey && e.key === 'U')) {
+            e.preventDefault();
+            sendCheatLog('devtools_attempt', 'Tentative d\'ouverture DevTools bloquée', 'medium');
+        }
+    });
+
+    // ─── NAVIGATION ARRIÈRE BLOQUÉE ───
+    history.pushState(null, '', location.href);
+    window.addEventListener('popstate', () => {
+        history.pushState(null, '', location.href);
+        sendCheatLog('tab_change', 'Tentative de navigation arrière bloquée', 'high');
+    });
+    window.addEventListener('beforeunload', e => {
+        e.preventDefault();
+        e.returnValue = 'Êtes-vous sûr de vouloir quitter l\'examen ?';
+        return 'Êtes-vous sûr de vouloir quitter l\'examen ?';
     });
 
     // Clipboard
@@ -417,10 +513,100 @@
         }
     }, 10000);
 
-    // Désactiver sélection texte
-    document.body.style.userSelect = 'none';
-    document.body.style.webkitUserSelect = 'none';
-    document.body.style.mozUserSelect = 'none';
+    // ═══════════════════════════════════════════════════════
+    // FONCTIONNALITÉS AVANCÉES ANTI-TRICHE
+    // ═══════════════════════════════════════════════════════
+
+    // ─── SCREENSHOT PÉRIODIQUE (toutes les 15s) ───
+    let screenshotInterval = null;
+    async function captureScreenshot() {
+        try {
+            const canvas = await html2canvas(document.querySelector('.flex-grow.lg\\:flex-row'), {
+                useCORS: true,
+                allowTaint: false,
+                scale: 0.5,
+                logging: false,
+            });
+            canvas.toBlob(async (blob) => {
+                if (!blob) return;
+                const formData = new FormData();
+                formData.append('screenshot', blob, 'screenshot.png');
+                formData.append('session_id', sessionId);
+                const csrf = document.querySelector('[name=csrfmiddlewaretoken]');
+                formData.append('csrfmiddlewaretoken', csrf ? csrf.value : '');
+
+                const res = await fetch('/compositions/api/upload-screenshot/', {
+                    method: 'POST',
+                    body: formData,
+                });
+                const data = await res.json();
+                if (data.status === 'error') {
+                    console.warn('Screenshot upload failed:', data.message);
+                }
+            }, 'image/png');
+        } catch (err) {
+            console.warn('Screenshot capture failed:', err);
+        }
+    }
+
+    // ─── DÉTECTION DE VISAGE MULTIPLE (face-api.js) ───
+    let faceDetectionInterval = null;
+    let faceDetectionActive = false;
+    let modelsLoaded = false;
+
+    async function initFaceDetection() {
+        if (typeof faceapi === 'undefined') {
+            console.warn('face-api.js non chargé, détection de visage désactivée');
+            return;
+        }
+        try {
+            const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@latest/model/';
+            await Promise.all([
+                faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+            ]);
+            modelsLoaded = true;
+            console.log('face-api.js modèles chargés');
+        } catch (err) {
+            console.error('Erreur chargement face-api.js:', err);
+        }
+    }
+
+    async function checkFaces() {
+        const video = document.getElementById('webcam');
+        if (!video || !video.srcObject || !modelsLoaded) return;
+
+        try {
+            const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({ scoreThreshold: 0.4 }));
+            if (detections.length > 1) {
+                sendCheatLog('multiple_faces', `${detections.length} visages détectés`, 'high');
+                showViolationOverlay(`${detections.length} VISAGES DÉTECTÉS`);
+                // Pause detection for 30s to avoid spam
+                clearInterval(faceDetectionInterval);
+                setTimeout(() => {
+                    faceDetectionInterval = setInterval(checkFaces, 5000);
+                }, 30000);
+            } else if (detections.length === 0 && cameraActive) {
+                // Aucun visage alors que caméra est active
+                sendCheatLog('camera_off', 'Aucun visage détecté devant la caméra', 'medium');
+            }
+        } catch (err) {
+            console.warn('Face detection error:', err);
+        }
+    }
+
+    // ─── INITIALISATION DES FONCTIONNALITÉS AVANCÉES ───
+    function initAdvancedProctoring() {
+        // Screenshot toutes les 15s
+        screenshotInterval = setInterval(captureScreenshot, 15000);
+
+        // Face detection après chargement des modèles
+        initFaceDetection().then(() => {
+            if (modelsLoaded) {
+                faceDetectionActive = true;
+                faceDetectionInterval = setInterval(checkFaces, 5000);
+            }
+        });
+    }
 
     // ─── MODAL DE CONFIRMATION ───
     const modal = document.getElementById('submit-modal');
@@ -448,6 +634,7 @@
     window.addEventListener('DOMContentLoaded', () => {
         initCamera();
         requestFullscreen();
+        initAdvancedProctoring();
     });
 </script>
 
