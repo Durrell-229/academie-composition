@@ -112,8 +112,15 @@
         <div class="info-eleve">
             <table>
                 <tr>
-                    <td style="width: 50%;"><span class="label">NOM ET PRÉNOM :</span> <span class="valeur">{{ eleve.last_name }} {{ eleve.first_name }}</span></td>
-                    <td style="width: 50%;"><span class="label">MATRICULE :</span> <span class="valeur">{{ eleve.matricule|default:"N/A" }}</span></td>
+                    <td style="width: 15%; vertical-align: middle; padding-right: 10px;" rowspan="2">
+                        {% if eleve.avatar %}
+                        <img src="{{ eleve.avatar.url }}" style="width:55px;height:55px;object-fit:cover;border:2px solid #000;border-radius:4px;">
+                        {% else %}
+                        <div style="width:55px;height:55px;border:2px solid #000;display:flex;align-items:center;justify-content:center;background:#f0f0f0;font-size:20pt;font-weight:bold;color:#333;">{{ eleve.first_name|slice:":1" }}{{ eleve.last_name|slice:":1" }}</div>
+                        {% endif %}
+                    </td>
+                    <td style="width: 42%;"><span class="label">NOM ET PRÉNOM :</span> <span class="valeur">{{ eleve.last_name }} {{ eleve.first_name }}</span></td>
+                    <td style="width: 43%;"><span class="label">MATRICULE :</span> <span class="valeur">{{ eleve.matricule|default:"N/A" }}</span></td>
                 </tr>
                 <tr>
                     <td><span class="label">CLASSE :</span> <span class="valeur">{{ classe }}</span></td>

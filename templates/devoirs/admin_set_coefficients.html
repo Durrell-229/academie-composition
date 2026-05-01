@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% block title %}Coefficients — {{ devoir.titre }}{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto space-y-6">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-black">Coefficients — {{ devoir.titre }}</h1>
+      <p class="text-text-muted mt-1">Définir le coefficient pour chaque matière</p>
+    </div>
+    <a href="{% url 'devoir_detail' pk=devoir.pk %}" class="px-4 py-2 rounded-xl bg-bg-tertiary border border-border-standard text-sm font-bold">
+      <i class="fa-solid fa-arrow-left"></i> Retour
+    </a>
+  </div>
+
+  <form method="post" class="bg-bg-card rounded-2xl border border-border-standard p-6 space-y-4">
+    {% csrf_token %}
+
+    <div class="grid grid-cols-1 gap-3">
+      {% for matiere in devoir.matieres.all %}
+      <div class="flex items-center justify-between p-4 bg-bg-tertiary rounded-xl">
+        <div>
+          <p class="font-bold">{{ matiere.nom }}</p>
+          <p class="text-xs text-text-muted">Coefficient par défaut : {{ devoir.coefficient_default }}</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <input type="number" name="coeff_{{ matiere.id }}" value="{{ devoir.coefficients_par_matiere|default:devoir.coefficient_default }}"
+                 min="0.5" max="10" step="0.5"
+                 class="w-24 text-center bg-bg-card border border-border-standard rounded-lg px-3 py-2 text-text-primary">
+          <span class="text-sm text-text-muted">/ 20</span>
+        </div>
+      </div>
+      {% empty %}
+      <p class="text-center text-text-muted py-4">Aucune matière programmée pour ce devoir.</p>
+      {% endfor %}
+    </div>
+
+    <div class="flex justify-end gap-3 pt-2">
+      <a href="{% url 'devoir_detail' pk=devoir.pk %}" class="px-6 py-3 rounded-xl bg-bg-tertiary border border-border-standard text-sm font-bold text-text-muted">Annuler</a>
+      <button type="submit" class="px-8 py-3 rounded-xl bg-primary text-white text-sm font-black shadow-lg hover:bg-primary/80 transition flex items-center gap-2">
+        <i class="fa-solid fa-save"></i> Enregistrer les coefficients
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}

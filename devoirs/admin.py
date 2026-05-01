@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Devoir, DevoirMatiere, DevoirComposition, Certificat
+from .models import Devoir, DevoirMatiere, DevoirComposition, DevoirReponseEleve, BulletinDevoir, BulletinDevoirLigne, Certificat
 
 
 @admin.register(Devoir)
@@ -23,6 +23,29 @@ class DevoirCompositionAdmin(admin.ModelAdmin):
     list_display = ('eleve', 'devoir', 'statut', 'moyenne_generale', 'rang', 'resultat')
     list_filter = ('statut', 'resultat', 'devoir')
     search_fields = ('eleve__email', 'devoir__titre')
+
+
+@admin.register(DevoirReponseEleve)
+class DevoirReponseEleveAdmin(admin.ModelAdmin):
+    list_display = ('eleve', 'devoir_matiere', 'statut', 'note_ia', 'note_finale', 'created_at')
+    list_filter = ('statut', 'devoir_matiere__devoir')
+    search_fields = ('eleve__email', 'devoir_matiere__matiere__nom')
+    readonly_fields = ('note_ia', 'appreciation_ia', 'feedback_ia', 'corrige_at')
+
+
+@admin.register(BulletinDevoir)
+class BulletinDevoirAdmin(admin.ModelAdmin):
+    list_display = ('eleve', 'devoir', 'moyenne_generale', 'rang', 'statut', 'approuve_par', 'created_at')
+    list_filter = ('statut', 'devoir')
+    search_fields = ('eleve__email', 'devoir__titre')
+    readonly_fields = ('verification_token', 'moyenne_generale', 'rang', 'created_at')
+
+
+@admin.register(BulletinDevoirLigne)
+class BulletinDevoirLigneAdmin(admin.ModelAdmin):
+    list_display = ('bulletin', 'matiere', 'coefficient', 'moyenne', 'rang')
+    list_filter = ('bulletin__devoir',)
+    search_fields = ('matiere', 'bulletin__eleve__email')
 
 
 @admin.register(Certificat)

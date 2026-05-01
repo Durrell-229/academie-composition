@@ -5,8 +5,48 @@
 <div class="space-y-6">
   <h1 class="text-2xl font-black"><i class="fa-solid fa-chart-bar text-primary"></i> Résultats des Devoirs</h1>
 
-  <!-- Compositions -->
-  <h2 class="text-lg font-black">Mes Compositions</h2>
+  <!-- Bulletins -->
+  {% if bulletins %}
+  <h2 class="text-lg font-black"><i class="fa-solid fa-file-lines text-accent"></i> Mes Bulletins</h2>
+  <div class="grid gap-4">
+    {% for bulletin in bulletins %}
+    <div class="bg-bg-card rounded-2xl border border-border-standard p-5">
+      <div class="flex justify-between items-start">
+        <div>
+          <h3 class="font-bold">{{ bulletin.devoir.titre }}</h3>
+          <p class="text-sm text-text-muted">{{ bulletin.devoir.annee_scolaire }} — Classe : {{ bulletin.classe.nom }}</p>
+        </div>
+        <div class="text-right">
+          {% if bulletin.statut == 'approuve' %}
+            <div class="text-2xl font-black text-primary">{{ bulletin.moyenne_generale|floatformat:2 }}<span class="text-sm text-text-muted">/20</span></div>
+            <span class="text-xs font-bold text-green-600">{{ bulletin.decision_conseil }}</span>
+            <div class="mt-2">
+              <a href="{% url 'eleve_download_bulletin' pk=bulletin.pk %}" class="px-4 py-2 rounded-lg bg-primary/10 text-primary text-xs font-bold hover:bg-primary/20 transition">
+                <i class="fa-solid fa-download"></i> Télécharger
+              </a>
+            </div>
+          {% elif bulletin.statut == 'en_attente' %}
+            <span class="px-3 py-1.5 rounded-full bg-warning/20 text-warning text-sm font-bold animate-pulse">
+              <i class="fa-solid fa-clock"></i> En attente d'approbation
+            </span>
+            <p class="text-xs text-text-muted mt-1">Rang : {{ bulletin.rang }}/{{ bulletin.effectif_total }}</p>
+          {% elif bulletin.statut == 'rejete' %}
+            <span class="px-3 py-1.5 rounded-full bg-red-100 text-red-700 text-sm font-bold">
+              <i class="fa-solid fa-circle-xmark"></i> Rejeté
+            </span>
+            {% if bulletin.appreciation_ia %}
+            <p class="text-xs text-text-muted mt-1">{{ bulletin.appreciation_ia }}</p>
+            {% endif %}
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Compositions (legacy) -->
+  <h2 class="text-lg font-black mt-8"><i class="fa-solid fa-list-check text-primary"></i> Mes Compositions</h2>
   <div class="grid gap-4">
     {% for comp in compositions %}
     <div class="bg-bg-card rounded-2xl border border-border-standard p-5">

@@ -2,46 +2,85 @@
 {% block title %}Composition — {{ devoir.titre }}{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto space-y-6" x-data="{ timeLeft: {{ devoir.date_fin|timeuntil|default:'0' }} }">
+<div class="max-w-4xl mx-auto space-y-6">
   <div class="bg-bg-card rounded-2xl border border-border-standard p-6">
     <h1 class="text-2xl font-black">{{ devoir.titre }}</h1>
     <p class="text-text-muted">{{ devoir.annee_scolaire }}</p>
-    <p class="text-sm mt-2">{{ devoir.instructions }}</p>
+    {% if devoir.instructions %}
+    <p class="text-sm mt-3 p-3 bg-primary/5 border border-primary/20 rounded-xl">{{ devoir.instructions }}</p>
+    {% endif %}
   </div>
 
-  <form method="post" action="{% url 'eleve_submit_reponse' devoir_id=devoir.pk %}" class="space-y-4">
-    {% csrf_token %}
-    {% for matiere in matieres %}
+  <div class="space-y-4">
+    {% for matiere_info in matieres %}
+    {% with dm=matiere_info.epreuve reponse=reponses_map|default:dict %}
     <div class="bg-bg-card rounded-2xl border border-border-standard p-5">
-      <h3 class="font-bold text-lg mb-3">{{ matiere.matiere.nom }}</h3>
-      <div class="flex gap-3">
-        <a href="{{ matiere.epreuve_file.url }}" target="_blank" class="px-4 py-2 rounded-lg bg-primary/10 text-primary text-sm font-bold hover:bg-primary/20 transition">
-          <i class="fa-solid fa-download"></i> Télécharger l'épreuve
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="font-bold text-lg">{{ matiere_info.matiere.nom }}</h3>
+        <span class="text-sm font-bold text-primary">Coeff. {{ matiere_info.coefficient|default:devoir.coefficient_default }}</span>
+      </div>
+
+      {% if dm %}
+      <div class="flex gap-3 mb-4">
+        <a href="{{ dm.epreuve_file.url }}" target="_blank" class="px-4 py-2 rounded-lg bg-primary/10 text-primary text-sm font-bold hover:bg-primary/20 transition">
+          <i class="fa-solid fa-download"></i> Épreuve
         </a>
-        <a href="{{ matiere.corrige_type_file.url }}" target="_blank" class="px-4 py-2 rounded-lg bg-accent/10 text-accent text-sm font-bold hover:bg-accent/20 transition">
-          <i class="fa-solid fa-file-lines"></i> Corrigé (après composition)
+        <a href="{{ dm.corrige_type_file.url }}" target="_blank" class="px-4 py-2 rounded-lg bg-accent/10 text-accent text-sm font-bold hover:bg-accent/20 transition">
+          <i class="fa-solid fa-file-lines"></i> Corrigé
         </a>
       </div>
-      <div class="mt-4">
-        <label class="block text-sm font-bold text-text-secondary mb-1">Votre note (auto-évaluation ou IA)</label>
-        <input type="number" name="note_{{ matiere.matiere.id }}" min="0" max="20" step="0.5" value="10" class="w-32 bg-bg-card border border-border-standard rounded-xl px-4 py-3 text-text-primary focus:border-primary outline-none">
-        <span class="text-sm text-text-muted ml-2">/ 20</span>
+
+      {% if reponse and reponse.dm_id in reponse %}
+        {# Already has a response #}
+      {% endif %}
+
+      <div class="flex items-center justify-between mt-3">
+        {% if reponses_map and dm.pk in reponses_map %}
+          {% with resp=reponses_map|default:'' %}
+          {% endwith %}
+        {% endif %}
+
+        <a href="{% url 'eleve_upload_copie' devoir_matiere_id=dm.pk %}"
+           class="px-5 py-2 rounded-xl bg-primary text-white text-sm font-bold hover:bg-primary/80 transition flex items-center gap-2">
+          {% if reponses_map and dm.pk in reponses_map %}
+            {% with r=reponses_map|dictsort:"statut"|last %}
+              <i class="fa-solid fa-eye"></i> Voir ma copie
+            {% endwith %}
+          {% else %}
+            <i class="fa-solid fa-upload"></i> Uploader ma copie
+          {% endif %}
+        </a>
+
+        {% if reponses_map and dm.pk in reponses_map %}
+          {% for r in reponses_map.values %}
+            {% if r.devoir_matiere_id == dm.pk %}
+              <span class="text-xs font-bold {% if r.statut == 'corrige' %}text-green-600{% elif r.statut == 'en_cours_correction' %}text-yellow-600{% else %}text-text-muted{% endif %}">
+                {% if r.statut == 'corrige' %}Note : {{ r.note_ia }}/20{% elif r.statut == 'en_cours_correction' %}En correction...{% else %}Soumis{% endif %}
+              </span>
+            {% endif %}
+          {% endfor %}
+        {% endif %}
       </div>
+      {% else %}
+      <p class="text-sm text-text-muted italic">Épreuve non disponible</p>
+      {% endif %}
     </div>
+    {% endwith %}
     {% empty %}
-    <div class="text-center py-12 text-text-muted">
+    <div class="bg-bg-card rounded-2xl border border-border-standard p-12 text-center text-text-muted">
       <i class="fa-solid fa-file-circle-xmark text-4xl mb-3 block"></i>
       <p class="font-bold">Aucune épreuve disponible pour le moment</p>
     </div>
     {% endfor %}
+  </div>
 
-    {% if matieres %}
-    <div class="flex justify-end">
-      <button type="submit" class="px-8 py-3 rounded-xl bg-primary text-white text-sm font-black shadow-lg hover:bg-primary/80 transition flex items-center gap-2">
-        <i class="fa-solid fa-paper-plane"></i> Soumettre mes réponses
-      </button>
-    </div>
-    {% endif %}
+  {% if matieres %}
+  <form method="post" action="{% url 'eleve_submit_reponse' devoir_id=devoir.pk %}" class="flex justify-end">
+    {% csrf_token %}
+    <button type="submit" class="px-8 py-3 rounded-xl bg-accent text-white text-sm font-black shadow-lg hover:bg-accent/80 transition flex items-center gap-2">
+      <i class="fa-solid fa-paper-plane"></i> Finaliser ma composition
+    </button>
   </form>
+  {% endif %}
 </div>
 {% endblock %}

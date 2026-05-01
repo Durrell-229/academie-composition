@@ -31,6 +31,15 @@
       {% if devoir.statut == 'en_cours' %}
         <a href="{% url 'devoir_end' pk=devoir.pk %}" class="px-4 py-2 rounded-lg bg-warning/10 text-warning text-sm font-bold hover:bg-warning/20 transition"><i class="fa-solid fa-stop"></i> Terminer le devoir</a>
       {% endif %}
+
+      {% if devoir.statut != 'brouillon' %}
+        <a href="{% url 'devoir_set_coefficients' pk=devoir.pk %}" class="px-4 py-2 rounded-lg bg-accent/10 text-accent text-sm font-bold hover:bg-accent/20 transition"><i class="fa-solid fa-calculator"></i> Coefficients</a>
+      {% endif %}
+      {% if devoir.statut == 'termine' or bulletins_en_attente > 0 %}
+        <a href="{% url 'devoir_bulletins' pk=devoir.pk %}" class="px-4 py-2 rounded-lg bg-warning/10 text-warning text-sm font-bold hover:bg-warning/20 transition">
+          <i class="fa-solid fa-file-lines"></i> Bulletins {% if bulletins_en_attente > 0 %}({{ bulletins_en_attente }} en attente){% endif %}
+        </a>
+      {% endif %}
       {% if devoir.statut == 'termine' %}
         <a href="{% url 'devoir_generate_certificates' pk=devoir.pk %}" class="px-4 py-2 rounded-lg bg-primary/10 text-primary text-sm font-bold hover:bg-primary/20 transition"><i class="fa-solid fa-award"></i> Générer certificats</a>
         <a href="{% url 'devoir_certificates' pk=devoir.pk %}" class="px-4 py-2 rounded-lg bg-bg-card border border-border-standard text-sm font-bold hover:bg-bg-tertiary transition"><i class="fa-solid fa-list"></i> Voir certificats</a>

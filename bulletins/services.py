@@ -3,6 +3,17 @@ from django.template.loader import render_to_string
 from xhtml2pdf import pisa
 from django.conf import settings
 import hashlib
+import os
+
+
+def link_callback(uri, rel):
+    """Convert media/static URLs to absolute file paths for xhtml2pdf."""
+    if uri.startswith(settings.MEDIA_URL):
+        return os.path.join(settings.MEDIA_ROOT, uri.replace(settings.MEDIA_URL, ""))
+    if uri.startswith(settings.STATIC_URL):
+        return os.path.join(settings.STATIC_ROOT, uri.replace(settings.STATIC_URL, ""))
+    return uri
+
 
 class BulletinService:
     @staticmethod
@@ -23,11 +34,11 @@ class BulletinService:
             'verification_token': bulletin.verification_token,
             'signature': hashlib.sha256(f"{bulletin.id}{bulletin.verification_token}".encode()).hexdigest()[:16],
         }
-        
+
         html = render_to_string('bulletins/bulletin_administratif_pdf.html', context)
         result = BytesIO()
-        pdf = pisa.pisaDocument(BytesIO(html.encode("UTF-8")), result)
-        
+        pdf = pisa.pisaDocument(BytesIO(html.encode("UTF-8")), result, link_callback=link_callback)
+
         if not pdf.err:
             pdf_content = result.getvalue()
             from django.core.files.base import ContentFile
@@ -53,11 +64,11 @@ class BulletinService:
             'verification_token': bulletin.verification_token,
             'signature': hashlib.sha256(f"{bulletin.id}{bulletin.verification_token}".encode()).hexdigest()[:16],
         }
-        
+
         html = render_to_string('bulletins/bulletin_professionnel_pdf.html', context)
         result = BytesIO()
-        pdf = pisa.pisaDocument(BytesIO(html.encode("UTF-8")), result)
-        
+        pdf = pisa.pisaDocument(BytesIO(html.encode("UTF-8")), result, link_callback=link_callback)
+
         if not pdf.err:
             pdf_content = result.getvalue()
             from django.core.files.base import ContentFile
@@ -69,9 +80,8 @@ class BulletinService:
     @staticmethod
     def generate_bulletin_qcm_pdf(bulletin):
         """Génère un bulletin QCM PDF (format officiel Ministère Bénin)."""
-        # Récupérer le QCMResultat lié
         qcm_resultat = bulletin.qcm_resultats.first()
-        
+
         context = {
             'bulletin': bulletin,
             'eleve': bulletin.eleve,
@@ -94,7 +104,7 @@ class BulletinService:
 
         html = render_to_string('bulletins/bulletin_qcm_pdf.html', context)
         result = BytesIO()
-        pdf = pisa.pisaDocument(BytesIO(html.encode("UTF-8")), result)
+        pdf = pisa.pisaDocument(BytesIO(html.encode("UTF-8")), result, link_callback=link_callback)
 
         if not pdf.err:
             pdf_content = result.getvalue()

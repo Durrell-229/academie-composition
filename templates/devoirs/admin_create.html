@@ -36,6 +36,12 @@
     </div>
 
     <div>
+      <label class="block text-sm font-bold text-text-secondary mb-1">Coefficient par défaut</label>
+      <input type="number" name="coefficient_default" value="1.00" min="0.5" max="10" step="0.5" class="w-32 bg-bg-card border border-border-standard rounded-xl px-4 py-3 text-text-primary focus:border-primary outline-none">
+      <p class="text-[10px] text-text-muted mt-1">Peut être modifié par matière après création</p>
+    </div>
+
+    <div>
       <label class="block text-sm font-bold text-text-secondary mb-1">Classes concernées</label>
       <select name="classes" multiple class="w-full bg-bg-card border border-border-standard rounded-xl px-4 py-3 text-text-primary focus:border-primary outline-none">
         {% for c in classes %}

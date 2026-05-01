@@ -1,0 +1,169 @@
+{% extends 'base.html' %}
+{% block title %}Bulletins — {{ devoir.titre }}{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-6">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-black">Bulletins — {{ devoir.titre }}</h1>
+      <p class="text-text-muted mt-1">Gestion des bulletins des élèves</p>
+    </div>
+    <a href="{% url 'devoir_detail' pk=devoir.pk %}" class="px-4 py-2 rounded-xl bg-bg-tertiary border border-border-standard text-sm font-bold">
+      <i class="fa-solid fa-arrow-left"></i> Retour
+    </a>
+  </div>
+
+  <!-- Filter tabs -->
+  <div class="flex gap-2">
+    <a href="?statut=en_attente" class="px-4 py-2 rounded-xl text-sm font-bold {% if statut_filter == 'en_attente' %}bg-warning text-white{% else %}bg-bg-card border border-border-standard{% endif %}">
+      En attente ({{ bulletin_count_en_attente|default:0 }})
+    </a>
+    <a href="?statut=approuve" class="px-4 py-2 rounded-xl text-sm font-bold {% if statut_filter == 'approuve' %}bg-green-600 text-white{% else %}bg-bg-card border border-border-standard{% endif %}">
+      Approuvés
+    </a>
+    <a href="?statut=rejete" class="px-4 py-2 rounded-xl text-sm font-bold {% if statut_filter == 'rejete' %}bg-red-600 text-white{% else %}bg-bg-card border border-border-standard{% endif %}">
+      Rejetés
+    </a>
+    <a href="?statut=tous" class="px-4 py-2 rounded-xl text-sm font-bold {% if statut_filter == 'tous' %}bg-primary text-white{% else %}bg-bg-card border border-border-standard{% endif %}">
+      Tous
+    </a>
+  </div>
+
+  {% if statut_filter == 'en_attente' and bulletins %}
+  <form method="post" action="{% url 'devoir_approuver_tous' pk=devoir.pk %}" class="inline">
+    {% csrf_token %}
+    <button type="submit" class="px-6 py-2 rounded-xl bg-green-600 text-white text-sm font-bold hover:bg-green-700 transition">
+      <i class="fa-solid fa-check-double"></i> Approuver tous
+    </button>
+  </form>
+  {% endif %}
+
+  <!-- Bulletins list -->
+  <div class="bg-bg-card rounded-2xl border border-border-standard overflow-hidden">
+    <table class="w-full text-sm">
+      <thead class="bg-bg-tertiary border-b border-border-standard">
+        <tr>
+          <th class="text-left px-4 py-3 font-bold text-text-muted">Élève</th>
+          <th class="text-left px-4 py-3 font-bold text-text-muted">Classe</th>
+          <th class="text-center px-4 py-3 font-bold text-text-muted">Moyenne</th>
+          <th class="text-center px-4 py-3 font-bold text-text-muted">Rang</th>
+          <th class="text-center px-4 py-3 font-bold text-text-muted">Décision</th>
+          <th class="text-center px-4 py-3 font-bold text-text-muted">Statut</th>
+          <th class="text-right px-4 py-3 font-bold text-text-muted">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for bulletin in bulletins %}
+        <tr class="border-b border-border-standard hover:bg-bg-tertiary/50">
+          <td class="px-4 py-3 font-medium">{{ bulletin.eleve.full_name }}</td>
+          <td class="px-4 py-3 text-text-muted">{{ bulletin.classe.nom }}</td>
+          <td class="px-4 py-3 text-center font-bold {% if bulletin.moyenne_generale >= 10 %}text-green-600{% else %}text-red-600{% endif %}">
+            {{ bulletin.moyenne_generale }}/20
+          </td>
+          <td class="px-4 py-3 text-center">{{ bulletin.rang }}/{{ bulletin.effectif_total }}</td>
+          <td class="px-4 py-3 text-center text-sm">{{ bulletin.decision_conseil }}</td>
+          <td class="px-4 py-3 text-center">
+            {% if bulletin.statut == 'en_attente' %}
+            <span class="px-2 py-1 rounded-full bg-warning/20 text-warning text-xs font-bold">En attente</span>
+            {% elif bulletin.statut == 'approuve' %}
+            <span class="px-2 py-1 rounded-full bg-green-100 text-green-700 text-xs font-bold">Approuvé</span>
+            {% elif bulletin.statut == 'rejete' %}
+            <span class="px-2 py-1 rounded-full bg-red-100 text-red-700 text-xs font-bold">Rejeté</span>
+            {% endif %}
+          </td>
+          <td class="px-4 py-3 text-right space-x-2">
+            {% if bulletin.statut == 'en_attente' %}
+            <button onclick="document.getElementById('modal-{{ bulletin.id }}').classList.remove('hidden')"
+                    class="px-3 py-1 rounded-lg bg-green-600 text-white text-xs font-bold hover:bg-green-700">
+              <i class="fa-solid fa-check"></i> Approuver
+            </button>
+            <button onclick="document.getElementById('modal-reject-{{ bulletin.id }}').classList.remove('hidden')"
+                    class="px-3 py-1 rounded-lg bg-red-600 text-white text-xs font-bold hover:bg-red-700">
+              <i class="fa-solid fa-xmark"></i> Rejeter
+            </button>
+            {% elif bulletin.statut == 'approuve' %}
+            <span class="text-xs text-text-muted">PDF généré</span>
+            {% endif %}
+          </td>
+        </tr>
+
+        <!-- Approve Modal -->
+        <div id="modal-{{ bulletin.id }}" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div class="bg-bg-card rounded-2xl border border-border-standard p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+            <h3 class="text-lg font-bold mb-4">Approuver le bulletin de {{ bulletin.eleve.full_name }}</h3>
+
+            <form method="post" action="{% url 'devoir_approuver_bulletin' pk=bulletin.id %}">
+              {% csrf_token %}
+
+              <table class="w-full text-sm mb-4">
+                <thead class="bg-bg-tertiary">
+                  <tr>
+                    <th class="text-left px-3 py-2">Matière</th>
+                    <th class="text-center px-3 py-2">Coeff</th>
+                    <th class="text-center px-3 py-2">Note</th>
+                    <th class="text-center px-3 py-2">Appréciation</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for ligne in bulletin.lignes.all %}
+                  <tr class="border-b border-border-standard">
+                    <td class="px-3 py-2">{{ ligne.matiere }}</td>
+                    <td class="px-3 py-2 text-center">{{ ligne.coefficient }}</td>
+                    <td class="px-3 py-2 text-center">
+                      <input type="number" name="note_finale_{{ ligne.id }}" value="{{ ligne.moyenne }}"
+                             min="0" max="20" step="0.5"
+                             class="w-20 text-center bg-bg-card border border-border-standard rounded px-2 py-1">
+                    </td>
+                    <td class="px-3 py-2 text-xs text-text-muted">{{ ligne.appreciation|truncatechars:50 }}</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+
+              <div class="flex justify-end gap-3">
+                <button type="button" onclick="document.getElementById('modal-{{ bulletin.id }}').classList.add('hidden')"
+                        class="px-4 py-2 rounded-xl bg-bg-tertiary border border-border-standard text-sm font-bold">
+                  Annuler
+                </button>
+                <button type="submit" class="px-6 py-2 rounded-xl bg-green-600 text-white text-sm font-bold hover:bg-green-700">
+                  <i class="fa-solid fa-check"></i> Approuver
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Reject Modal -->
+        <div id="modal-reject-{{ bulletin.id }}" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div class="bg-bg-card rounded-2xl border border-border-standard p-6 max-w-md w-full">
+            <h3 class="text-lg font-bold mb-4">Rejeter le bulletin de {{ bulletin.eleve.full_name }}</h3>
+            <form method="post" action="{% url 'devoir_rejeter_bulletin' pk=bulletin.id %}">
+              {% csrf_token %}
+              <textarea name="commentaire" rows="3" placeholder="Motif du rejet..." required
+                        class="w-full bg-bg-card border border-border-standard rounded-xl px-4 py-3 text-sm"></textarea>
+              <div class="flex justify-end gap-3 mt-4">
+                <button type="button" onclick="document.getElementById('modal-reject-{{ bulletin.id }}').classList.add('hidden')"
+                        class="px-4 py-2 rounded-xl bg-bg-tertiary border border-border-standard text-sm font-bold">
+                  Annuler
+                </button>
+                <button type="submit" class="px-6 py-2 rounded-xl bg-red-600 text-white text-sm font-bold hover:bg-red-700">
+                  <i class="fa-solid fa-xmark"></i> Rejeter
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        {% empty %}
+        <tr>
+          <td colspan="7" class="px-4 py-8 text-center text-text-muted">
+            <i class="fa-solid fa-file-circle-xmark text-3xl mb-2 block"></i>
+            Aucun bulletin pour ce filtre.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

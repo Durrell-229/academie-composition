@@ -22,6 +22,8 @@ class Devoir(models.Model):
     date_debut = models.DateField(_('date de début'))
     date_fin = models.DateField(_('date de fin'))
     horaires = models.JSONField(_('horaires'), default=dict, blank=True)
+    coefficient_default = models.DecimalField(_('coefficient par défaut'), max_digits=4, decimal_places=2, default=1.00)
+    coefficients_par_matiere = models.JSONField(_('coefficients par matière'), default=dict, blank=True)
     classes = models.ManyToManyField(Classe, related_name='devoirs', verbose_name=_('classes concernées'))
     matieres = models.ManyToManyField(Matiere, related_name='devoirs', verbose_name=_('matières concernées'))
     statut = models.CharField(_('statut'), max_length=30, choices=Statut.choices, default=Statut.BROUILLON)
@@ -142,3 +144,94 @@ class Certificat(models.Model):
             count = Certificat.objects.filter(date_delivrance__year=year).count() + 1
             self.numero_certificat = f"CERT-{year}-{count:05d}"
         super().save(*args, **kwargs)
+
+
+class DevoirReponseEleve(models.Model):
+    """Copie soumise par un élève pour une matière d'un devoir national."""
+
+    class StatutReponse(models.TextChoices):
+        SOUMIS = 'soumis', _('Soumis')
+        EN_COURS_CORRECTION = 'en_cours_correction', _('En cours de correction IA')
+        CORRIGE = 'corrige', _('Corrigé par IA')
+        APPROUVE = 'approuve', _('Approuvé par admin')
+        REJETE = 'rejete', _('Rejeté / à reprendre')
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    devoir_matiere = models.ForeignKey(DevoirMatiere, on_delete=models.CASCADE, related_name='reponses')
+    eleve = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='devoir_reponses')
+    copie_file = models.FileField(_('copie de l\'élève'), upload_to='devoirs/copies/%Y/%m/', blank=True, null=True)
+    copie_text = models.TextField(_('texte de la copie'), blank=True, default='')
+    statut = models.CharField(_('statut'), max_length=30, choices=StatutReponse.choices, default=StatutReponse.SOUMIS)
+    note_ia = models.DecimalField(_('note IA'), max_digits=5, decimal_places=2, null=True, blank=True)
+    note_finale = models.DecimalField(_('note finale'), max_digits=5, decimal_places=2, null=True, blank=True)
+    appreciation_ia = models.TextField(_('appréciation IA'), blank=True, default='')
+    feedback_ia = models.JSONField(_('feedback détaillé IA'), default=dict, blank=True)
+    soumis_par_admin = models.BooleanField(_('saisi par admin'), default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    corrige_at = models.DateTimeField(_('date de correction'), null=True, blank=True)
+    approuve_at = models.DateTimeField(_('date d\'approbation'), null=True, blank=True)
+
+    class Meta:
+        verbose_name = _('réponse élève')
+        verbose_name_plural = _('réponses élèves')
+        unique_together = ['devoir_matiere', 'eleve']
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f"{self.eleve.full_name} — {self.devoir_matiere.matiere.nom}"
+
+
+class BulletinDevoir(models.Model):
+    """Bulletin généré pour un élève sur un devoir national."""
+
+    class StatutBulletin(models.TextChoices):
+        EN_ATTENTE = 'en_attente', _('En attente d\'approbation')
+        APPROUVE = 'approuve', _('Approuvé')
+        REJETE = 'rejete', _('Rejeté')
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    devoir = models.ForeignKey(Devoir, on_delete=models.CASCADE, related_name='bulletins')
+    eleve = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='bulletins_devoir')
+    classe = models.ForeignKey(Classe, on_delete=models.CASCADE, related_name='bulletins_devoir')
+    moyenne_generale = models.DecimalField(_('moyenne générale'), max_digits=5, decimal_places=2, default=0.00)
+    rang = models.PositiveIntegerField(_('rang'), default=0)
+    effectif_total = models.PositiveIntegerField(_('effectif total'), default=0)
+    decision_conseil = models.CharField(_('décision du conseil'), max_length=100, blank=True, default='')
+    statut = models.CharField(_('statut'), max_length=20, choices=StatutBulletin.choices, default=StatutBulletin.EN_ATTENTE)
+    approuve_par = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='bulletins_approuves')
+    appreciation_ia = models.TextField(_('synthèse IA'), blank=True, default='')
+    file_pdf = models.FileField(_('fichier PDF'), upload_to='bulletins_devoirs/%Y/%m/', blank=True, null=True)
+    verification_token = models.UUIDField(_('token de vérification'), unique=True, default=uuid.uuid4)
+    created_at = models.DateTimeField(auto_now_add=True)
+    approuve_at = models.DateTimeField(_('date d\'approbation'), null=True, blank=True)
+
+    class Meta:
+        verbose_name = _('bulletin de devoir')
+        verbose_name_plural = _('bulletins de devoirs')
+        unique_together = ['devoir', 'eleve']
+        ordering = ['rang', '-moyenne_generale']
+
+    def __str__(self):
+        return f"Bulletin {self.devoir.titre} — {self.eleve.full_name}"
+
+
+class BulletinDevoirLigne(models.Model):
+    """Note par matière dans un bulletin de devoir national."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    bulletin = models.ForeignKey(BulletinDevoir, on_delete=models.CASCADE, related_name='lignes')
+    matiere = models.CharField(_('matière'), max_length=100)
+    coefficient = models.DecimalField(_('coefficient'), max_digits=4, decimal_places=2, default=1.00)
+    note_devoir = models.DecimalField(_('note devoir'), max_digits=5, decimal_places=2, default=0.00)
+    note_exam = models.DecimalField(_('note examen'), max_digits=5, decimal_places=2, default=0.00)
+    moyenne = models.DecimalField(_('moyenne'), max_digits=5, decimal_places=2, default=0.00)
+    rang = models.PositiveIntegerField(_('rang'), default=0)
+    appreciation = models.TextField(_('appréciation'), blank=True, default='')
+
+    class Meta:
+        verbose_name = _('ligne de bulletin')
+        verbose_name_plural = _('lignes de bulletin')
+        ordering = ['-moyenne']
+
+    def __str__(self):
+        return f"{self.matiere} — {self.moyenne}/20"

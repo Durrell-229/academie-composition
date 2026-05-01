@@ -104,10 +104,28 @@
                 <!-- Corps -->
                 <div class="corps">
                     <p>Le Chef de l'Administration Scolaire certifie que l'élève :</p>
-                    <div class="nom-eleve">{{ eleve.last_name }} {{ eleve.first_name }}</div>
+
+                    <!-- Photo de l'élève -->
+                    <table style="margin: 5mm auto; border-collapse: collapse;">
+                        <tr>
+                            <td style="padding: 0 5mm; vertical-align: middle;">
+                                {% if eleve.avatar %}
+                                <img src="{{ eleve.avatar.url }}" style="width:45mm;height:45mm;object-fit:cover;border:2px solid #008751;">
+                                {% else %}
+                                <div style="width:45mm;height:45mm;border:2px solid #008751;display:flex;align-items:center;justify-content:center;background:#f0f0f0;font-size:36pt;font-weight:bold;color:#333;">{{ eleve.first_name|slice:":1" }}{{ eleve.last_name|slice:":1" }}</div>
+                                {% endif %}
+                            </td>
+                            <td style="padding: 0 5mm; vertical-align: middle; text-align: left;">
+                                <div class="nom-eleve" style="display: inline-block; font-size: 22pt; font-weight: bold; color: #000; margin: 0; text-transform: uppercase; border-bottom: 2px solid #008751; padding: 2mm 10mm;">{{ eleve.last_name }} {{ eleve.first_name }}</div>
+                                <p style="margin: 3mm 0 0 0; font-size: 10pt;">
+                                    Matricule : <strong>{{ eleve.matricule|default:"N/A" }}</strong> &nbsp;|&nbsp;
+                                    Classe : <strong>{{ eleve.classe|default:"N/A" }}</strong>
+                                </p>
+                            </td>
+                        </tr>
+                    </table>
+
                     <p>
-                        Matricule : <strong>{{ eleve.matricule|default:"N/A" }}</strong> &nbsp;|&nbsp;
-                        Classe : <strong>{{ eleve.classe|default:"N/A" }}</strong> &nbsp;|&nbsp;
                         Annee Scolaire : <strong>{{ annee_scolaire }}</strong>
                     </p>
                     <p>a obtenu la moyenne de</p>
