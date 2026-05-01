@@ -84,63 +84,102 @@ def take_qcm(request):
 
 @login_required
 def submit_qcm(request):
-    """Soumission et correction du QCM."""
+    """Soumission et correction du QCM avec génération de bulletin professionnel."""
+    from bulletins.models import Bulletin, BulletinLigne
+    from bulletins.services import BulletinService
+    from .models import QCMResultat
+    from django.utils import timezone
+
     if request.method != 'POST':
         return redirect('qcm_start')
 
     ctx = request.session.get('qcm_context', {})
     questions = ctx.get('questions', [])
-    
+
     # Récupérer les réponses
     reponses = {}
+    details_questions = []
+    bonnes_reponses = 0
     for i, q in enumerate(questions):
         q_id = q.get('id', f'Q{i+1}')
         rep = request.POST.get(f'reponse_{i}', '')
         if rep:
             reponses[f'Q{i+1}'] = rep
-    
+
     # Construire le texte des réponses pour l'IA
     reponses_text = '\n'.join([f'{k}: {v}' for k, v in reponses.items()])
-    
+
     # Correction IA
     qcm_original = ctx.get('qcm_original', '')
     if not qcm_original:
-        # Reconstruire le QCM original depuis les questions
         qcm_original = '\n\n'.join([f"{q.get('question', '')}\n" + '\n'.join([f"{c.get('label', '')}) {c.get('texte', '')}" for c in q.get('choix', [])]) for q in questions])
-    
+
     feedback = multi_ai.correct_qcm(reponses_text, qcm_original, ctx)
     note = feedback.get('note', 0)
-    
-    # Sauvegarder en DB si un examen QCM est associé
-    qcm_exam_id = ctx.get('qcm_exam_id')
-    session_id = ctx.get('session_id')
-    
-    if qcm_exam_id and session_id:
-        try:
-            with transaction.atomic():
-                qcm_exam = QCMExam.objects.get(id=qcm_exam_id)
-                session = CompositionSession.objects.get(id=session_id)
-                
-                # Sauvegarder chaque réponse
-                for i, q in enumerate(questions):
-                    q_id = q.get('db_id')  # ID de QuestionBank si stocké
-                    if q_id:
-                        reponse = request.POST.get(f'reponse_{i}', '')
-                        est_correct = _check_answer(q, reponse)
-                        points = float(qcm_exam.points_bonne_reponse) if est_correct else 0
-                        
-                        QCMAnswer.objects.update_or_create(
-                            session=session,
-                            question_id=q_id,
-                            defaults={
-                                'choix_selectionnes': reponse.split(', ') if reponse else [],
-                                'est_correct': est_correct,
-                                'points_obtenus': points,
-                            }
-                        )
-        except Exception as e:
-            logger.error(f"Erreur sauvegarde QCM: {e}")
-    
+    bonnes_reponses = feedback.get('bonnes_reponses', 0)
+
+    # Préparer les détails des questions/réponses
+    for i, q in enumerate(questions):
+        rep = request.POST.get(f'reponse_{i}', '')
+        est_correct = _check_answer(q, rep)
+        if est_correct:
+            bonnes_reponses_detail = bonnes_reponses  # approximation
+        details_questions.append({
+            'question': q.get('question', ''),
+            'reponse_eleve': rep,
+            'correct': est_correct,
+        })
+
+    try:
+        with transaction.atomic():
+            # 1. Créer le Bulletin professionnel
+            annee_scolaire = timezone.now().strftime('%Y-%Y')
+            bulletin = Bulletin.objects.create(
+                eleve=request.user,
+                classe=ctx.get('classe', ''),
+                annee_scolaire=annee_scolaire,
+                periode=Bulletin.Periode.QCM,
+                type_bulletin=Bulletin.TypeBulletin.PROFESSIONNEL,
+                moyenne_generale=note,
+                rang=1,
+                effectif_total=1,
+                appreciation_ia=feedback.get('appreciation', '') or feedback.get('remediation', ''),
+                decision_conseil='Évaluation QCM complétée',
+            )
+
+            # 2. Créer la ligne du bulletin
+            BulletinLigne.objects.create(
+                bulletin=bulletin,
+                matiere=ctx.get('matiere', ''),
+                note=note,
+                note_max=20,
+                moyenne_classe=note,
+                appreciation=feedback.get('remediation', ''),
+            )
+
+            # 3. Générer le PDF
+            try:
+                BulletinService.generate_bulletin_qcm_pdf(bulletin)
+            except Exception as e:
+                logger.error(f"Erreur génération PDF bulletin QCM: {e}")
+
+            # 4. Créer le QCMResultat
+            resultat = QCMResultat.objects.create(
+                eleve=request.user,
+                matiere=ctx.get('matiere', ''),
+                classe=ctx.get('classe', ''),
+                theme=ctx.get('theme', ''),
+                note_sur_20=note,
+                bonnes_reponses=feedback.get('bonnes_reponses', len([r for r in reponses.values() if r])),
+                total_questions=len(questions),
+                questions_data={'questions': details_questions, 'reponses': reponses},
+                feedback_ia=feedback,
+                bulletin=bulletin,
+            )
+    except Exception as e:
+        logger.error(f"Erreur création bulletin QCM: {e}")
+        resultat = None
+
     # Nettoyer la session
     request.session.pop('qcm_context', None)
     request.session.pop('qcm_generated', None)
@@ -152,6 +191,7 @@ def submit_qcm(request):
         'classe': ctx.get('classe', ''),
         'reponses': reponses,
         'questions': questions,
+        'resultat_id': resultat.id if resultat else None,
     })
 
 
@@ -227,3 +267,22 @@ Quelle est la bonne réponse (A, B, C ou D) ? Retourne UNIQUEMENT la lettre de l
         return False
     except Exception:
         return False
+
+
+@login_required
+def download_qcm_bulletin(request, resultat_id):
+    """Télécharger le bulletin PDF d'un résultat QCM."""
+    from .models import QCMResultat
+    from django.http import FileResponse, Http404
+
+    resultat = get_object_or_404(QCMResultat, id=resultat_id, eleve=request.user)
+
+    if not resultat.bulletin or not resultat.bulletin.file_pdf:
+        raise Http404("Bulletin non disponible")
+
+    return FileResponse(
+        resultat.bulletin.file_pdf.open('rb'),
+        content_type='application/pdf',
+        as_attachment=True,
+        filename=resultat.bulletin.file_pdf.name.split('/')[-1]
+    )

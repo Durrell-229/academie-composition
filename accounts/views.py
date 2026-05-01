@@ -103,6 +103,17 @@ def dashboard_view(request):
 
         pending_sessions = sessions.filter(statut='soumis')
 
+        # Résultats QCM
+        try:
+            from qcm.models import QCMResultat
+            qcm_results = QCMResultat.objects.filter(eleve=user).order_by('-created_at')[:5]
+            qcm_avg = qcm_results.aggregate(Avg('note_sur_20'))['note_sur_20__avg'] or 0
+            qcm_count = qcm_results.count()
+        except Exception:
+            qcm_results = []
+            qcm_avg = 0
+            qcm_count = 0
+
         # Referral / Parrainage
         try:
             from .models import Referral, Leaderboard
@@ -155,6 +166,9 @@ def dashboard_view(request):
             'my_score': my_score,
             'leaderboard_top10': leaderboard_top10,
             'total_players': total_players,
+            'qcm_results': qcm_results,
+            'qcm_avg': round(float(qcm_avg), 1),
+            'qcm_count': qcm_count,
         })
         return render(request, 'accounts/dashboard_eleve.html', context)
 

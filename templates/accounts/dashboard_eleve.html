@@ -308,6 +308,63 @@
     </div>
   </div>
 
+  <!-- ═══ RÉSULTATS QCM ═══ -->
+  {% if qcm_results %}
+  <div class="animate-in delay-3 glass rounded-2xl border border-primary/20 overflow-hidden">
+    <div class="flex items-center justify-between px-6 py-4 border-b border-border-standard bg-primary/5">
+      <h3 class="font-black text-sm uppercase tracking-wider flex items-center gap-2">
+        <i class="fa-solid fa-list-check text-primary"></i> Évaluations QCM — {{ qcm_count }} passé(s) • Moy. {{ qcm_avg }}/20
+      </h3>
+      <a href="{% url 'qcm_start' %}" class="text-xs text-primary hover:text-primary/80 font-bold transition">Nouveau QCM →</a>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-border-standard">
+            <th class="text-left py-3 px-5 text-[9px] font-black uppercase tracking-widest text-text-muted">Matière</th>
+            <th class="text-center py-3 px-3 text-[9px] font-black uppercase tracking-widest text-text-muted">Note /20</th>
+            <th class="text-center py-3 px-3 text-[9px] font-black uppercase tracking-widest text-text-muted">Bonnes Rép.</th>
+            <th class="text-center py-3 px-3 text-[9px] font-black uppercase tracking-widest text-text-muted">Date</th>
+            <th class="text-right py-3 px-5 text-[9px] font-black uppercase tracking-widest text-text-muted">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-border-standard">
+          {% for res in qcm_results %}
+          <tr class="hover:bg-bg-tertiary/30 transition">
+            <td class="py-3 px-5">
+              <p class="font-semibold text-sm">{{ res.matiere }}</p>
+              {% if res.theme %}<p class="text-xs text-text-muted">{{ res.theme }}</p>{% endif %}
+            </td>
+            <td class="py-3 px-3 text-center">
+              <span class="inline-flex items-center px-3 py-1 rounded-lg text-sm font-black
+                {% if res.note_sur_20 >= 16 %}bg-success/10 note-excellent
+                {% elif res.note_sur_20 >= 12 %}bg-info/10 note-bien
+                {% elif res.note_sur_20 >= 10 %}bg-warning/10 note-moyen
+                {% else %}bg-danger/10 note-insuffisant{% endif %}">
+                {{ res.note_sur_20 }}<span class="text-text-muted text-xs font-normal">/20</span>
+              </span>
+            </td>
+            <td class="py-3 px-3 text-center text-sm text-text-secondary">
+              {{ res.bonnes_reponses }}/{{ res.total_questions }}
+            </td>
+            <td class="py-3 px-3 text-center text-xs text-text-muted">
+              {{ res.created_at|date:"d/m/Y H:i" }}
+            </td>
+            <td class="py-3 px-5 text-right flex items-center justify-end gap-2">
+              {% if res.bulletin and res.bulletin.file_pdf %}
+              <a href="{% url 'qcm_bulletin_download' res.id %}" class="text-xs text-accent hover:text-accent/80 font-bold transition" title="Télécharger bulletin">
+                <i class="fa-solid fa-file-pdf"></i> Bulletin
+              </a>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
   <!-- ═══ DERNIER BULLETIN ═══ -->
   {% if user.bulletins.exists %}
   {% with dernier_bulletin=user.bulletins.first %}

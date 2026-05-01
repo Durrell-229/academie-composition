@@ -80,6 +80,11 @@
     <a href="{% url 'dashboard' %}" class="px-6 py-3 rounded-xl glass border border-border-standard text-sm font-bold hover:bg-bg-tertiary/30 transition flex items-center gap-2">
       <i class="fa-solid fa-gauge-high"></i> Tableau de bord
     </a>
+    {% if resultat_id %}
+    <a href="{% url 'qcm_bulletin_download' resultat_id %}" class="px-6 py-3 rounded-xl bg-primary text-white text-sm font-black shadow-lg shadow-primary/20 hover:opacity-90 transition flex items-center gap-2">
+      <i class="fa-solid fa-file-pdf"></i> Télécharger mon bulletin
+    </a>
+    {% endif %}
     <a href="{% url 'ia_corrections_list' %}" class="px-6 py-3 rounded-xl bg-button-gradient text-white text-sm font-black shadow-lg shadow-primary/20 hover:opacity-90 transition flex items-center gap-2">
       <i class="fa-solid fa-chart-bar"></i> Voir tous mes résultats
     </a>

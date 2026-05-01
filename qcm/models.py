@@ -111,3 +111,27 @@ class QCMAnswer(models.Model):
 
     def __str__(self):
         return f"{self.session.eleve.full_name} - Q{self.question.id.hex[:8]}"
+
+
+class QCMResultat(models.Model):
+    """Résultat persisté d'un QCM avec lien vers le bulletin."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    eleve = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='qcm_resultats')
+    matiere = models.CharField(max_length=100)
+    classe = models.CharField(max_length=100)
+    theme = models.CharField(max_length=200, blank=True, default='')
+    note_sur_20 = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
+    bonnes_reponses = models.PositiveIntegerField(default=0)
+    total_questions = models.PositiveIntegerField(default=0)
+    questions_data = models.JSONField(_('détails des questions/réponses'), default=dict)
+    feedback_ia = models.JSONField(_('feedback IA'), default=dict)
+    bulletin = models.ForeignKey('bulletins.Bulletin', on_delete=models.SET_NULL, null=True, blank=True, related_name='qcm_resultats')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = _('résultat QCM')
+        verbose_name_plural = _('résultats QCM')
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.eleve.full_name} - {self.matiere} - {self.note_sur_20}/20"

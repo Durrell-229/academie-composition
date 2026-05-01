@@ -11,6 +11,7 @@ class Bulletin(models.Model):
         SEMESTRE_1 = 'S1', _('1er Semestre')
         SEMESTRE_2 = 'S2', _('2ème Semestre')
         ANNUEL = 'AN', _('Annuel')
+        QCM = 'QCM', _('Évaluation QCM')
 
     class TypeBulletin(models.TextChoices):
         ADMINISTRATIF = 'administratif', 'Administratif (Format Ministère)'
