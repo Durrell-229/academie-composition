@@ -87,6 +87,7 @@ class BulletinService:
             'verification_token': bulletin.verification_token,
             'signature': hashlib.sha256(f"{bulletin.id}{bulletin.verification_token}".encode()).hexdigest()[:16],
             'matiere': bulletin.lignes.first().matiere if bulletin.lignes.exists() else '',
+            'coefficient': bulletin.lignes.first().coefficient if bulletin.lignes.exists() else 1,
             'bonnes_reponses': qcm_resultat.bonnes_reponses if qcm_resultat else '-',
             'total_questions': qcm_resultat.total_questions if qcm_resultat else '-',
         }

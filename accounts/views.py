@@ -8,6 +8,7 @@ from django.utils import timezone
 from datetime import timedelta
 from django import forms
 from .models import User
+from .laravel_auth import LaravelAuthBackend
 
 class ProfileUpdateForm(forms.ModelForm):
     class Meta:
@@ -581,4 +582,35 @@ def profile_edit_view(request):
         form = ProfileUpdateForm(instance=request.user)
         
     return render(request, 'accounts/profile_edit.html', {'form': form})
+
+
+def laravel_sso_login(request):
+    """
+    View pour le SSO depuis Laravel.
+    L'utilisateur arrive avec ?laravel_token=xxx et est automatiquement connecté.
+    
+    Flow :
+    1. Sur Laravel, ajouter un lien : https://academie.onrender.com/accounts/laravel-sso?token={token}
+    2. Laravel doit exposer POST /api/auth/check-token qui retourne les infos du user
+    """
+    laravel_token = request.GET.get('token', '').strip()
+    
+    if not laravel_token:
+        messages.error(request, "Token d'authentification manquant.")
+        return redirect('login')
+    
+    if request.user.is_authenticated:
+        # Déjà connecté
+        return redirect('dashboard')
+    
+    backend = LaravelAuthBackend()
+    user = backend.authenticate(request, laravel_token=laravel_token)
+    
+    if user is not None:
+        login(request, user)
+        messages.success(request, f"Connecté via Laravel en tant que {user.full_name}.")
+        return redirect('dashboard')
+    else:
+        messages.error(request, "Échec de l'authentification Laravel. Le token est invalide ou expiré.")
+        return redirect('login')
 

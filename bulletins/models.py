@@ -48,4 +48,5 @@ class BulletinLigne(models.Model):
     note = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
     note_max = models.DecimalField(max_digits=5, decimal_places=2, default=20.0)
     moyenne_classe = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
+    coefficient = models.DecimalField(max_digits=4, decimal_places=2, default=1.00)
     appreciation = models.TextField(blank=True, default="")

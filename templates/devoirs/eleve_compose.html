@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% block title %}Composition — {{ devoir.titre }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6" x-data="{ timeLeft: {{ devoir.date_fin|timeuntil|default:'0' }} }">
+  <div class="bg-bg-card rounded-2xl border border-border-standard p-6">
+    <h1 class="text-2xl font-black">{{ devoir.titre }}</h1>
+    <p class="text-text-muted">{{ devoir.annee_scolaire }}</p>
+    <p class="text-sm mt-2">{{ devoir.instructions }}</p>
+  </div>
+
+  <form method="post" action="{% url 'eleve_submit_reponse' devoir_id=devoir.pk %}" class="space-y-4">
+    {% csrf_token %}
+    {% for matiere in matieres %}
+    <div class="bg-bg-card rounded-2xl border border-border-standard p-5">
+      <h3 class="font-bold text-lg mb-3">{{ matiere.matiere.nom }}</h3>
+      <div class="flex gap-3">
+        <a href="{{ matiere.epreuve_file.url }}" target="_blank" class="px-4 py-2 rounded-lg bg-primary/10 text-primary text-sm font-bold hover:bg-primary/20 transition">
+          <i class="fa-solid fa-download"></i> Télécharger l'épreuve
+        </a>
+        <a href="{{ matiere.corrige_type_file.url }}" target="_blank" class="px-4 py-2 rounded-lg bg-accent/10 text-accent text-sm font-bold hover:bg-accent/20 transition">
+          <i class="fa-solid fa-file-lines"></i> Corrigé (après composition)
+        </a>
+      </div>
+      <div class="mt-4">
+        <label class="block text-sm font-bold text-text-secondary mb-1">Votre note (auto-évaluation ou IA)</label>
+        <input type="number" name="note_{{ matiere.matiere.id }}" min="0" max="20" step="0.5" value="10" class="w-32 bg-bg-card border border-border-standard rounded-xl px-4 py-3 text-text-primary focus:border-primary outline-none">
+        <span class="text-sm text-text-muted ml-2">/ 20</span>
+      </div>
+    </div>
+    {% empty %}
+    <div class="text-center py-12 text-text-muted">
+      <i class="fa-solid fa-file-circle-xmark text-4xl mb-3 block"></i>
+      <p class="font-bold">Aucune épreuve disponible pour le moment</p>
+    </div>
+    {% endfor %}
+
+    {% if matieres %}
+    <div class="flex justify-end">
+      <button type="submit" class="px-8 py-3 rounded-xl bg-primary text-white text-sm font-black shadow-lg hover:bg-primary/80 transition flex items-center gap-2">
+        <i class="fa-solid fa-paper-plane"></i> Soumettre mes réponses
+      </button>
+    </div>
+    {% endif %}
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @page { size: A4 landscape; margin: 0; }
+        body { font-family: 'Times New Roman', serif; color: #000; font-size: 11pt; margin: 0; padding: 0; }
+
+        .page { width: 297mm; height: 210mm; position: relative; background: #fff; }
+
+        /* Bandeau drapeau Benin en haut */
+        .header-flag { width: 100%; height: 12mm; position: absolute; top: 0; left: 0; }
+        .header-flag .green { background-color: #008751; width: 33.33%; height: 100%; float: left; }
+        .header-flag .yellow { background-color: #FCD116; width: 33.33%; height: 100%; float: left; }
+        .header-flag .red { background-color: #E8112D; width: 33.34%; height: 100%; float: left; }
+
+        /* Cadre principal */
+        .cadre { position: absolute; top: 15mm; left: 15mm; right: 15mm; bottom: 15mm; border: 3px double #008751; padding: 10mm; }
+        .cadre-interne { border: 1px solid #008751; padding: 8mm; height: 100%; }
+
+        /* En-tete */
+        .header { text-align: center; margin-bottom: 8mm; }
+        .republique { font-size: 13pt; font-weight: bold; text-transform: uppercase; margin-bottom: 2mm; }
+        .ministere { font-size: 10pt; font-weight: bold; margin-bottom: 2mm; }
+        .etablissement { font-size: 12pt; font-weight: bold; font-style: italic; color: #008751; margin-bottom: 3mm; }
+
+        /* Logo placeholder (SVG inline) */
+        .logo-container { text-align: center; margin: 3mm 0; }
+        .logo-svg { width: 35mm; height: 35mm; }
+
+        /* Titre */
+        .titre { text-align: center; font-size: 20pt; font-weight: bold; text-transform: uppercase; margin: 8mm 0; padding: 5mm; border: 2px solid #008751; background-color: #f8fdf8; letter-spacing: 4px; color: #008751; }
+
+        /* Corps */
+        .corps { margin: 8mm 15mm; text-align: center; line-height: 2; font-size: 12pt; }
+        .corps p { margin: 3mm 0; }
+        .nom-eleve { font-size: 22pt; font-weight: bold; color: #000; margin: 5mm 0; text-transform: uppercase; border-bottom: 2px solid #008751; display: inline-block; padding: 2mm 10mm; }
+        .moyenne { font-size: 18pt; font-weight: bold; color: #008751; }
+        .mention { font-size: 14pt; font-weight: bold; margin: 4mm 0; }
+        .mention-excellent { color: #008751; }
+        .mention-tbien { color: #0066cc; }
+        .mention-bien { color: #009900; }
+        .mention-abien { color: #cc8800; }
+        .mention-passable { color: #cc6600; }
+
+        /* Info block */
+        .info-block { margin: 5mm 0; font-size: 10pt; }
+        .info-block td { padding: 1mm 5mm; }
+
+        /* Signature */
+        .signature { margin-top: 10mm; display: table; width: 100%; }
+        .signature td { width: 50%; text-align: center; vertical-align: top; }
+        .signature .titre-signature { font-weight: bold; margin-bottom: 15mm; }
+        .signature .nom { font-style: italic; }
+        .signature .phone { font-size: 9pt; color: #333; }
+
+        /* Verification */
+        .verification { font-family: 'Courier New', monospace; font-size: 7pt; color: #666; text-align: center; margin-top: 5mm; padding: 2mm; border: 1px solid #ccc; background: #fafafa; }
+
+        /* Drapeau Benin footer pleine largeur */
+        .footer-flag { width: 100%; height: 10mm; position: absolute; bottom: 0; left: 0; }
+        .footer-flag .green { background-color: #008751; width: 33.33%; height: 100%; float: left; }
+        .footer-flag .yellow { background-color: #FCD116; width: 33.33%; height: 100%; float: left; }
+        .footer-flag .red { background-color: #E8112D; width: 33.34%; height: 100%; float: left; }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <!-- Drapeau Benin header -->
+        <div class="header-flag">
+            <div class="green"></div>
+            <div class="yellow"></div>
+            <div class="red"></div>
+        </div>
+
+        <div class="cadre">
+            <div class="cadre-interne">
+                <!-- En-tete -->
+                <div class="header">
+                    <div class="republique">REPUBLIQUE DU BENIN</div>
+                    <div class="ministere">MINISTERE DE L'ENSEIGNEMENT SECONDAIRE, TECHNIQUE ET DE LA FORMATION PROFESSIONNELLE</div>
+                    <div class="etablissement">ACADEMIE NUMERIQUE INTELLIGENTE — IA</div>
+
+                    <!-- Logo SVG Professionnel -->
+                    <div class="logo-container">
+                        <svg class="logo-svg" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="100" cy="100" r="95" fill="none" stroke="#008751" stroke-width="4"/>
+                            <circle cx="100" cy="100" r="85" fill="none" stroke="#FCD116" stroke-width="2"/>
+                            <text x="100" y="70" text-anchor="middle" font-size="42" font-weight="bold" fill="#008751" font-family="serif">ANI</text>
+                            <text x="100" y="100" text-anchor="middle" font-size="14" font-weight="bold" fill="#333" font-family="serif">ACADEMIE</text>
+                            <text x="100" y="118" text-anchor="middle" font-size="12" fill="#666" font-family="serif">NUMERIQUE</text>
+                            <line x1="60" y1="125" x2="140" y2="125" stroke="#008751" stroke-width="2"/>
+                            <text x="100" y="142" text-anchor="middle" font-size="10" fill="#008751" font-family="serif">INTELLIGENTE</text>
+                            <!-- Etoiles -->
+                            <polygon points="30,30 33,40 43,40 35,46 38,56 30,50 22,56 25,46 17,40 27,40" fill="#FCD116"/>
+                            <polygon points="170,30 173,40 183,40 175,46 178,56 170,50 162,56 165,46 157,40 167,40" fill="#FCD116"/>
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Titre du certificat -->
+                <div class="titre">CERTIFICAT D'{{ type_certificat|upper }}</div>
+
+                <!-- Corps -->
+                <div class="corps">
+                    <p>Le Chef de l'Administration Scolaire certifie que l'élève :</p>
+                    <div class="nom-eleve">{{ eleve.last_name }} {{ eleve.first_name }}</div>
+                    <p>
+                        Matricule : <strong>{{ eleve.matricule|default:"N/A" }}</strong> &nbsp;|&nbsp;
+                        Classe : <strong>{{ eleve.classe|default:"N/A" }}</strong> &nbsp;|&nbsp;
+                        Annee Scolaire : <strong>{{ annee_scolaire }}</strong>
+                    </p>
+                    <p>a obtenu la moyenne de</p>
+                    <div class="moyenne">{{ moyenne|floatformat:2 }} / 20</div>
+                    <div class="mention
+                        {% if 'Excellent' in mention %}mention-excellent
+                        {% elif 'Très' in mention %}mention-tbien
+                        {% elif 'Bien' in mention and 'Très' not in mention %}mention-bien
+                        {% elif 'Assez' in mention %}mention-abien
+                        {% else %}mention-passable{% endif %}">
+                        {{ mention }}
+                    </div>
+                    <p>Numero de certificat : <strong>{{ numero }}</strong></p>
+                    <p>Date de delivrance : <strong>{{ date_delivrance|date:"d F Y" }}</strong></p>
+                </div>
+
+                <!-- Signatures -->
+                <table class="signature">
+                    <tr>
+                        <td>
+                            <div class="titre-signature">L'Eleve</div>
+                            <br><br>
+                            <div class="nom">{{ eleve.full_name }}</div>
+                        </td>
+                        <td>
+                            <div class="titre-signature">Le Chef de l'Administration</div>
+                            <br><br>
+                            <div class="nom">Directeur de l'Académie</div>
+                            <div class="phone">Tel: {{ admin_phone }}</div>
+                        </td>
+                    </tr>
+                </table>
+
+                <!-- Verification -->
+                <div class="verification">
+                    <strong>Verification :</strong> Token {{ verification_token }} —
+                    Verifiable sur https://academie-composition.onrender.com/verify/{{ verification_token }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Drapeau Benin footer pleine largeur -->
+        <div class="footer-flag">
+            <div class="green"></div>
+            <div class="yellow"></div>
+            <div class="red"></div>
+        </div>
+    </div>
+</body>
+</html>

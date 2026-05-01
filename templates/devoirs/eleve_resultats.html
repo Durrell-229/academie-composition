@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% block title %}Résultats des Devoirs{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <h1 class="text-2xl font-black"><i class="fa-solid fa-chart-bar text-primary"></i> Résultats des Devoirs</h1>
+
+  <!-- Compositions -->
+  <h2 class="text-lg font-black">Mes Compositions</h2>
+  <div class="grid gap-4">
+    {% for comp in compositions %}
+    <div class="bg-bg-card rounded-2xl border border-border-standard p-5">
+      <div class="flex justify-between items-start">
+        <div>
+          <h3 class="font-bold">{{ comp.devoir.titre }}</h3>
+          <p class="text-sm text-text-muted">{{ comp.devoir.annee_scolaire }}</p>
+        </div>
+        <div class="text-right">
+          {% if comp.statut == 'compose' %}
+            <div class="text-2xl font-black text-primary">{{ comp.moyenne_generale|floatformat:2 }}<span class="text-sm text-text-muted">/20</span></div>
+            <span class="text-[10px] font-bold
+              {% if comp.resultat == 'admis' %}text-success
+              {% elif comp.resultat == 'ajourne' %}text-warning
+              {% else %}text-danger{% endif %}">
+              {{ comp.get_resultat_display }}
+            </span>
+          {% else %}
+            <span class="text-[10px] bg-bg-tertiary text-text-muted px-2 py-1 rounded-full">{{ comp.get_statut_display }}</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <div class="text-center py-8 text-text-muted">
+      <p class="font-bold">Aucune composition enregistrée</p>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Certificats -->
+  {% if certificats %}
+  <h2 class="text-lg font-black mt-8"><i class="fa-solid fa-award text-warning"></i> Mes Certificats</h2>
+  <div class="grid gap-4">
+    {% for cert in certificats %}
+    <div class="bg-bg-card rounded-2xl border border-warning/30 p-5">
+      <div class="flex justify-between items-center">
+        <div>
+          <h3 class="font-bold">{{ cert.get_type_certificat_display }}</h3>
+          <p class="text-sm text-text-muted">N° {{ cert.numero_certificat }} — {{ cert.date_delivrance|date:"d/m/Y" }}</p>
+          <p class="text-sm">Moyenne : <strong>{{ cert.moyenne_obtenue|floatformat:2 }}/20</strong> — {{ cert.mention }}</p>
+        </div>
+        <a href="{% url 'certificat_download' pk=cert.pk %}" class="px-5 py-2.5 rounded-xl bg-warning/10 text-warning text-sm font-bold hover:bg-warning/20 transition flex items-center gap-2">
+          <i class="fa-solid fa-download"></i> Télécharger PDF
+        </a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

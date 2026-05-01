@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+{% block title %}Créer un Devoir National{% endblock %}
+{% block breadcrumb %}<a href="{% url 'devoir_list' %}" class="hover:text-primary">Devoirs</a> <span class="mx-2 text-text-muted">/</span> <span class="text-text-primary">Créer</span>{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto space-y-6">
+  <h1 class="text-2xl font-black">Créer un Devoir National</h1>
+
+  <form method="post" class="bg-bg-card rounded-2xl border border-border-standard p-6 space-y-5">
+    {% csrf_token %}
+
+    <div>
+      <label class="block text-sm font-bold text-text-secondary mb-1">Titre du devoir *</label>
+      <input type="text" name="titre" required placeholder="Ex: Composition Nationale Trimestre 1" class="w-full bg-bg-card border border-border-standard rounded-xl px-4 py-3 text-text-primary focus:border-primary outline-none">
+    </div>
+
+    <div>
+      <label class="block text-sm font-bold text-text-secondary mb-1">Description</label>
+      <textarea name="description" rows="3" class="w-full bg-bg-card border border-border-standard rounded-xl px-4 py-3 text-text-primary focus:border-primary outline-none" placeholder="Description du devoir..."></textarea>
+    </div>
+
+    <div class="grid grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm font-bold text-text-secondary mb-1">Date de début *</label>
+        <input type="date" name="date_debut" required class="w-full bg-bg-card border border-border-standard rounded-xl px-4 py-3 text-text-primary focus:border-primary outline-none">
+      </div>
+      <div>
+        <label class="block text-sm font-bold text-text-secondary mb-1">Date de fin *</label>
+        <input type="date" name="date_fin" required class="w-full bg-bg-card border border-border-standard rounded-xl px-4 py-3 text-text-primary focus:border-primary outline-none">
+      </div>
+    </div>
+
+    <div>
+      <label class="block text-sm font-bold text-text-secondary mb-1">Instructions</label>
+      <textarea name="instructions" rows="2" class="w-full bg-bg-card border border-border-standard rounded-xl px-4 py-3 text-text-primary focus:border-primary outline-none" placeholder="Instructions pour les élèves..."></textarea>
+    </div>
+
+    <div>
+      <label class="block text-sm font-bold text-text-secondary mb-1">Classes concernées</label>
+      <select name="classes" multiple class="w-full bg-bg-card border border-border-standard rounded-xl px-4 py-3 text-text-primary focus:border-primary outline-none">
+        {% for c in classes %}
+          <option value="{{ c.id }}">{{ c.nom }}</option>
+        {% endfor %}
+      </select>
+      <p class="text-[10px] text-text-muted mt-1">Maintenez Ctrl pour sélectionner plusieurs classes</p>
+    </div>
+
+    <div>
+      <label class="block text-sm font-bold text-text-secondary mb-1">Matières concernées</label>
+      <select name="matieres" multiple class="w-full bg-bg-card border border-border-standard rounded-xl px-4 py-3 text-text-primary focus:border-primary outline-none">
+        {% for m in matieres %}
+          <option value="{{ m.id }}">{{ m.nom }}</option>
+        {% endfor %}
+      </select>
+      <p class="text-[10px] text-text-muted mt-1">Maintenez Ctrl pour sélectionner plusieurs matières</p>
+    </div>
+
+    <div class="flex justify-end gap-3">
+      <a href="{% url 'devoir_list' %}" class="px-6 py-3 rounded-xl bg-bg-tertiary border border-border-standard text-sm font-bold text-text-muted hover:text-text-primary transition">Annuler</a>
+      <button type="submit" class="px-8 py-3 rounded-xl bg-primary text-white text-sm font-black shadow-lg hover:bg-primary/80 transition flex items-center gap-2">
+        <i class="fa-solid fa-plus"></i> Créer
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -29,6 +29,7 @@ urlpatterns = [
     path('webhooks/', include('webhooks.urls')),
     path('subscriptions/', include('subscriptions.urls')),
     path('cours/', include('cours.urls')),
+    path('devoirs/', include('devoirs.urls')),
 ]
 
 # Servir les fichiers médias et statiques en développement (RIGOUREUX)

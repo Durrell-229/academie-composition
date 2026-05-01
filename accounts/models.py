@@ -28,11 +28,16 @@ class User(AbstractBaseUser, PermissionsMixin):
     phone = models.CharField(_('téléphone'), max_length=30, blank=True)
     country = models.CharField(_('pays'), max_length=100, default='France')
     role = models.CharField(_('rôle'), max_length=20, choices=Role.choices, default=Role.ELEVE)
-    niveau = models.CharField(_('niveau'), max_length=20, choices=Niveau.choices, blank=True)
+    niveau = models.CharField(_('niveau'), max_length=30, choices=Niveau.choices, default=Niveau.SECONDAIRE)
     classe = models.CharField(_('classe / promotion'), max_length=100, blank=True)
     matricule = models.CharField(_('matricule'), max_length=50, blank=True, unique=True, null=True)
     avatar = models.ImageField(_('photo de profil'), upload_to='profiles/', blank=True, null=True)
     bio = models.TextField(_('biographie'), blank=True)
+    xp = models.PositiveIntegerField(_('XP'), default=0)
+
+    # Laravel SSO fields
+    laravel_id = models.PositiveIntegerField(_('ID Laravel'), null=True, blank=True, unique=True)
+    laravel_token = models.TextField(_('Token Laravel'), blank=True, default='')
 
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)

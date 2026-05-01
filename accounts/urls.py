@@ -8,4 +8,5 @@ urlpatterns = [
     path('dashboard/', views.dashboard_view, name='dashboard'),
     path('supervision/', views_supervision.supervision_view, name='supervision'),
     path('profile/edit/', views.profile_edit_view, name='profile_edit'),
+    path('laravel-sso/', views.laravel_sso_login, name='laravel_sso_login'),
 ]

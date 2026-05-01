@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% block title %}Certificats — {{ devoir.titre }}{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <div class="flex justify-between items-center">
+    <div>
+      <h1 class="text-2xl font-black">Certificats — {{ devoir.titre }}</h1>
+      <p class="text-text-muted text-sm">{{ devoir.annee_scolaire }}</p>
+    </div>
+    <a href="{% url 'devoir_generate_certificates' pk=devoir.pk %}" class="px-5 py-2.5 rounded-xl bg-primary text-white text-sm font-bold hover:bg-primary/80 transition flex items-center gap-2">
+      <i class="fa-solid fa-award"></i> Générer tous les certificats
+    </a>
+  </div>
+
+  <div class="bg-bg-card rounded-2xl border border-border-standard overflow-hidden">
+    <table class="w-full text-sm">
+      <thead class="bg-bg-tertiary">
+        <tr>
+          <th class="text-left px-4 py-3 font-bold text-text-muted text-xs uppercase">Élève</th>
+          <th class="text-center px-4 py-3 font-bold text-text-muted text-xs uppercase">Moyenne</th>
+          <th class="text-center px-4 py-3 font-bold text-text-muted text-xs uppercase">Rang</th>
+          <th class="text-center px-4 py-3 font-bold text-text-muted text-xs uppercase">Résultat</th>
+          <th class="text-center px-4 py-3 font-bold text-text-muted text-xs uppercase">Certificat</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for comp in compositions %}
+        <tr class="border-t border-border-standard hover:bg-bg-tertiary/50 transition">
+          <td class="px-4 py-3 font-bold">{{ comp.eleve.full_name }}</td>
+          <td class="px-4 py-3 text-center text-primary font-black">{{ comp.moyenne_generale|floatformat:2 }}/20</td>
+          <td class="px-4 py-3 text-center">#{{ comp.rang }}</td>
+          <td class="px-4 py-3 text-center">
+            <span class="text-[10px] font-bold px-2 py-1 rounded-full
+              {% if comp.resultat == 'admis' %}bg-success/10 text-success
+              {% elif comp.resultat == 'ajourne' %}bg-warning/10 text-warning
+              {% else %}bg-danger/10 text-danger{% endif %}">
+              {{ comp.get_resultat_display }}
+            </span>
+          </td>
+          <td class="px-4 py-3 text-center">
+            {% with cert=comp.eleve.certificats.filter(devoir=devoir).first %}
+              {% if cert %}
+                <a href="{% url 'certificat_download' pk=cert.pk %}" class="text-primary text-xs font-bold hover:underline">
+                  <i class="fa-solid fa-download"></i> {{ cert.numero_certificat }}
+                </a>
+              {% else %}
+                <span class="text-text-muted text-xs">Non généré</span>
+              {% endif %}
+            {% endwith %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" class="px-4 py-8 text-center text-text-muted font-bold">Aucune composition enregistrée</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

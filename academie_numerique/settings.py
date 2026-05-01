@@ -48,6 +48,7 @@ LOCAL_APPS = [
     'webhooks',
     'subscriptions',
     'cours',
+    'devoirs',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -194,6 +195,15 @@ SESSION_COOKIE_AGE = 86400 * 7  # 7 days
 SESSION_SAVE_EVERY_REQUEST = True
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SECURE = not DEBUG
+
+# Laravel SSO Integration
+LARAVEL_API_URL = os.environ.get('LARAVEL_API_URL', 'http://localhost:8000')
+
+# Auth backends
+AUTHENTICATION_BACKENDS = [
+    'accounts.laravel_auth.LaravelAuthBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
 CSRF_COOKIE_SECURE = not DEBUG
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True

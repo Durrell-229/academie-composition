@@ -6,12 +6,22 @@
         @page { size: A4; margin: 12mm 18mm; }
         body { font-family: 'Times New Roman', 'Helvetica', serif; color: #000; font-size: 10pt; line-height: 1.3; margin: 0; padding: 0; }
 
+        /* Drapeau Bénin */
+        .flag-bar { display: table; width: 100%; margin-bottom: 8px; }
+        .flag-bar td { border: none; padding: 0; height: 8mm; }
+        .flag-green { background-color: #008751; width: 33.33%; }
+        .flag-yellow { background-color: #FCD116; width: 33.33%; }
+        .flag-red { background-color: #E8112D; width: 33.33%; }
+
         /* En-tête officiel Ministère */
-        .header-ministere { text-align: center; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 15px; }
-        .republique { font-size: 11pt; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; margin: 0 0 2px 0; }
-        .devise { font-size: 9pt; font-style: italic; margin: 0 0 5px 0; color: #333; }
+        .header-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+        .header-left { flex: 1; }
+        .header-right { width: 60px; text-align: center; }
+        .header-ministere { text-align: center; border-bottom: 3px double #000; padding-bottom: 10px; }
+        .republique { font-size: 11pt; font-weight: bold; text-transform: uppercase; margin: 0 0 2px 0; }
         .ministere { font-size: 9pt; font-weight: bold; margin: 0 0 2px 0; }
-        .direction { font-size: 8pt; margin: 0 0 5px 0; }
+        .etablissement { font-size: 10pt; font-weight: bold; font-style: italic; margin: 0 0 5px 0; }
+        .annee-scolaire { font-size: 9pt; font-weight: bold; }
 
         /* Titre du bulletin */
         .titre-bulletin { text-align: center; font-size: 14pt; font-weight: bold; margin: 12px 0; text-transform: uppercase; letter-spacing: 1px; border: 1px solid #000; padding: 6px; background-color: #f5f5f5; }
@@ -59,12 +69,30 @@
     </style>
 </head>
 <body>
-    <!-- En-tête officiel -->
-    <div class="header-ministere">
-        <p class="republique">RÉPUBLIQUE DU BÉNIN</p>
-        <p class="devise">Fraternité — Justice — Travail</p>
-        <p class="ministere">MINISTÈRE DE L'ÉDUCATION NATIONALE ET DE LA FORMATION PROFESSIONNELLE</p>
-        <p class="direction">Direction Générale de l'Enseignement Secondaire</p>
+    <!-- Drapeau Bénin - Barre supérieure -->
+    <table class="flag-bar"><tr><td class="flag-green"></td><td class="flag-yellow"></td><td class="flag-red"></td></tr></table>
+    
+    <!-- En-tête Officiel -->
+    <div class="header-row">
+        <div class="header-left">
+            <div class="header-ministere">
+                <div class="republique">RÉPUBLIQUE DU BÉNIN</div>
+                <div class="ministere">MINISTÈRE DE L'ENSEIGNEMENT SECONDAIRE, TECHNIQUE ET DE LA FORMATION PROFESSIONNELLE</div>
+                <div class="etablissement">ACADÉMIE NUMÉRIQUE INTELLIGENTE — IA</div>
+                <div class="annee-scolaire">ANNÉE SCOLAIRE : {{ annee_scolaire }}</div>
+            </div>
+        </div>
+        <div class="header-right">
+            <svg width="50" height="50" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="50" cy="50" r="48" fill="#4F46E5" stroke="#fff" stroke-width="2"/>
+                <text x="50" y="35" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold" font-family="Arial">ACADÉMIE</text>
+                <text x="50" y="52" text-anchor="middle" fill="#FCD116" font-size="12" font-weight="bold" font-family="Arial">NUMÉRIQUE</text>
+                <text x="50" y="68" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold" font-family="Arial">INTELLIGENTE</text>
+                <circle cx="50" cy="80" r="4" fill="#008751"/>
+                <circle cx="42" cy="80" r="3" fill="#FCD116"/>
+                <circle cx="58" cy="80" r="3" fill="#E8112D"/>
+            </svg>
+        </div>
     </div>
 
     <!-- Titre -->
@@ -107,11 +135,12 @@
     <table class="table-notes">
         <thead>
             <tr>
-                <th style="width: 30%;">Matière / Discipline</th>
-                <th style="width: 15%;">Note / 20</th>
-                <th style="width: 15%;">Bonnes Rép.</th>
-                <th style="width: 15%;">Total Quest.</th>
-                <th style="width: 15%;">Mention</th>
+                <th style="width: 25%;">Matière / Discipline</th>
+                <th style="width: 12%;">Coefficient</th>
+                <th style="width: 13%;">Note / 20</th>
+                <th style="width: 13%;">Bonnes Rép.</th>
+                <th style="width: 13%;">Total Quest.</th>
+                <th style="width: 14%;">Mention</th>
                 <th style="width: 10%;">Rang</th>
             </tr>
         </thead>
@@ -119,6 +148,7 @@
             {% for ligne in lignes %}
             <tr>
                 <td><strong>{{ ligne.matiere }}</strong></td>
+                <td style="font-weight: bold;">{{ ligne.coefficient|default:"1" }}</td>
                 <td class="note-val">{{ ligne.note }}</td>
                 <td>{{ bonnes_reponses|default:"-" }}</td>
                 <td>{{ total_questions|default:"-" }}</td>
@@ -128,7 +158,7 @@
                 <td>{{ rang }}/{{ effectif }}</td>
             </tr>
             {% empty %}
-            <tr><td colspan="6" style="text-align:center; padding:10px;">Données non disponibles</td></tr>
+            <tr><td colspan="7" style="text-align:center; padding:10px;">Données non disponibles</td></tr>
             {% endfor %}
         </tbody>
     </table>
@@ -163,29 +193,26 @@
     {% endif %}
 
     <!-- Signature et vérification -->
-    <table class="signature-section">
+    <table style="margin-top: 20px; display: table; width: 100%; border: none;">
         <tr>
-            <td>
-                <div class="verification-box">
-                    <strong>CERTIFICATION NUMÉRIQUE</strong><br>
-                    Token : {{ verification_token }}<br>
-                    Document vérifiable sur la plateforme Académie Numérique IA
+            <td style="border: none; width: 50%; vertical-align: top;">
+                <div style="font-family: 'Courier New', monospace; font-size: 7pt; color: #666; margin-top: 15px; padding: 5px; border: 1px solid #ccc; background-color: #fafafa; text-align: center;">
+                    <strong>VÉRIFICATION NUMÉRIQUE</strong><br>
+                    AUTH-ID: {{ verification_token }}<br>
+                    Document certifié conforme — Plateforme Académie Numérique IA
                 </div>
             </td>
-            <td>
-                <div class="signature-block">
-                    <div class="titre-sig">Le Directeur de l'Établissement / L'Enseignant</div>
-                    <div style="height:40px; border-bottom:1px solid #000; margin-bottom:5px;"></div>
-                    <div class="mention-sig">Signature et sceau</div>
+            <td style="border: none; width: 50%; vertical-align: top;">
+                <div style="text-align: center; padding: 10px;">
+                    <div style="font-weight: bold; margin-bottom: 40px;">Le Chef de l'Administration Scolaire</div>
+                    <div style="font-family: 'Brush Script MT', cursive; font-size: 18pt; color: #333; margin-bottom: 5px;">Signature Numérique</div>
+                    <div style="font-size: 7pt; color: #666;">Tél: +2290197650817</div>
                 </div>
             </td>
         </tr>
     </table>
-
-    <!-- Footer -->
-    <div class="footer-officiel">
-        Document généré automatiquement par la plateforme Académie Numérique IA — Ministère de l'Éducation Nationale du Bénin<br>
-        Date de génération : {{ bulletin.created_at|date:"d/m/Y à H:i" }} — Ce document fait foi de résultat officiel
-    </div>
+    
+    <!-- Drapeau Bénin - Barre inférieure -->
+    <table class="flag-bar" style="margin-top: 15px;"><tr><td class="flag-green"></td><td class="flag-yellow"></td><td class="flag-red"></td></tr></table>
 </body>
 </html>
