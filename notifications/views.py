@@ -30,11 +30,17 @@ def _send_resend_email(to_email: str, subject: str, body: str) -> bool:
 
     try:
         resp = requests.post('https://api.resend.com/emails', headers=headers, json=data, timeout=10)
-        resp.raise_for_status()
-        logger.info(f"[Resend] Email envoyé à {to_email}")
-        return True
+        if resp.status_code == 200:
+            logger.info(f"[Resend] Email envoyé à {to_email}")
+            return True
+        else:
+            logger.error(f"[Resend] Erreur {resp.status_code} pour {to_email}: {resp.text}")
+            return False
+    except requests.RequestException as e:
+        logger.error(f"[Resend] Erreur réseau pour {to_email}: {e}")
+        return False
     except Exception as e:
-        logger.error(f"[Resend] Erreur envoi à {to_email}: {e}")
+        logger.error(f"[Resend] Erreur inattendue pour {to_email}: {e}")
         return False
 
 
