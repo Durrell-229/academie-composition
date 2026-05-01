@@ -545,11 +545,13 @@ def register_view(request):
 
 @login_required
 def profile_edit_view(request):
+    import unicodedata
+    import re
     if request.method == 'POST':
         form = ProfileUpdateForm(request.POST, request.FILES, instance=request.user)
         if form.is_valid():
             user = form.save(commit=False)
-            # Handle avatar upload
+            # Handle avatar upload with sanitized filename
             if 'avatar' in request.FILES:
                 avatar = request.FILES['avatar']
                 # Validate file size (5MB max)
@@ -560,6 +562,15 @@ def profile_edit_view(request):
                 if not avatar.content_type.startswith('image/'):
                     messages.error(request, "Le fichier doit être une image valide.")
                     return render(request, 'accounts/profile_edit.html', {'form': form})
+                # Sanitize filename: remove accents, spaces, special chars
+                original_name = avatar.name
+                # Remove accents
+                sanitized = unicodedata.normalize('NFKD', original_name).encode('ascii', 'ignore').decode('ascii')
+                # Replace spaces and special chars with underscores
+                sanitized = re.sub(r'[^a-zA-Z0-9._-]', '_', sanitized)
+                # Prefix with user id to avoid collisions
+                sanitized = f"user_{user.id.hex[:8]}_{sanitized}"
+                avatar.name = sanitized
             form.save()
             request.user.refresh_from_db()
             messages.success(request, "Votre profil a été mis à jour avec succès.")
