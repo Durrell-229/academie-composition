@@ -1,4 +1,5 @@
 import json
+import math
 import uuid
 import logging
 from django.shortcuts import render, redirect, get_object_or_404
@@ -113,7 +114,7 @@ def submit_qcm(request):
     # Construire le texte des réponses pour l'IA
     reponses_text = '\n'.join([f'{k}: {v}' for k, v in reponses.items()])
 
-    # Correction : calcul déterministe basé sur les réponses stockées
+    # Correction : calcul déterministe et STRICT basé sur les réponses stockées
     bonnes_reponses_count = 0
     total = len(questions)
     for i, q in enumerate(questions):
@@ -121,7 +122,9 @@ def submit_qcm(request):
         if _check_answer(q, rep):
             bonnes_reponses_count += 1
 
-    note = round((bonnes_reponses_count / total) * 20, 1) if total > 0 else 0
+    # Note stricte : pas d'arrondi supérieur, on tronque à 1 décimale
+    note_raw = (bonnes_reponses_count / total) * 20 if total > 0 else 0
+    note = math.floor(note_raw * 10) / 10  # tronque à 1 décimale (ex: 13.99 → 13.9)
 
     # Générer le feedback (IA optionnelle + fallback déterministe)
     appreciation_levels = [

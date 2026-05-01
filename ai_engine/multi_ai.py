@@ -192,7 +192,21 @@ FORMAT DE RÉPONSE EXIGÉ (JSON valide UNIQUEMENT) :
 
         theme_str = theme.strip()
 
+        # Déterminer la langue du QCM selon la matière
+        matiere_lower = matiere.lower()
+        if matiere_lower in ('anglais', 'anglais lv1', 'anglais lv2', 'english'):
+            langue_qcm = 'ANGLAIS'
+            instruction_langue = 'TOUTES les questions, choix de réponses et explications doivent être rédigées EXCLUSIVEMENT EN ANGLAIS.'
+        elif matiere_lower in ('arabe',):
+            langue_qcm = 'ARABE'
+            instruction_langue = 'TOUTES les questions et choix de réponses doivent être rédigés EN ARABE.'
+        else:
+            langue_qcm = 'FRANÇAIS'
+            instruction_langue = 'TOUTES les questions, choix de réponses et explications doivent être rédigés EXCLUSIVEMENT EN FRANÇAIS.'
+
         prompt = f"""Tu es un professeur expert en {matiere} pour la classe de {classe}.
+
+LANGUE : {instruction_langue}
 
 CHAPITRE CIBLE : {theme_str}
 
@@ -201,6 +215,7 @@ CONTRAINTE ABSOLUE :
 - NE JAMAIS poser de questions sur un autre chapitre
 - Si tu ne connais pas le contenu de ce chapitre, adapte-toi mais reste DANS le thème
 - Niveau de difficulté : {difficulte}
+- Sois STRICT et RIGOUREUX comme un vrai examen
 
 OBJECTIF :
 Génère exactement {nb_questions} questions QCM sur "{theme_str}".
@@ -209,8 +224,9 @@ RÈGLES STRICTES :
 1. Chaque question a exactement 4 choix : A, B, C, D
 2. Une SEULE bonne réponse par question
 3. Questions précises, pédagogiques, adaptées au niveau {classe}
-4. Les distracteurs (mauvaises réponses) doivent être plausibles
+4. Les distracteurs (mauvaises réponses) doivent être plausibles mais clairement incorrects
 5. Numérote les questions de 1 à {nb_questions}
+6. La bonne réponse doit être JUSTE et sans ambiguïté
 
 FORMAT DE RÉPONSE EXIGÉ — JSON valide UNIQUEMENT, rien d'autre :
 ```json
@@ -236,12 +252,23 @@ Retourne UNIQUEMENT le JSON, sans texte avant ni après."""
         return self.generate(prompt, expect_json=True)
 
     def correct_qcm(self, reponses: str, qcm_original: str, ctx: dict) -> dict:
-        """Corrige les réponses à un QCM et retourne un JSON structuré."""
+        """Génère un feedback pédagogique pour un QCM (la note est calculée séparément)."""
         questions = ctx.get('questions', [])
         nb_questions = len(questions)
         nb_reponses = len([r for r in reponses.split('\n') if ':' in r])
 
-        prompt = f"""Tu es un correcteur expert de l'ÉDUCATION NATIONALE DU BÉNIN, spécialiste en {ctx.get('matiere', 'matière')}.
+        # Langue du feedback
+        matiere_lower = ctx.get('matiere', '').lower()
+        if matiere_lower in ('anglais', 'anglais lv1', 'anglais lv2', 'english'):
+            instruction_langue = 'Rédige le feedback EXCLUSIVEMENT EN ANGLAIS.'
+        elif matiere_lower in ('arabe',):
+            instruction_langue = 'Rédige le feedback EN ARABE.'
+        else:
+            instruction_langue = 'Rédige le feedback EN FRANÇAIS.'
+
+        prompt = f"""Tu es un correcteur STRICT et EXIGEANT, spécialiste en {ctx.get('matiere', 'matière')}.
+
+{instruction_langue}
 
 QCM original généré :
 ---
@@ -254,31 +281,20 @@ Réponses de l'élève :
 ---
 
 INSTRUCTIONS DE CORRECTION STRICTES :
-1. Identifie la bonne réponse pour CHAQUE question (la réponse correcte selon les connaissances académiques)
-2. Compare avec la réponse donnée par l'élève
-3. Compte le nombre EXACT de bonnes réponses
-4. Calcule la note sur 20 : (bonnes_réponses / {nb_questions}) × 20, arrondi à 1 décimale
-5. Si l'élève a répondu à toutes les questions correctement, la note DOIT être 20/20
-6. Si l'élève n'a répondu à aucune question, la note DOIT être 0/20
+1. Sois SÉVÈRE — ne donne des points QUE pour les réponses exactement correctes
+2. Une réponse partiellement correcte mais inexacte = 0 point
+3. Identifie les lacunes réelles de l'élève
 
 Retourne UNIQUEMENT un JSON valide sans texte autour :
 {{
-  "note": <nombre entre 0 et 20 avec 1 décimale>,
-  "bonnes_reponses": <nombre de bonnes réponses>,
+  "note": 0,
+  "bonnes_reponses": 0,
   "total_questions": {nb_questions},
-  "appreciation": "<Très Bien/Bien/Assez Bien/Passable/Insuffisant>",
-  "details": [
-    {{
-      "question": "Q1: ...",
-      "reponse_eleve": "...",
-      "bonne_reponse": "...",
-      "correct": true/false,
-      "explication": "..."
-    }}
-  ],
+  "appreciation": "<appreciation stricte et honnête>",
+  "details": [],
   "points_forts": ["...", "..."],
   "axes_amelioration": ["...", "..."],
-  "remediation": "<conseils personnalisés pour progresser selon le programme béninois>"
+  "remediation": "<conseils précis et exigeants pour progresser>"
 }}"""
 
         raw = self.generate(prompt, expect_json=True)
