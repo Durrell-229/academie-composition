@@ -74,4 +74,4 @@ def verify_certificate_api(request):
 @login_required
 def my_certificates_view(request):
     certificates = Certificate.objects.filter(eleve=request.user).select_related('matiere')
-    return render(request, 'certificates/my_certificates.html', {'certificates': certificates})
+    return render(request, 'certifications/my_certificates.html', {'certificates': certificates})
