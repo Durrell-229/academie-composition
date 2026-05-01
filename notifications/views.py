@@ -1,10 +1,41 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.core.mail import send_mail
 from django.conf import settings
 from .models import Notification, EmailQueue
 from accounts.models import User
+import requests
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+def _send_resend_email(to_email: str, subject: str, body: str) -> bool:
+    """Envoie un email via l'API HTTP Resend (pas de SMTP, pas de timeout)."""
+    api_key = getattr(settings, 'RESEND_API_KEY', '') or ''
+    if not api_key:
+        logger.error("[Resend] API key non configurée")
+        return False
+
+    headers = {
+        'Authorization': f'Bearer {api_key}',
+        'Content-Type': 'application/json',
+    }
+    data = {
+        'from': 'Académie Numérique <onboarding@resend.dev>',
+        'to': [to_email],
+        'subject': subject,
+        'html': body.replace('\n', '<br>'),
+    }
+
+    try:
+        resp = requests.post('https://api.resend.com/emails', headers=headers, json=data, timeout=10)
+        resp.raise_for_status()
+        logger.info(f"[Resend] Email envoyé à {to_email}")
+        return True
+    except Exception as e:
+        logger.error(f"[Resend] Erreur envoi à {to_email}: {e}")
+        return False
 
 
 @login_required
@@ -89,7 +120,8 @@ def email_compose_view(request):
             return redirect('dashboard')
 
         # Vérifier que la clé API Resend est configurée
-        if not settings.EMAIL_HOST_PASSWORD:
+        resend_api_key = getattr(settings, 'RESEND_API_KEY', '') or ''
+        if not resend_api_key:
             messages.error(
                 request,
                 "Email non configuré : RESEND_API_KEY est requis. "
@@ -102,18 +134,12 @@ def email_compose_view(request):
             messages.warning(request, f"Envoi limité aux 50 premiers destinataires sur {len(recipient_list)} (limite anti-timeout).")
             recipient_list = recipient_list[:50]
 
-        # Envoyer individuellement via SMTP (un par un pour éviter OOM)
+        # Envoyer individuellement via l'API Resend (HTTP, pas SMTP)
         sent_count = 0
         error_count = 0
         for email_addr in recipient_list:
-            try:
-                send_mail(
-                    subject=subject,
-                    message=body_text,
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=[email_addr],
-                    fail_silently=False,
-                )
+            success = _send_resend_email(email_addr, subject, body_text)
+            if success:
                 EmailQueue.objects.create(
                     destinataire=email_addr,
                     sujet=subject,
@@ -121,14 +147,14 @@ def email_compose_view(request):
                     statut='sent',
                 )
                 sent_count += 1
-            except Exception as e:
+            else:
                 error_count += 1
                 EmailQueue.objects.create(
                     destinataire=email_addr,
                     sujet=subject,
                     corps_texte=body_text,
                     statut='error',
-                    erreur=str(e),
+                    erreur="Erreur API Resend",
                 )
 
         if sent_count > 0:

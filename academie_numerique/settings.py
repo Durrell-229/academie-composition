@@ -173,7 +173,7 @@ GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
 MISTRAL_API_KEY = os.environ.get('MISTRAL_API_KEY', '')
 DEEPSEEK_API_KEY = os.environ.get('DEEPSEEK_API_KEY', '')
 
-# Email via Resend API (free 3000/day, no SMTP timeout)
+# Email via Resend API (free 3000/day, HTTP API, no SMTP timeout)
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.resend.com'
 EMAIL_PORT = 465
@@ -181,7 +181,8 @@ EMAIL_USE_SSL = True
 EMAIL_USE_TLS = False
 EMAIL_HOST_USER = 'resend'
 EMAIL_HOST_PASSWORD = os.environ.get('RESEND_API_KEY', '')
-DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'Académie Numérique <noreply@academie-numerique.com>')
+RESEND_API_KEY = os.environ.get('RESEND_API_KEY', 're_bvSDVttk_NUo6pqFZNLgudshNoKgctVuy')
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'Académie Numérique <onboarding@resend.dev>')
 
 # Role Passwords (configurable via env)
 ROLE_PASSWORD_ADMIN = os.environ.get('ROLE_PASSWORD_ADMIN', 'admin2025')
