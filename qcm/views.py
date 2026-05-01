@@ -124,16 +124,16 @@ def submit_qcm(request):
     note = round((bonnes_reponses_count / total) * 20, 1) if total > 0 else 0
 
     # Générer le feedback (IA optionnelle + fallback déterministe)
-    appreciation_levels = {
-        (0, 5): 'Insuffisant',
-        (5, 8): 'Passable',
-        (8, 10): 'Assez Bien',
-        (10, 14): 'Bien',
-        (14, 18): 'Très Bien',
-        (18, 21): 'Excellent',
-    }
+    appreciation_levels = [
+        (0, 5, 'Insuffisant'),
+        (5, 8, 'Passable'),
+        (8, 10, 'Assez Bien'),
+        (10, 14, 'Bien'),
+        (14, 18, 'Très Bien'),
+        (18, 21, 'Excellent'),
+    ]
     appreciation = 'Insuffisant'
-    for low, high, label in appreciation_levels.items():
+    for low, high, label in appreciation_levels:
         if low <= note < high:
             appreciation = label
             break

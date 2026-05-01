@@ -88,12 +88,12 @@ def email_compose_view(request):
             messages.error(request, "Aucun destinataire trouvé.")
             return redirect('dashboard')
 
-        # Vérifier que les credentials SMTP sont configurés
-        if not settings.EMAIL_HOST_USER or not settings.EMAIL_HOST_PASSWORD:
+        # Vérifier que la clé API Resend est configurée
+        if not settings.EMAIL_HOST_PASSWORD:
             messages.error(
                 request,
-                "Email non configuré : EMAIL_HOST_USER et EMAIL_HOST_PASSWORD sont requis. "
-                "Configurez-les dans les variables d'environnement Render ou dans .env en local."
+                "Email non configuré : RESEND_API_KEY est requis. "
+                "Configurez-le dans les variables d'environnement Render."
             )
             return redirect('dashboard')
 
