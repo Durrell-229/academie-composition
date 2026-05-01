@@ -88,29 +88,53 @@ def email_compose_view(request):
             messages.error(request, "Aucun destinataire trouvé.")
             return redirect('dashboard')
 
-        # Créer les entrées dans EmailQueue
-        for email in recipient_list:
-            EmailQueue.objects.create(
-                destinataire=email,
-                sujet=subject,
-                corps_texte=body_text,
-                statut='pending',
+        # Vérifier que les credentials SMTP sont configurés
+        if not settings.EMAIL_HOST_USER or not settings.EMAIL_HOST_PASSWORD:
+            messages.error(
+                request,
+                "Email non configuré : EMAIL_HOST_USER et EMAIL_HOST_PASSWORD sont requis. "
+                "Configurez-les dans les variables d'environnement Render ou dans .env en local."
             )
+            return redirect('dashboard')
 
-        # Envoyer directement via SMTP
-        try:
-            send_mail(
-                subject=subject,
-                message=body_text,
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=recipient_list,
-                fail_silently=False,
-            )
-            EmailQueue.objects.filter(statut='pending', sujet=subject).update(statut='sent')
-            messages.success(request, f"Email envoyé à {len(recipient_list)} destinataire(s).")
-        except Exception as e:
-            EmailQueue.objects.filter(statut='pending', sujet=subject).update(statut='error', erreur=str(e))
-            messages.error(request, f"Erreur d'envoi : {str(e)}")
+        # Limiter à 50 emails par requête pour éviter timeout
+        if len(recipient_list) > 50:
+            messages.warning(request, f"Envoi limité aux 50 premiers destinataires sur {len(recipient_list)} (limite anti-timeout).")
+            recipient_list = recipient_list[:50]
+
+        # Envoyer individuellement via SMTP (un par un pour éviter OOM)
+        sent_count = 0
+        error_count = 0
+        for email_addr in recipient_list:
+            try:
+                send_mail(
+                    subject=subject,
+                    message=body_text,
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[email_addr],
+                    fail_silently=False,
+                )
+                EmailQueue.objects.create(
+                    destinataire=email_addr,
+                    sujet=subject,
+                    corps_texte=body_text,
+                    statut='sent',
+                )
+                sent_count += 1
+            except Exception as e:
+                error_count += 1
+                EmailQueue.objects.create(
+                    destinataire=email_addr,
+                    sujet=subject,
+                    corps_texte=body_text,
+                    statut='error',
+                    erreur=str(e),
+                )
+
+        if sent_count > 0:
+            messages.success(request, f"{sent_count} email(s) envoyé(s). {error_count} erreur(s)." if error_count else f"{sent_count} email(s) envoyé(s) avec succès.")
+        else:
+            messages.error(request, f"Aucun email envoyé. {error_count} erreur(s).")
 
         return redirect('dashboard')
 
