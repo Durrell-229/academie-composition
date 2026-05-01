@@ -200,6 +200,30 @@ def _parse_qcm_text(text, nb_questions):
 
 
 def _check_answer(question, reponse):
-    """Vérifie si une réponse est correcte (version simple)."""
-    # Cette fonction sera améliorée quand l'IA retournera les bonnes réponses
-    return False
+    """Vérifie si une réponse est correcte selon les connaissances académiques."""
+    from ai_engine.multi_ai import multi_ai
+
+    choix = question.get('choix', [])
+    question_text = question.get('question', '')
+
+    # Construire le prompt pour l'IA
+    prompt_check = f"""Question: {question_text}
+Choix:
+A) {choix[0]['texte'] if len(choix) > 0 else ''}
+B) {choix[1]['texte'] if len(choix) > 1 else ''}
+C) {choix[2]['texte'] if len(choix) > 2 else ''}
+D) {choix[3]['texte'] if len(choix) > 3 else ''}
+
+Réponse de l'élève: {reponse}
+
+Quelle est la bonne réponse (A, B, C ou D) ? Retourne UNIQUEMENT la lettre de la bonne réponse, rien d'autre."""
+
+    try:
+        bonne_reponse = multi_ai.generate(prompt_check).strip().upper()
+        # Extraire juste la lettre
+        for lettre in ['A', 'B', 'C', 'D']:
+            if lettre in bonne_reponse:
+                return reponse.upper() == lettre
+        return False
+    except Exception:
+        return False

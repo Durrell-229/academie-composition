@@ -186,31 +186,51 @@ FORMAT DE RÉPONSE EXIGÉ (JSON valide UNIQUEMENT) :
 
     def generate_qcm(self, matiere: str, classe: str, nb_questions: int = 10,
                      difficulte: str = 'moyen', theme: str = '') -> str:
-        """Génère un QCM complet."""
+        """Génère un QCM complet basé sur le programme éducatif béninois."""
         theme_str = f" sur le thème spécifique : {theme}" if theme else ""
-        prompt = f"""Tu es un professeur expert en {matiere} pour la classe {classe}{theme_str}.
+        prompt = f"""Tu es un professeur expert de l'ÉDUCATION NATIONALE DU BÉNIN, spécialiste en {matiere} pour la classe {classe}{theme_str}.
 
-Génère un QCM de {nb_questions} questions de niveau {difficulte}.
+CONTEXTE PÉDAGOGIQUE :
+- Tu suis STRICTEMENT le programme officiel béninois en vigueur pour {matiere} en classe de {classe}
+- Les questions doivent correspondre EXACTEMENT aux contenus enseignés dans les écoles du Bénin
+- NE JAMAIS mélanger avec des programmes d'autres pays (France, Canada, etc.)
+- Utilise la terminologie et les références du système éducatif béninois
+
+OBJECTIF :
+Génère un QCM de {nb_questions} questions de niveau {difficulte} basé UNIQUEMENT sur le programme béninois.
 
 RÈGLES STRICTES :
-- Chaque question a exactement 4 choix : A, B, C, D
-- NE révèle PAS les bonnes réponses dans cette section
-- Numérote chaque question : Q1, Q2, Q3...
-- Questions précises, pédagogiques et adaptées au niveau {classe}
+1. Chaque question a exactement 4 choix : A, B, C, D
+2. Une SEULE bonne réponse par question
+3. Numérote chaque question : Q1, Q2, Q3...
+4. Questions précises, pédagogiques et adaptées au niveau {classe}
+5. Les distracteurs (mauvaises réponses) doivent être plausibles
 
-FORMAT EXACT :
+FORMAT EXACT À RESPECTER :
 Q1. [Question] ?
 A) [Choix A]
 B) [Choix B]
 C) [Choix C]
 D) [Choix D]
 
-Génère les {nb_questions} questions maintenant. Ne fournis que les questions, aucune introduction :"""
+Q2. [Question] ?
+A) [Choix A]
+B) [Choix B]
+C) [Choix C]
+D) [Choix D]
+
+... et ainsi de suite pour les {nb_questions} questions.
+
+AUCUNE introduction, AUCUN texte avant ou après les questions. Uniquement le QCM."""
         return self.generate(prompt)
 
     def correct_qcm(self, reponses: str, qcm_original: str, ctx: dict) -> dict:
         """Corrige les réponses à un QCM et retourne un JSON structuré."""
-        prompt = f"""Tu es un correcteur expert en {ctx.get('matiere', 'matière')}.
+        questions = ctx.get('questions', [])
+        nb_questions = len(questions)
+        nb_reponses = len([r for r in reponses.split('\n') if ':' in r])
+
+        prompt = f"""Tu es un correcteur expert de l'ÉDUCATION NATIONALE DU BÉNIN, spécialiste en {ctx.get('matiere', 'matière')}.
 
 QCM original généré :
 ---
@@ -222,11 +242,32 @@ Réponses de l'élève :
 {reponses}
 ---
 
-Corrige ces réponses. Retourne UNIQUEMENT un JSON valide sans texte autour :
+INSTRUCTIONS DE CORRECTION STRICTES :
+1. Identifie la bonne réponse pour CHAQUE question (la réponse correcte selon les connaissances académiques)
+2. Compare avec la réponse donnée par l'élève
+3. Compte le nombre EXACT de bonnes réponses
+4. Calcule la note sur 20 : (bonnes_réponses / {nb_questions}) × 20, arrondi à 1 décimale
+5. Si l'élève a répondu à toutes les questions correctement, la note DOIT être 20/20
+6. Si l'élève n'a répondu à aucune question, la note DOIT être 0/20
+
+Retourne UNIQUEMENT un JSON valide sans texte autour :
 {{
-  "note": <nombre entre 0 et 20>,
-  "corrections": "<détail par question : bonne réponse et explication>",
-  "remediation": "<conseils personnalisés pour progresser>"
+  "note": <nombre entre 0 et 20 avec 1 décimale>,
+  "bonnes_reponses": <nombre de bonnes réponses>,
+  "total_questions": {nb_questions},
+  "appreciation": "<Très Bien/Bien/Assez Bien/Passable/Insuffisant>",
+  "details": [
+    {{
+      "question": "Q1: ...",
+      "reponse_eleve": "...",
+      "bonne_reponse": "...",
+      "correct": true/false,
+      "explication": "..."
+    }}
+  ],
+  "points_forts": ["...", "..."],
+  "axes_amelioration": ["...", "..."],
+  "remediation": "<conseils personnalisés pour progresser selon le programme béninois>"
 }}"""
 
         raw = self.generate(prompt, expect_json=True)
@@ -238,7 +279,22 @@ Corrige ces réponses. Retourne UNIQUEMENT un JSON valide sans texte autour :
                 clean = clean.split('```')[1].split('```')[0]
             return json.loads(clean.strip())
         except Exception:
-            return {"note": 10, "corrections": raw[:1000], "remediation": "Continuez à pratiquer !"}
+            # Fallback: calcul manuel basique
+            bonnes = 0
+            total = len(questions)
+            if total > 0:
+                bonnes = nb_reponses  # estimation basique
+            note = round((bonnes / total) * 20, 1) if total > 0 else 0
+            return {
+                "note": note,
+                "bonnes_reponses": bonnes,
+                "total_questions": total,
+                "appreciation": "À revoir",
+                "details": [],
+                "points_forts": [],
+                "axes_amelioration": ["Révisez le programme"],
+                "remediation": "Consultez votre cours et réessayez."
+            }
 
 
 # Instance globale réutilisable
