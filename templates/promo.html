@@ -491,8 +491,8 @@
             <div class="video-track">
                 <!-- Video 1 -->
                 <div class="video-card">
-                    <video autoplay muted loop playsinline>
-                        <source src="{% static 'videos/promo_1.mp4' %}" type="video/mp4">
+                    <video muted loop playsinline preload="none" data-src="{% static 'videos/promo_1.mp4' %}">
+                        <source src="" type="video/mp4">
                     </video>
                     <span class="badge badge-new">Nouveau</span>
                     <div class="overlay">
@@ -503,8 +503,8 @@
 
                 <!-- Video 2 -->
                 <div class="video-card">
-                    <video autoplay muted loop playsinline>
-                        <source src="{% static 'videos/promo_2.mp4' %}" type="video/mp4">
+                    <video muted loop playsinline preload="none" data-src="{% static 'videos/promo_2.mp4' %}">
+                        <source src="" type="video/mp4">
                     </video>
                     <span class="badge badge-demo">Démo</span>
                     <div class="overlay">
@@ -515,7 +515,7 @@
 
                 <!-- Video 3 -->
                 <div class="video-card">
-                    <video autoplay muted loop playsinline>
+                    <video muted loop playsinline preload="none" poster="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 320 180%22%3E%3Crect fill=%22%231e293b%22 width=%22320%22 height=%22180%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 fill=%22%2394a3b8%22 text-anchor=%22middle%22 dy=%22.3em%22 font-size=%2214%22%3E%E2%96%B6 Video%3C/text%3E%3C/svg%3E" data-lazy="true">
                         <source src="{% static 'videos/promo_3.mp4' %}" type="video/mp4">
                     </video>
                     <span class="badge badge-promo">Promo</span>
@@ -527,7 +527,7 @@
 
                 <!-- Duplicate for infinite scroll -->
                 <div class="video-card">
-                    <video autoplay muted loop playsinline>
+                    <video muted loop playsinline preload="none" poster="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 320 180%22%3E%3Crect fill=%22%231e293b%22 width=%22320%22 height=%22180%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 fill=%22%2394a3b8%22 text-anchor=%22middle%22 dy=%22.3em%22 font-size=%2214%22%3E%E2%96%B6 Video%3C/text%3E%3C/svg%3E" data-lazy="true">
                         <source src="{% static 'videos/promo_1.mp4' %}" type="video/mp4">
                     </video>
                     <span class="badge badge-new">Nouveau</span>
@@ -538,7 +538,7 @@
                 </div>
 
                 <div class="video-card">
-                    <video autoplay muted loop playsinline>
+                    <video muted loop playsinline preload="none" poster="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 320 180%22%3E%3Crect fill=%22%231e293b%22 width=%22320%22 height=%22180%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 fill=%22%2394a3b8%22 text-anchor=%22middle%22 dy=%22.3em%22 font-size=%2214%22%3E%E2%96%B6 Video%3C/text%3E%3C/svg%3E" data-lazy="true">
                         <source src="{% static 'videos/promo_2.mp4' %}" type="video/mp4">
                     </video>
                     <span class="badge badge-demo">Démo</span>
@@ -549,7 +549,7 @@
                 </div>
 
                 <div class="video-card">
-                    <video autoplay muted loop playsinline>
+                    <video muted loop playsinline preload="none" poster="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 320 180%22%3E%3Crect fill=%22%231e293b%22 width=%22320%22 height=%22180%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 fill=%22%2394a3b8%22 text-anchor=%22middle%22 dy=%22.3em%22 font-size=%2214%22%3E%E2%96%B6 Video%3C/text%3E%3C/svg%3E" data-lazy="true">
                         <source src="{% static 'videos/promo_3.mp4' %}" type="video/mp4">
                     </video>
                     <span class="badge badge-promo">Promo</span>
@@ -560,7 +560,7 @@
                 </div>
 
                 <div class="video-card">
-                    <video autoplay muted loop playsinline>
+                    <video muted loop playsinline preload="none" poster="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 320 180%22%3E%3Crect fill=%22%231e293b%22 width=%22320%22 height=%22180%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 fill=%22%2394a3b8%22 text-anchor=%22middle%22 dy=%22.3em%22 font-size=%2214%22%3E%E2%96%B6 Video%3C/text%3E%3C/svg%3E" data-lazy="true">
                         <source src="{% static 'videos/promo_1.mp4' %}" type="video/mp4">
                     </video>
                     <span class="badge badge-new">Nouveau</span>
@@ -571,7 +571,7 @@
                 </div>
 
                 <div class="video-card">
-                    <video autoplay muted loop playsinline>
+                    <video muted loop playsinline preload="none" poster="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 320 180%22%3E%3Crect fill=%22%231e293b%22 width=%22320%22 height=%22180%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 fill=%22%2394a3b8%22 text-anchor=%22middle%22 dy=%22.3em%22 font-size=%2214%22%3E%E2%96%B6 Video%3C/text%3E%3C/svg%3E" data-lazy="true">
                         <source src="{% static 'videos/promo_2.mp4' %}" type="video/mp4">
                     </video>
                     <span class="badge badge-demo">Démo</span>
@@ -582,7 +582,7 @@
                 </div>
 
                 <div class="video-card">
-                    <video autoplay muted loop playsinline>
+                    <video muted loop playsinline preload="none" poster="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 320 180%22%3E%3Crect fill=%22%231e293b%22 width=%22320%22 height=%22180%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 fill=%22%2394a3b8%22 text-anchor=%22middle%22 dy=%22.3em%22 font-size=%2214%22%3E%E2%96%B6 Video%3C/text%3E%3C/svg%3E" data-lazy="true">
                         <source src="{% static 'videos/promo_3.mp4' %}" type="video/mp4">
                     </video>
                     <span class="badge badge-promo">Promo</span>
@@ -596,7 +596,7 @@
             <!-- ROW 2: Skewed right, scrolling left -->
             <div class="video-track-reverse">
                 <div class="video-card">
-                    <video autoplay muted loop playsinline>
+                    <video muted loop playsinline preload="none" poster="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 320 180%22%3E%3Crect fill=%22%231e293b%22 width=%22320%22 height=%22180%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 fill=%22%2394a3b8%22 text-anchor=%22middle%22 dy=%22.3em%22 font-size=%2214%22%3E%E2%96%B6 Video%3C/text%3E%3C/svg%3E" data-lazy="true">
                         <source src="{% static 'videos/promo_4.mp4' %}" type="video/mp4">
                     </video>
                     <span class="badge badge-new">Excellence</span>
@@ -607,7 +607,7 @@
                 </div>
 
                 <div class="video-card">
-                    <video autoplay muted loop playsinline>
+                    <video muted loop playsinline preload="none" poster="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 320 180%22%3E%3Crect fill=%22%231e293b%22 width=%22320%22 height=%22180%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 fill=%22%2394a3b8%22 text-anchor=%22middle%22 dy=%22.3em%22 font-size=%2214%22%3E%E2%96%B6 Video%3C/text%3E%3C/svg%3E" data-lazy="true">
                         <source src="{% static 'videos/promo_5.mp4' %}" type="video/mp4">
                     </video>
                     <span class="badge badge-demo">QCM IA</span>
@@ -618,7 +618,7 @@
                 </div>
 
                 <div class="video-card">
-                    <video autoplay muted loop playsinline>
+                    <video muted loop playsinline preload="none" poster="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 320 180%22%3E%3Crect fill=%22%231e293b%22 width=%22320%22 height=%22180%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 fill=%22%2394a3b8%22 text-anchor=%22middle%22 dy=%22.3em%22 font-size=%2214%22%3E%E2%96%B6 Video%3C/text%3E%3C/svg%3E" data-lazy="true">
                         <source src="{% static 'videos/promo_6.mp4' %}" type="video/mp4">
                     </video>
                     <span class="badge badge-promo">Gamification</span>
@@ -630,7 +630,7 @@
 
                 <!-- Duplicates -->
                 <div class="video-card">
-                    <video autoplay muted loop playsinline>
+                    <video muted loop playsinline preload="none" poster="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 320 180%22%3E%3Crect fill=%22%231e293b%22 width=%22320%22 height=%22180%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 fill=%22%2394a3b8%22 text-anchor=%22middle%22 dy=%22.3em%22 font-size=%2214%22%3E%E2%96%B6 Video%3C/text%3E%3C/svg%3E" data-lazy="true">
                         <source src="{% static 'videos/promo_4.mp4' %}" type="video/mp4">
                     </video>
                     <span class="badge badge-new">Excellence</span>
@@ -641,7 +641,7 @@
                 </div>
 
                 <div class="video-card">
-                    <video autoplay muted loop playsinline>
+                    <video muted loop playsinline preload="none" poster="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 320 180%22%3E%3Crect fill=%22%231e293b%22 width=%22320%22 height=%22180%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 fill=%22%2394a3b8%22 text-anchor=%22middle%22 dy=%22.3em%22 font-size=%2214%22%3E%E2%96%B6 Video%3C/text%3E%3C/svg%3E" data-lazy="true">
                         <source src="{% static 'videos/promo_5.mp4' %}" type="video/mp4">
                     </video>
                     <span class="badge badge-demo">QCM IA</span>
@@ -652,7 +652,7 @@
                 </div>
 
                 <div class="video-card">
-                    <video autoplay muted loop playsinline>
+                    <video muted loop playsinline preload="none" poster="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 320 180%22%3E%3Crect fill=%22%231e293b%22 width=%22320%22 height=%22180%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 fill=%22%2394a3b8%22 text-anchor=%22middle%22 dy=%22.3em%22 font-size=%2214%22%3E%E2%96%B6 Video%3C/text%3E%3C/svg%3E" data-lazy="true">
                         <source src="{% static 'videos/promo_6.mp4' %}" type="video/mp4">
                     </video>
                     <span class="badge badge-promo">Gamification</span>
@@ -663,7 +663,7 @@
                 </div>
 
                 <div class="video-card">
-                    <video autoplay muted loop playsinline>
+                    <video muted loop playsinline preload="none" poster="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 320 180%22%3E%3Crect fill=%22%231e293b%22 width=%22320%22 height=%22180%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 fill=%22%2394a3b8%22 text-anchor=%22middle%22 dy=%22.3em%22 font-size=%2214%22%3E%E2%96%B6 Video%3C/text%3E%3C/svg%3E" data-lazy="true">
                         <source src="{% static 'videos/promo_4.mp4' %}" type="video/mp4">
                     </video>
                     <span class="badge badge-new">Excellence</span>
@@ -674,7 +674,7 @@
                 </div>
 
                 <div class="video-card">
-                    <video autoplay muted loop playsinline>
+                    <video muted loop playsinline preload="none" poster="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 320 180%22%3E%3Crect fill=%22%231e293b%22 width=%22320%22 height=%22180%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 fill=%22%2394a3b8%22 text-anchor=%22middle%22 dy=%22.3em%22 font-size=%2214%22%3E%E2%96%B6 Video%3C/text%3E%3C/svg%3E" data-lazy="true">
                         <source src="{% static 'videos/promo_5.mp4' %}" type="video/mp4">
                     </video>
                     <span class="badge badge-demo">QCM IA</span>
@@ -685,7 +685,7 @@
                 </div>
 
                 <div class="video-card">
-                    <video autoplay muted loop playsinline>
+                    <video muted loop playsinline preload="none" poster="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 320 180%22%3E%3Crect fill=%22%231e293b%22 width=%22320%22 height=%22180%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 fill=%22%2394a3b8%22 text-anchor=%22middle%22 dy=%22.3em%22 font-size=%2214%22%3E%E2%96%B6 Video%3C/text%3E%3C/svg%3E" data-lazy="true">
                         <source src="{% static 'videos/promo_6.mp4' %}" type="video/mp4">
                     </video>
                     <span class="badge badge-promo">Gamification</span>
@@ -709,14 +709,34 @@
     <!-- Auto-play all videos script -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const videos = document.querySelectorAll('.video-card video');
-            videos.forEach(video => {
-                video.play().catch(() => {
-                    // Autoplay blocked, video will play on user interaction
-                    video.muted = true;
-                    video.play();
+            // Ne pas autoplay les vidéos sur mobile pour économiser les ressources
+            const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent) || window.innerWidth < 768;
+
+            if (!isMobile) {
+                const videos = document.querySelectorAll('.video-card video');
+                videos.forEach(video => {
+                    // Charger la source et jouer
+                    const src = video.getAttribute('data-src');
+                    if (src) {
+                        video.querySelector('source').src = src;
+                        video.load();
+                        video.play().catch(() => {
+                            video.muted = true;
+                            video.play();
+                        });
+                    }
                 });
-            });
+            } else {
+                // Sur mobile: juste afficher un placeholder avec icône play
+                document.querySelectorAll('.video-card video').forEach(video => {
+                    video.parentElement.style.background = 'linear-gradient(135deg, rgba(79,70,229,0.3), rgba(124,58,237,0.2))';
+                    video.style.display = 'none';
+                    const icon = document.createElement('div');
+                    icon.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;';
+                    icon.innerHTML = '<i class="fa-solid fa-play text-4xl text-white/40"></i>';
+                    video.parentElement.appendChild(icon);
+                });
+            }
         });
     </script>
 
