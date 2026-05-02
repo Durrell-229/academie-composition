@@ -8,10 +8,39 @@ import os
 
 def link_callback(uri, rel):
     """Convert media/static URLs to absolute file paths for xhtml2pdf."""
+    import urllib.parse
+
+    if not uri:
+        return uri
+
+    # Decode URL-encoded characters (e.g. %20 for spaces)
+    uri = urllib.parse.unquote(uri)
+
+    # Handle media files
     if uri.startswith(settings.MEDIA_URL):
-        return os.path.join(settings.MEDIA_ROOT, uri.replace(settings.MEDIA_URL, ""))
+        rel_path = uri[len(settings.MEDIA_URL):]
+        abs_path = os.path.join(str(settings.MEDIA_ROOT), rel_path)
+        # Normalize path for Windows
+        return os.path.normpath(abs_path)
+
+    # Handle static files
     if uri.startswith(settings.STATIC_URL):
-        return os.path.join(settings.STATIC_ROOT, uri.replace(settings.STATIC_URL, ""))
+        rel_path = uri[len(settings.STATIC_URL):]
+        abs_path = os.path.join(str(settings.STATIC_ROOT), rel_path)
+        return os.path.normpath(abs_path)
+
+    # Handle relative paths starting with /media/ or /static/
+    if uri.startswith('/media/'):
+        rel_path = uri[7:]  # strip '/media/'
+        abs_path = os.path.join(str(settings.MEDIA_ROOT), rel_path)
+        return os.path.normpath(abs_path)
+
+    if uri.startswith('/static/'):
+        rel_path = uri[8:]  # strip '/static/'
+        abs_path = os.path.join(str(settings.STATIC_ROOT), rel_path)
+        return os.path.normpath(abs_path)
+
+    # Already absolute path or other URL — return as-is
     return uri
 
 
@@ -148,3 +177,8 @@ class BulletinService:
         if not pdf.err:
             return result.getvalue()
         return None
+
+    @staticmethod
+    def generate_pdf_from_bulletin(bulletin):
+        """Alias pour compatibilité — génère un bulletin administratif PDF."""
+        return BulletinService.generate_bulletin_administratif_pdf(bulletin)

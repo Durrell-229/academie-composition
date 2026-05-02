@@ -125,7 +125,23 @@ class MultiAIService:
     def correct_copy(self, corrige_type_text: str, copie_text: str, exam_info: dict) -> dict:
         """Corrige une copie d'élève par rapport à un corrigé type."""
         note_max = exam_info.get('note_maximale', 20)
+        corrige_doc_id = exam_info.get('corrige_doc_id', 'NON_SPECIFIE')
+        copie_doc_ids = exam_info.get('copie_doc_ids', [])
+        session_id = exam_info.get('session_id', 'NON_SPECIFIE')
+
+        # En-tête de traçabilité pour l'IA
+        tracking_header = f"""[TRAÇABILITÉ IA]
+- ID Session: {session_id}
+- ID Corrigé type: {corrige_doc_id}
+- ID Copie(s) élève: {', '.join(copie_doc_ids) if copie_doc_ids else 'Aucun fichier'}
+
+CORRIGE UNIQUEMENT la copie identifiée ci-dessus en utilisant le corrigé type identifié ci-dessus.
+NE JAMAIS mélanger avec une autre copie ou un autre corrigé.
+"""
+
         prompt = f"""Tu es un correcteur d'examens professionnel et strict pour les grandes écoles du Bénin.
+
+{tracking_header}
 
 INFORMATIONS DE L'EXAMEN :
 - Titre : {exam_info.get('titre', 'Épreuve')}
@@ -133,12 +149,12 @@ INFORMATIONS DE L'EXAMEN :
 - Note maximale : {note_max}
 - Niveau : {exam_info.get('niveau', 'Secondaire')}
 
-CORRIGÉ TYPE (référence absolue pour la correction) :
+CORRIGÉ TYPE (référence absolue pour la correction) — ID: {corrige_doc_id}:
 ---
 {corrige_type_text[:5000]}
 ---
 
-COPIE DE L'ÉLÈVE :
+COPIE DE L'ÉLÈVE — IDs: {', '.join(copie_doc_ids) if copie_doc_ids else 'Réponses texte'}:
 ---
 {copie_text[:5000]}
 ---

@@ -82,6 +82,8 @@ class StudentSubmissionFile(models.Model):
     session = models.ForeignKey(CompositionSession, on_delete=models.CASCADE, related_name='submission_files')
     fichier = models.ImageField(_('fichier'), upload_to='submissions/%Y/%m/')
     page_number = models.PositiveIntegerField(_('numéro de page'), default=1)
+    document_id = models.CharField(_('ID document'), max_length=32, blank=True, editable=False,
+                                   help_text='Identifiant unique pour le suivi IA')
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -91,6 +93,11 @@ class StudentSubmissionFile(models.Model):
 
     def __str__(self):
         return f"Page {self.page_number} - {self.session}"
+
+    def save(self, *args, **kwargs):
+        if not self.document_id:
+            self.document_id = f"COPIE-{self.session.id.hex[:8]}-{uuid.uuid4().hex[:8]}".upper()
+        super().save(*args, **kwargs)
 
 
 class Resultat(models.Model):

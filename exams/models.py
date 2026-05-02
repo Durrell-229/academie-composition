@@ -74,6 +74,8 @@ class ExamFile(models.Model):
     type_fichier = models.CharField(_('type de fichier'), max_length=20, choices=TypeFichier.choices)
     fichier = models.FileField(_('fichier'), upload_to='exams/%Y/%m/')
     nom_original = models.CharField(_('nom original'), max_length=255)
+    document_id = models.CharField(_('ID document'), max_length=32, blank=True, editable=False,
+                                   help_text='Identifiant unique pour le suivi IA')
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -82,6 +84,11 @@ class ExamFile(models.Model):
 
     def __str__(self):
         return f"{self.nom_original} ({self.get_type_fichier_display()})"
+
+    def save(self, *args, **kwargs):
+        if not self.document_id:
+            self.document_id = f"CORRIGE-{self.exam.id.hex[:8]}-{uuid.uuid4().hex[:8]}".upper()
+        super().save(*args, **kwargs)
 
 
 class ExamAssignment(models.Model):

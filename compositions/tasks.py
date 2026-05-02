@@ -4,6 +4,7 @@ from django.shortcuts import get_object_or_404
 from .models import CompositionSession, Resultat
 from ai_engine.multi_ai import multi_ai
 from ai_engine.services import extract_text_from_file
+from bulletins.services import link_callback
 from io import BytesIO
 from django.template.loader import render_to_string
 from xhtml2pdf import pisa
@@ -30,6 +31,7 @@ def process_ia_correction(session_id):
     corrige_file = exam.files.filter(type_fichier='corrige_type').first()
     corrige_text = ""
     corrige_hash = ""
+    corrige_doc_id = ""
     
     if not corrige_file:
         logger.error(f"[Correction] AUCUN CORRIGÉ TYPE pour l'examen {exam.id} - {exam.titre}")
@@ -54,7 +56,8 @@ def process_ia_correction(session_id):
         corrige_text = extract_text_from_file(corrige_file.fichier.path)
         # Hash du corrigé pour traçabilité
         corrige_hash = hashlib.sha256(corrige_text.encode('utf-8', errors='ignore')).hexdigest()[:16]
-        logger.info(f"[Correction] Corrigé type chargé: {corrige_file.fichier.path} (hash: {corrige_hash})")
+        corrige_doc_id = corrige_file.document_id  # ID unique du corrigé
+        logger.info(f"[Correction] Corrigé type chargé: {corrige_file.fichier.path} (hash: {corrige_hash}, doc_id: {corrige_doc_id})")
     except Exception as e:
         logger.error(f"[Correction] Erreur lecture corrigé type: {e}")
         corrige_text = ""
@@ -66,14 +69,17 @@ def process_ia_correction(session_id):
     copie_text = ""
     submission_files = session.submission_files.all()
     files_info = []
+    copie_doc_ids = []
     
     if submission_files.exists():
         for sub in submission_files:
             try:
                 text = extract_text_from_file(sub.fichier.path)
                 copie_text += text + "\n"
-                files_info.append({'file': str(sub.fichier.name), 'page': sub.page_number})
-                logger.info(f"[Correction] Copie page {sub.page_number} extraite: {sub.fichier.path}")
+                doc_id = getattr(sub, 'document_id', f"COPIE-{sub.id.hex[:8]}")
+                files_info.append({'file': str(sub.fichier.name), 'page': sub.page_number, 'document_id': doc_id})
+                copie_doc_ids.append(doc_id)
+                logger.info(f"[Correction] Copie page {sub.page_number} extraite: {sub.fichier.path} (doc_id: {doc_id})")
             except Exception as e:
                 logger.warning(f"[Correction] Erreur extraction page {sub.page_number}: {e}")
     
@@ -93,9 +99,12 @@ def process_ia_correction(session_id):
         'matiere': exam.matiere.nom if exam.matiere else 'Non spécifiée',
         'note_maximale': float(exam.note_maximale),
         'niveau': exam.matiere.niveau if hasattr(exam.matiere, 'niveau') else 'Secondaire',
+        'corrige_doc_id': corrige_doc_id,
+        'copie_doc_ids': copie_doc_ids,
+        'session_id': str(session.id),
     }
     
-    logger.info(f"[Correction] Appel IA avec corrigé ({len(corrige_text)} chars) et copie ({len(copie_text)} chars)")
+    logger.info(f"[Correction] Appel IA avec corrigé ({len(corrige_text)} chars) et copie ({len(copie_text)} chars) — corrige:{corrige_doc_id} copie:{copie_doc_ids}")
     correction_result = multi_ai.correct_copy(corrige_text, copie_text, exam_info)
 
     # ═══ 4. ENREGISTREMENT DU RÉSULTAT ═══
@@ -129,8 +138,10 @@ def process_ia_correction(session_id):
                 'details': correction_result.get('details', []),
                 'points_forts': correction_result.get('points_forts_global', ''),
                 'axes_amelioration': correction_result.get('axes_amelioration', ''),
-                'corrige_hash': corrige_hash,  # Traçabilité
-                'files_info': files_info,  # Traçabilité des copies
+                'corrige_hash': corrige_hash,
+                'corrige_doc_id': corrige_doc_id,
+                'copie_doc_ids': copie_doc_ids,
+                'files_info': files_info,
                 'nb_files': submission_files.count(),
                 'has_text_answer': answers.exists(),
             },
@@ -142,10 +153,13 @@ def process_ia_correction(session_id):
     
     # ═══ 5. GÉNÉRATION DU BULLETIN PDF ═══
     try:
-        context = {'resultat': resultat}
+        context = {
+            'resultat': resultat,
+            'annee_scolaire': '2025-2026',
+        }
         html = render_to_string('compositions/bulletin_resultat_benin.html', context)
         pdf_file = BytesIO()
-        pisa_status = pisa.CreatePDF(BytesIO(html.encode("UTF-8")), dest=pdf_file)
+        pisa_status = pisa.CreatePDF(BytesIO(html.encode("UTF-8")), dest=pdf_file, link_callback=link_callback)
         
         if not pisa_status.err:
             pdf_content = pdf_file.getvalue()
