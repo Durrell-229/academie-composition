@@ -31,10 +31,33 @@ ADMIN_PHONE = '+2290197650817'
 
 def _link_callback(uri, rel):
     """Convert media/static URLs to absolute file paths for xhtml2pdf."""
+    import urllib.parse
+
+    if not uri:
+        return uri
+
+    uri = urllib.parse.unquote(uri)
+
     if uri.startswith(settings.MEDIA_URL):
-        return os.path.join(settings.MEDIA_ROOT, uri.replace(settings.MEDIA_URL, ""))
+        rel_path = uri[len(settings.MEDIA_URL):]
+        abs_path = os.path.join(str(settings.MEDIA_ROOT), rel_path)
+        return os.path.normpath(abs_path)
+
     if uri.startswith(settings.STATIC_URL):
-        return os.path.join(settings.STATIC_ROOT, uri.replace(settings.STATIC_URL, ""))
+        rel_path = uri[len(settings.STATIC_URL):]
+        abs_path = os.path.join(str(settings.STATIC_ROOT), rel_path)
+        return os.path.normpath(abs_path)
+
+    if uri.startswith('/media/'):
+        rel_path = uri[7:]
+        abs_path = os.path.join(str(settings.MEDIA_ROOT), rel_path)
+        return os.path.normpath(abs_path)
+
+    if uri.startswith('/static/'):
+        rel_path = uri[8:]
+        abs_path = os.path.join(str(settings.STATIC_ROOT), rel_path)
+        return os.path.normpath(abs_path)
+
     return uri
 
 
@@ -391,6 +414,34 @@ def devoir_approuver_tous_view(request, pk):
 # ═══════════════════════════════════════════
 
 @login_required
+def prof_dashboard_view(request):
+    """Prof dashboard — shows devoirs with epreuve submission status."""
+    if request.user.role not in ('professeur', 'admin'):
+        messages.error(request, "Accès refusé.")
+        return redirect('dashboard')
+
+    # Get all active devoirs (brouillon, programme_publie, en_cours)
+    devoirs = Devoir.objects.filter(
+        statut__in=[Devoir.Statut.BROUILLON, Devoir.Statut.PROGRAMME_PUBLIE, Devoir.Statut.EN_COURS]
+    ).prefetch_related('matieres').order_by('-date_debut')
+
+    # Build data with submission status
+    devoirs_data = []
+    for devoir in devoirs:
+        for matiere in devoir.matieres.all():
+            dm = DevoirMatiere.objects.filter(devoir=devoir, matiere=matiere).first()
+            devoirs_data.append({
+                'devoir': devoir,
+                'matiere': matiere,
+                'epreuve': dm,
+            })
+
+    return render(request, 'devoirs/prof_dashboard.html', {
+        'devoirs_data': devoirs_data,
+    })
+
+
+@login_required
 def devoir_submit_epreuve_view(request, devoir_id, matiere_id):
     if request.user.role not in ('professeur', 'admin'):
         messages.error(request, "Accès refusé.")
@@ -700,6 +751,7 @@ def _corriger_copie_ia(reponse, devoir_matiere):
 
         # Extract text from the answer key (corrigé type)
         corrige_text = ""
+        corrige_doc_id = getattr(devoir_matiere, 'corrige_document_id', '')
         if devoir_matiere.corrige_type_file:
             corrige_path = devoir_matiere.corrige_type_file.path
             corrige_text = _extract_text_from_file(corrige_path)
@@ -716,13 +768,20 @@ def _corriger_copie_ia(reponse, devoir_matiere):
             devoir_matiere.devoir.coefficient_default
         )
 
+        copie_doc_id = getattr(reponse, 'copie_document_id', '')
+
         exam_info = {
             'titre': devoir_matiere.devoir.titre,
             'matiere': devoir_matiere.matiere.nom,
             'note_maximale': 20,
             'niveau': devoir_matiere.devoir.classes.first().nom if devoir_matiere.devoir.classes.exists() else 'Secondaire',
             'coefficient': float(coeff),
+            'corrige_doc_id': corrige_doc_id,
+            'copie_doc_ids': [copie_doc_id] if copie_doc_id else [],
+            'session_id': str(reponse.id),
         }
+
+        logger.info(f"[Devoirs IA] Correction: corrige={corrige_doc_id} copie={copie_doc_id} eleve={reponse.eleve.full_name}")
 
         # Call AI correction
         result = engine.correct_copy(corrige_text, copie_text, exam_info)

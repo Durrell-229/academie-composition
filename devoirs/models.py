@@ -59,6 +59,10 @@ class DevoirMatiere(models.Model):
     matiere = models.ForeignKey(Matiere, on_delete=models.CASCADE, related_name='devoir_matieres')
     epreuve_file = models.FileField(_('épreuve'), upload_to='devoirs/epreuves/%Y/%m/')
     corrige_type_file = models.FileField(_('corrigé type'), upload_to='devoirs/corriges/%Y/%m/')
+    epreuve_document_id = models.CharField(_('ID épreuve'), max_length=32, blank=True, editable=False,
+                                           help_text='Identifiant unique pour le suivi IA')
+    corrige_document_id = models.CharField(_('ID corrigé'), max_length=32, blank=True, editable=False,
+                                           help_text='Identifiant unique pour le suivi IA')
     soumis_par = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='devoirs_soumis')
     valide_par = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='devoirs_valides')
     statut = models.CharField(_('statut'), max_length=20, choices=StatutEP.choices, default=StatutEP.SOUMIS)
@@ -73,6 +77,13 @@ class DevoirMatiere(models.Model):
 
     def __str__(self):
         return f"{self.devoir.titre} — {self.matiere.nom}"
+
+    def save(self, *args, **kwargs):
+        if not self.epreuve_document_id:
+            self.epreuve_document_id = f"EPREUVE-{self.devoir.id.hex[:8]}-{self.matiere.id.hex[:8]}".upper()
+        if not self.corrige_document_id:
+            self.corrige_document_id = f"CORRIGE-DEV-{self.devoir.id.hex[:8]}-{self.matiere.id.hex[:8]}".upper()
+        super().save(*args, **kwargs)
 
 
 class DevoirComposition(models.Model):
@@ -161,6 +172,8 @@ class DevoirReponseEleve(models.Model):
     eleve = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='devoir_reponses')
     copie_file = models.FileField(_('copie de l\'élève'), upload_to='devoirs/copies/%Y/%m/', blank=True, null=True)
     copie_text = models.TextField(_('texte de la copie'), blank=True, default='')
+    copie_document_id = models.CharField(_('ID copie'), max_length=32, blank=True, editable=False,
+                                         help_text='Identifiant unique pour le suivi IA')
     statut = models.CharField(_('statut'), max_length=30, choices=StatutReponse.choices, default=StatutReponse.SOUMIS)
     note_ia = models.DecimalField(_('note IA'), max_digits=5, decimal_places=2, null=True, blank=True)
     note_finale = models.DecimalField(_('note finale'), max_digits=5, decimal_places=2, null=True, blank=True)
@@ -179,6 +192,11 @@ class DevoirReponseEleve(models.Model):
 
     def __str__(self):
         return f"{self.eleve.full_name} — {self.devoir_matiere.matiere.nom}"
+
+    def save(self, *args, **kwargs):
+        if not self.copie_document_id:
+            self.copie_document_id = f"COPIE-DEV-{self.devoir_matiere.id.hex[:8]}-{self.eleve.id.hex[:8]}".upper()
+        super().save(*args, **kwargs)
 
 
 class BulletinDevoir(models.Model):

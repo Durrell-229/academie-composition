@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+{% block title %}Espace Professeur — Devoirs Nationaux{% endblock %}
+{% block breadcrumb %}<a href="{% url 'dashboard' %}" class="hover:text-primary">Dashboard</a> <span class="mx-2 text-text-muted">/</span> <span class="text-text-primary">Devoirs Nationaux</span>{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <!-- Header -->
+  <div class="bg-bg-card rounded-2xl border border-border-standard p-6">
+    <h1 class="text-2xl font-black"><i class="fa-solid fa-chalkboard-user text-primary"></i> Espace Professeur — Devoirs Nationaux</h1>
+    <p class="text-text-muted text-sm mt-1">Soumettez les épreuves et corrigés types pour les devoirs assignés.</p>
+  </div>
+
+  <!-- Stats rapides -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    {% with pending=devoirs_data|length %}
+    <div class="bg-bg-card rounded-2xl border border-border-standard p-5 text-center">
+      <p class="text-3xl font-black text-warning">{{ devoirs_data|length }}</p>
+      <p class="text-sm text-text-muted">Épreuves à soumettre</p>
+    </div>
+    {% with soumis=devoirs_data|dictsort:"epreuve.statut" %}
+    <div class="bg-bg-card rounded-2xl border border-border-standard p-5 text-center">
+      <p class="text-3xl font-black text-info">{{ devoirs_data|length }}</p>
+      <p class="text-sm text-text-muted">Total matières</p>
+    </div>
+    <div class="bg-bg-card rounded-2xl border border-border-standard p-5 text-center">
+      <p class="text-3xl font-black text-success">{{ devoirs_data|length }}</p>
+      <p class="text-sm text-text-muted">Validées</p>
+    </div>
+    {% endwith %}
+    {% endwith %}
+  </div>
+
+  <!-- Liste des devoirs -->
+  {% regroup devoirs_data by devoir as devoir_groups %}
+
+  {% for group in devoir_groups %}
+  <div class="bg-bg-card rounded-2xl border border-border-standard p-6">
+    <div class="flex justify-between items-start mb-4">
+      <div>
+        <h2 class="text-xl font-black">{{ group.grouper.titre }}</h2>
+        <p class="text-sm text-text-muted">{{ group.grouper.annee_scolaire }} — {{ group.grouper.date_debut|date:"d/m/Y" }} au {{ group.grouper.date_fin|date:"d/m/Y" }}</p>
+        <p class="text-xs mt-1">{{ group.grouper.description }}</p>
+      </div>
+      <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase
+        {% if group.grouper.statut == 'brouillon' %}bg-bg-tertiary text-text-muted
+        {% elif group.grouper.statut == 'programme_publie' %}bg-info/10 text-info
+        {% elif group.grouper.statut == 'en_cours' %}bg-success/10 text-success
+        {% else %}bg-bg-tertiary text-text-muted{% endif %}">
+        {{ group.grouper.get_statut_display }}
+      </span>
+    </div>
+
+    <!-- Matières de ce devoir -->
+    <div class="space-y-3 mt-4">
+      {% for item in group.list %}
+      <div class="border border-border-standard rounded-xl p-4 flex justify-between items-center">
+        <div>
+          <h3 class="font-bold">{{ item.matiere.nom }}</h3>
+          <p class="text-xs text-text-muted">Coefficient: {{ group.grouper.coefficients_par_matiere|default:group.grouper.coefficient_default|default:"1" }}</p>
+        </div>
+        <div class="text-right">
+          {% if item.epreuve %}
+            {% if item.epreuve.statut == 'soumis' %}
+              <span class="text-[10px] bg-warning/10 text-warning px-2 py-1 rounded-full font-bold">Soumis — en attente de validation</span>
+              <div class="flex gap-2 mt-2 text-xs justify-end">
+                <a href="{{ item.epreuve.epreuve_file.url }}" target="_blank" class="text-primary hover:underline"><i class="fa-solid fa-eye"></i> Épreuve</a>
+                <a href="{{ item.epreuve.corrige_type_file.url }}" target="_blank" class="text-accent hover:underline"><i class="fa-solid fa-eye"></i> Corrigé</a>
+              </div>
+            {% elif item.epreuve.statut == 'valide' %}
+              <span class="text-[10px] bg-success/10 text-success px-2 py-1 rounded-full font-bold"><i class="fa-solid fa-check"></i> Validé</span>
+              <p class="text-[10px] text-text-muted mt-1">Par {{ item.epreuve.valide_par.get_full_name|default:"Admin" }}</p>
+              <div class="flex gap-2 mt-1 text-xs justify-end">
+                <a href="{{ item.epreuve.epreuve_file.url }}" target="_blank" class="text-primary hover:underline"><i class="fa-solid fa-download"></i> Épreuve</a>
+                <a href="{{ item.epreuve.corrige_type_file.url }}" target="_blank" class="text-accent hover:underline"><i class="fa-solid fa-download"></i> Corrigé</a>
+              </div>
+            {% elif item.epreuve.statut == 'rejete' %}
+              <span class="text-[10px] bg-danger/10 text-danger px-2 py-1 rounded-full font-bold"><i class="fa-solid fa-xmark"></i> Rejeté</span>
+              {% if item.epreuve.commentaire_admin %}
+                <p class="text-[10px] text-danger mt-1">Motif: {{ item.epreuve.commentaire_admin }}</p>
+              {% endif %}
+              <a href="{% url 'devoir_submit_epreuve' devoir_id=group.grouper.pk matiere_id=item.matiere.pk %}" class="mt-1 inline-block px-3 py-1 rounded-lg bg-primary/10 text-primary text-xs font-bold hover:bg-primary/20 transition"><i class="fa-solid fa-rotate"></i> Resoumettre</a>
+            {% endif %}
+          {% else %}
+            <span class="text-[10px] bg-bg-tertiary text-text-muted px-2 py-1 rounded-full">En attente de soumission</span>
+            <a href="{% url 'devoir_submit_epreuve' devoir_id=group.grouper.pk matiere_id=item.matiere.pk %}" class="mt-2 inline-block px-4 py-2 rounded-lg bg-primary text-white text-xs font-bold hover:bg-primary/80 transition shadow-lg">
+              <i class="fa-solid fa-upload"></i> Soumettre l'épreuve et le corrigé
+            </a>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% empty %}
+  <div class="bg-bg-card rounded-2xl border border-border-standard p-12 text-center">
+    <i class="fa-solid fa-folder-open text-5xl text-text-muted mb-4"></i>
+    <p class="font-bold text-text-muted">Aucun devoir national disponible pour le moment.</p>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

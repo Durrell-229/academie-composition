@@ -24,6 +24,7 @@ urlpatterns = [
     path('bulletin/<uuid:pk>/reject/', views.devoir_rejeter_bulletin_view, name='devoir_rejeter_bulletin'),
 
     # Prof: submit exam
+    path('prof/', views.prof_dashboard_view, name='prof_dashboard'),
     path('<uuid:devoir_id>/submit/<uuid:matiere_id>/', views.devoir_submit_epreuve_view, name='devoir_submit_epreuve'),
 
     # Eleve: programme + compose
