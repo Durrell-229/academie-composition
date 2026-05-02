@@ -7,13 +7,13 @@
 {% endblock %}
 
 {% block content %}
-<div class="space-y-6" x-data="{ filterType: 'all', filterPeriode: 'all' }">
+<div class="space-y-6">
 
   <!-- HEADER -->
   <div class="animate-in flex flex-col md:flex-row md:items-center justify-between gap-4">
     <div>
       <h1 class="text-2xl font-black tracking-tight">Mes <span class="gradient-text">Bulletins</span></h1>
-      <p class="text-sm text-text-muted mt-1">Consultez et téléchargez vos bulletins officiels (administratifs et professionnels)</p>
+      <p class="text-sm text-text-muted mt-1">Consultez et téléchargez vos bulletins officiels</p>
     </div>
     <div class="flex items-center gap-3">
       <span class="px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-xs font-bold flex items-center gap-2">
@@ -22,113 +22,71 @@
     </div>
   </div>
 
-  <!-- FILTRES -->
-  <div class="animate-in delay-1 glass rounded-2xl border border-border-standard p-4 flex flex-wrap items-center gap-4">
-    <div class="flex items-center gap-2 text-sm font-bold text-text-muted">
-      <i class="fa-solid fa-filter text-xs"></i> Filtrer :
-    </div>
-    <div class="flex items-center gap-2">
-      <button @click="filterType = 'all'" :class="filterType === 'all' ? 'bg-primary text-white' : 'bg-bg-tertiary/30 text-text-muted'" class="px-3 py-1.5 rounded-lg text-xs font-bold transition">Tous</button>
-      <button @click="filterType = 'administratif'" :class="filterType === 'administratif' ? 'bg-primary text-white' : 'bg-bg-tertiary/30 text-text-muted'" class="px-3 py-1.5 rounded-lg text-xs font-bold transition">Administratifs</button>
-      <button @click="filterType = 'professionnel'" :class="filterType === 'professionnel' ? 'bg-primary text-white' : 'bg-bg-tertiary/30 text-text-muted'" class="px-3 py-1.5 rounded-lg text-xs font-bold transition">Professionnels</button>
-    </div>
-    <div class="h-6 w-px bg-border-standard"></div>
-    <select x-model="filterPeriode" class="bg-bg-tertiary border border-border-standard rounded-lg px-3 py-1.5 text-xs font-bold text-white">
-      <option value="all">Toutes périodes</option>
-      <option value="T1">1er Trimestre</option>
-      <option value="T2">2ème Trimestre</option>
-      <option value="T3">3ème Trimestre</option>
-      <option value="S1">1er Semestre</option>
-      <option value="S2">2ème Semestre</option>
-      <option value="AN">Annuel</option>
-    </select>
-  </div>
-
   <!-- GRILLE DES BULLETINS -->
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in delay-2">
-    <template x-for="bulletin in [{{ bulletins|safe|join:',' }}]" :key="bulletin.id">
-      <div class="glass rounded-2xl border border-border-standard overflow-hidden hover-lift group"
-           x-show="(filterType === 'all' || bulletin.type === filterType) && (filterPeriode === 'all' || bulletin.periode === filterPeriode)"
-           x-transition>
-        <!-- Badge Type -->
-        <div class="h-2" :class="bulletin.type === 'administratif' ? 'bg-gradient-to-r from-primary to-secondary' : 'bg-gradient-to-r from-accent to-success'"></div>
-        
-        <div class="p-6">
-          <div class="flex items-start justify-between mb-4">
-            <div class="w-12 h-12 rounded-xl flex items-center justify-center"
-                 :class="bulletin.type === 'administratif' ? 'bg-primary/10 text-primary' : 'bg-accent/10 text-accent'">
-              <i class="fa-solid text-xl" :class="bulletin.type === 'administratif' ? 'fa-landmark' : 'fa-briefcase'"></i>
-            </div>
-            <span class="px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider"
-                  :class="bulletin.type === 'administratif' ? 'bg-primary/10 text-primary' : 'bg-accent/10 text-accent'"
-                  x-text="bulletin.type === 'administratif' ? 'Ministère' : 'Entreprise'"></span>
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    {% for b in bulletins %}
+    <div class="glass rounded-2xl border border-border-standard overflow-hidden hover-lift group">
+      <!-- Badge Type -->
+      <div class="h-2 {% if b.type_bulletin == 'administratif' %}bg-gradient-to-r from-primary to-secondary{% else %}bg-gradient-to-r from-accent to-success{% endif %}"></div>
+      
+      <div class="p-6">
+        <div class="flex items-start justify-between mb-4">
+          <div class="w-12 h-12 rounded-xl flex items-center justify-center {% if b.type_bulletin == 'administratif' %}bg-primary/10 text-primary{% else %}bg-accent/10 text-accent{% endif %}">
+            <i class="fa-solid text-xl {% if b.type_bulletin == 'administratif' %}fa-landmark{% else %}fa-briefcase{% endif %}"></i>
           </div>
+          <span class="px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider {% if b.type_bulletin == 'administratif' %}bg-primary/10 text-primary{% else %}bg-accent/10 text-accent{% endif %}">
+            {% if b.type_bulletin == 'administratif' %}Ministère{% else %}Entreprise{% endif %}
+          </span>
+        </div>
 
-          <h3 class="text-lg font-black text-white mb-1" x-text="bulletin.eleve"></h3>
-          <p class="text-xs text-text-muted mb-4" x-text="bulletin.classe + ' • ' + bulletin.annee"></p>
+        <h3 class="text-lg font-black text-white mb-1">{{ b.eleve.full_name }}</h3>
+        <p class="text-xs text-text-muted mb-4">{{ b.classe }} &bull; {{ b.annee_scolaire }}</p>
 
-          <div class="flex items-center justify-between mb-4 p-3 rounded-xl bg-bg-tertiary/30 border border-border-standard">
-            <div class="text-center">
-              <p class="text-[9px] font-black uppercase tracking-widest text-text-muted">Période</p>
-              <p class="text-sm font-bold text-white" x-text="bulletin.periodeLabel"></p>
-            </div>
-            <div class="h-8 w-px bg-border-standard"></div>
-            <div class="text-center">
-              <p class="text-[9px] font-black uppercase tracking-widest text-text-muted">Moyenne</p>
-              <p class="text-xl font-black" :class="bulletin.moyenne >= 16 ? 'note-excellent' : bulletin.moyenne >= 10 ? 'note-moyen' : 'note-insuffisant'" x-text="bulletin.moyenne + '/20'"></p>
-            </div>
-            <div class="h-8 w-px bg-border-standard"></div>
-            <div class="text-center">
-              <p class="text-[9px] font-black uppercase tracking-widest text-text-muted">Rang</p>
-              <p class="text-sm font-bold text-warning" x-text="bulletin.rang + '/' + bulletin.effectif"></p>
-            </div>
+        <div class="flex items-center justify-between mb-4 p-3 rounded-xl bg-bg-tertiary/30 border border-border-standard">
+          <div class="text-center">
+            <p class="text-[9px] font-black uppercase tracking-widest text-text-muted">Période</p>
+            <p class="text-sm font-bold text-white">{{ b.get_periode_display }}</p>
           </div>
-
-          <!-- Actions -->
-          <div class="flex items-center gap-2">
-            <a :href="'{% url 'bulletins:detail' 'PLACEHOLDER' %}'.replace('PLACEHOLDER', bulletin.id)" class="flex-1 py-2.5 rounded-xl bg-bg-tertiary/30 border border-border-standard text-xs font-bold text-white hover:bg-bg-tertiary/50 transition text-center">
-              <i class="fa-solid fa-eye mr-1"></i> Consulter
-            </a>
-            <a :href="'{% url 'bulletins:download' 'PLACEHOLDER' %}'.replace('PLACEHOLDER', bulletin.id)" class="py-2.5 px-3 rounded-xl text-xs font-bold text-white transition flex items-center gap-1"
-               :class="bulletin.type === 'administratif' ? 'bg-primary hover:bg-primary/80' : 'bg-accent hover:bg-accent/80'">
-              <i class="fa-solid fa-download"></i>
-            </a>
+          <div class="h-8 w-px bg-border-standard"></div>
+          <div class="text-center">
+            <p class="text-[9px] font-black uppercase tracking-widest text-text-muted">Moyenne</p>
+            <p class="text-xl font-black {% if b.moyenne_generale >= 16 %}text-green-400{% elif b.moyenne_generale >= 10 %}text-warning{% else %}text-danger{% endif %}">{{ b.moyenne_generale|floatformat:1 }}/20</p>
+          </div>
+          <div class="h-8 w-px bg-border-standard"></div>
+          <div class="text-center">
+            <p class="text-[9px] font-black uppercase tracking-widest text-text-muted">Rang</p>
+            <p class="text-sm font-bold text-warning">{{ b.rang }}/{{ b.effectif_total|default:0 }}</p>
           </div>
         </div>
-      </div>
-    </template>
-  </div>
 
-  {% if bulletins %}
-  <!-- DATA JSON pour Alpine.js -->
-  <script>
-    const bulletinsData = [
-      {% for b in bulletins %}
-      {
-        id: '{{ b.id }}',
-        type: '{{ b.type_bulletin }}',
-        eleve: '{{ b.eleve.full_name|escapejs }}',
-        classe: '{{ b.classe|escapejs }}',
-        annee: '{{ b.annee_scolaire|escapejs }}',
-        periode: '{{ b.periode }}',
-        periodeLabel: '{{ b.get_periode_display|escapejs }}',
-        moyenne: {{ b.moyenne_generale|floatformat:1 }},
-        rang: {{ b.rang }},
-        effectif: {{ b.effectif_total|default:0 }}
-      }{% if not forloop.last %},{% endif %}
-      {% endfor %}
-    ];
-  </script>
-  {% else %}
-  <!-- EMPTY STATE -->
-  <div class="animate-in delay-2 py-20 text-center bg-bg-secondary/20 rounded-[3rem] border-2 border-dashed border-bg-secondary">
-    <div class="w-20 h-20 rounded-full bg-bg-tertiary/30 flex items-center justify-center mx-auto mb-4">
-      <i class="fa-solid fa-file-invoice text-4xl text-text-muted opacity-30"></i>
+        <!-- Actions -->
+        <div class="flex items-center gap-2">
+          <a href="{% url 'bulletins:detail' b.id %}" class="flex-1 py-2.5 rounded-xl bg-bg-tertiary/30 border border-border-standard text-xs font-bold text-white hover:bg-bg-tertiary/50 transition text-center">
+            <i class="fa-solid fa-eye mr-1"></i> Consulter
+          </a>
+          {% if b.file_pdf %}
+          <a href="{% url 'bulletins:download' b.id %}" class="py-2.5 px-3 rounded-xl text-xs font-bold text-white transition flex items-center gap-1 {% if b.type_bulletin == 'administratif' %}bg-primary hover:bg-primary/80{% else %}bg-accent hover:bg-accent/80{% endif %}">
+            <i class="fa-solid fa-download"></i>
+          </a>
+          {% else %}
+          <a href="{% url 'bulletins:generate' b.id %}" class="py-2.5 px-3 rounded-xl text-xs font-bold text-white transition flex items-center gap-1 bg-warning/80 hover:bg-warning/60">
+            <i class="fa-solid fa-file-pdf"></i>
+          </a>
+          {% endif %}
+        </div>
+      </div>
     </div>
-    <p class="text-lg font-bold text-white mb-2">Aucun bulletin disponible</p>
-    <p class="text-sm text-text-muted">Vos bulletins seront générés automatiquement après la correction de vos compositions.</p>
+    {% empty %}
+    <!-- EMPTY STATE -->
+    <div class="col-span-full animate-in delay-2 py-20 text-center bg-bg-secondary/20 rounded-[3rem] border-2 border-dashed border-bg-secondary">
+      <div class="w-20 h-20 rounded-full bg-bg-tertiary/30 flex items-center justify-center mx-auto mb-4">
+        <i class="fa-solid fa-file-invoice text-4xl text-text-muted opacity-30"></i>
+      </div>
+      <p class="text-lg font-bold text-white mb-2">Aucun bulletin disponible</p>
+      <p class="text-sm text-text-muted">Vos bulletins seront générés automatiquement après la correction de vos compositions.</p>
+    </div>
+    {% endfor %}
   </div>
-  {% endif %}
 
 </div>
 {% endblock %}
