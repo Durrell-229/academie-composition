@@ -543,6 +543,8 @@ def register_view(request):
                     niveau=niveau,
                     classe=classe,
                 )
+                # Explicitly set auth backend for multi-backend setup
+                user.backend = 'django.contrib.auth.backends.ModelBackend'
                 login(request, user)
                 messages.success(request, f"Bienvenue, {first_name} ! Votre compte a été créé.")
                 return redirect('dashboard')
