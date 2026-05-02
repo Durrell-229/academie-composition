@@ -199,6 +199,9 @@ SESSION_COOKIE_SECURE = not DEBUG
 # Laravel SSO Integration
 LARAVEL_API_URL = os.environ.get('LARAVEL_API_URL', 'http://localhost:8000')
 
+# Redis (background task queue — no Celery)
+REDIS_URL = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
+
 # Auth backends
 AUTHENTICATION_BACKENDS = [
     'accounts.laravel_auth.LaravelAuthBackend',

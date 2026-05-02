@@ -4,10 +4,12 @@ from django.conf import settings
 from django.utils import timezone
 
 from .models import EmailQueue, Notification
+from core.redis_tasks import redis_task
 
 logger = logging.getLogger(__name__)
 
 
+@redis_task('send_notification_email')
 def send_notification_email(notification_id: str):
     try:
         notif = Notification.objects.get(id=notification_id)

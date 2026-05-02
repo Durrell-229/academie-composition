@@ -33,6 +33,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     matricule = models.CharField(_('matricule'), max_length=50, blank=True, unique=True, null=True)
     avatar = models.ImageField(_('photo de profil'), upload_to='profiles/', blank=True, null=True)
     bio = models.TextField(_('biographie'), blank=True)
+    sexe = models.CharField(_('sexe'), max_length=10, blank=True, default='',
+                            choices=[('Masculin', 'Masculin'), ('Féminin', 'Féminin')])
     xp = models.PositiveIntegerField(_('XP'), default=0)
 
     # Laravel SSO fields

@@ -4,10 +4,12 @@ from itertools import combinations
 
 from .models import PlagiarismCheck, PlagiarismPair, PlagiarismReport
 from compositions.models import CompositionSession, StudentAnswer
+from core.redis_tasks import redis_task
 
 logger = logging.getLogger(__name__)
 
 
+@redis_task('run_plagiarism_check')
 def run_plagiarism_check(check_id: str):
     try:
         check = PlagiarismCheck.objects.select_related('exam').get(id=check_id)

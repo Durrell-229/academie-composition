@@ -13,10 +13,12 @@ from reportlab.graphics.shapes import Drawing, Rect, String
 from reportlab.graphics import renderPDF
 
 from .models import Certificate
+from core.redis_tasks import redis_task
 
 logger = logging.getLogger(__name__)
 
 
+@redis_task('generate_certificate_pdf')
 def generate_certificate_pdf(certificate_id: str):
     try:
         cert = Certificate.objects.select_related('eleve', 'matiere', 'delivre_par').get(id=certificate_id)

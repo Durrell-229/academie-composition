@@ -90,9 +90,9 @@ def submit_paper_view(request, session_id):
         # Submit the session
         session.submit()
         
-        # Déclenchement synchrone de la correction IA
+        # Correction IA asynchrone via Redis
         from .tasks import process_ia_correction
-        process_ia_correction(session.id)
+        process_ia_correction.delay(str(session.id))
         
         messages.success(request, "Votre composition a été soumise avec succès. La correction IA est en cours.")
         return redirect('result_detail', session_id=session.id)

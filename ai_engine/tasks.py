@@ -1,8 +1,12 @@
 import logging
 from correction.models import CorrectionCopie, StatutCorrection
 
+from core.redis_tasks import redis_task
+
 logger = logging.getLogger(__name__)
 
+
+@redis_task('process_ai_correction')
 def process_ai_correction(correction_id, model_answer_path, student_pages_paths, instructions=""):
     """Fonction synchrone de correction IA via le service dédié."""
     try:

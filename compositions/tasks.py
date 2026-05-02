@@ -9,10 +9,14 @@ from django.template.loader import render_to_string
 from xhtml2pdf import pisa
 from django.core.files.base import ContentFile
 
+from core.redis_tasks import redis_task
+
 logger = logging.getLogger(__name__)
 
+
+@redis_task('process_ia_correction')
 def process_ia_correction(session_id):
-    """Fonction synchrone pour corriger une copie via l'IA avec chaîne de vérification stricte."""
+    """Correction asynchrone via IA avec chaîne de vérification stricte."""
     try:
         session = CompositionSession.objects.get(id=session_id)
     except CompositionSession.DoesNotExist:
@@ -199,7 +203,7 @@ def process_ia_correction(session_id):
             cert.generate_signature()
             cert.save()
             from certifications.tasks import generate_certificate_pdf
-            generate_certificate_pdf(str(cert.id))
+            generate_certificate_pdf.delay(str(cert.id))
             logger.info(f"[Correction] Certificat généré: {cert.id}")
     except Exception as e:
         logger.warning(f"[Correction] Erreur certificat: {e}")

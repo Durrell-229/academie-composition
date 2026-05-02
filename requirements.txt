@@ -133,3 +133,4 @@ zipp==3.23.1
 zopfli==0.4.1
 dj_database_url
 psycopg2-binary
+redis

@@ -84,9 +84,9 @@ def submit_composition(request, session_id: uuid.UUID):
         
     session.submit()
     
-    # Déclenchement synchrone de la correction IA
+    # Correction IA asynchrone via Redis
     from compositions.tasks import process_ia_correction
-    process_ia_correction(str(session.id))
+    process_ia_correction.delay(str(session.id))
     
     return {"message": "Examen soumis. Correction IA en cours.", "status": session.statut}
 

@@ -18,7 +18,12 @@ def link_callback(uri, rel):
 class BulletinService:
     @staticmethod
     def generate_bulletin_administratif_pdf(bulletin):
-        """Génère un bulletin administratif PDF (format officiel Ministère)."""
+        """Génère un bulletin administratif PDF (format officiel Ministère Bénin)."""
+        lignes = list(bulletin.lignes.all())
+        
+        # Calculer total moy*coeff
+        total_moy_coeff = sum(l.note * l.coefficient for l in lignes) if lignes else 0
+
         context = {
             'bulletin': bulletin,
             'eleve': bulletin.eleve,
@@ -30,9 +35,17 @@ class BulletinService:
             'appreciation': bulletin.appreciation_ia,
             'decision': bulletin.decision_conseil,
             'annee_scolaire': bulletin.annee_scolaire,
-            'lignes': bulletin.lignes.all(),
+            'lignes': lignes,
             'verification_token': bulletin.verification_token,
             'signature': hashlib.sha256(f"{bulletin.id}{bulletin.verification_token}".encode()).hexdigest()[:16],
+            # Nouveaux champs
+            'retards': bulletin.retards,
+            'minutes_retard': bulletin.minutes_retard,
+            'absences': bulletin.absences,
+            'heures_absences': bulletin.heures_absences,
+            'comportement': bulletin.comportement,
+            'observation': bulletin.observation_conseil or "Travail satisfaisant. Continue dans cette voie.",
+            'total_moy_coeff': round(total_moy_coeff, 2),
         }
 
         html = render_to_string('bulletins/bulletin_administratif_pdf.html', context)

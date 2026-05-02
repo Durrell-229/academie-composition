@@ -13,11 +13,11 @@ def run_plagiarism_check_view(request, exam_id):
     exam = get_object_or_404(Exam, id=exam_id)
     check = PlagiarismCheck.objects.create(exam=exam, declenche_par=request.user)
     
-    # Exécution synchrone de la vérification de plagiat
+    # Vérification de plagiat asynchrone via Redis
     from .tasks import run_plagiarism_check
-    run_plagiarism_check(str(check.id))
+    run_plagiarism_check.delay(str(check.id))
     
-    return JsonResponse({'check_id': str(check.id), 'status': 'completed'})
+    return JsonResponse({'check_id': str(check.id), 'status': 'queued'})
 
 
 @login_required

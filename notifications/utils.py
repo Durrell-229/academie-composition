@@ -9,11 +9,11 @@ def send_notification(user, title, message, link=None, type='INSCRIPTION'):
         message=message,
         type=type
     )
-    # Envoi email synchrone si l'utilisateur a un email
+    # Envoi email asynchrone via Redis si l'utilisateur a un email
     if user.email:
         try:
             from .tasks import send_notification_email
-            send_notification_email(str(notif.id))
+            send_notification_email.delay(str(notif.id))
         except Exception:
             pass  # Email optionnel, ne pas bloquer la notification
     return notif

@@ -1,0 +1,50 @@
+services:
+  - type: web
+    name: academie-numerique
+    env: python
+    region: frankfurt
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn academie_numerique.wsgi:application
+    envVars:
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: false
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: academie-redis
+          property: connectionString
+      - key: DB_ENGINE
+        value: sqlite3
+      - key: AI_PROVIDER
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+
+  - type: worker
+    name: academie-worker
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python manage.py run_worker
+    envVars:
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: academie-redis
+          property: connectionString
+      - key: DJANGO_SECRET_KEY
+        fromService:
+          type: web
+          name: academie-numerique
+          envVarKey: DJANGO_SECRET_KEY
+
+  - type: redis
+    name: academie-redis
+    plan: free
+    ipAllowList: []
+    maxmemoryPolicy: noeviction
