@@ -2,229 +2,347 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Bulletin de Composition</title>
     <style>
-        @page {
-            size: A4 portrait;
-            margin: 2cm;
-        }
-        body {
-            font-family: Helvetica, Arial, sans-serif;
-            font-size: 12pt;
-            color: #0F172A;
-        }
-        .header-table {
-            width: 100%;
-            text-align: center;
-            font-size: 10pt;
-            margin-bottom: 20px;
-        }
-        .header-left, .header-right {
-            width: 45%;
-            vertical-align: top;
-        }
-        .header-center {
-            width: 10%;
-            vertical-align: middle;
-        }
-        .republique {
-            font-weight: bold;
-            font-size: 12pt;
-            text-transform: uppercase;
-        }
-        .ministere {
-            font-size: 10pt;
-            margin-top: 5px;
-        }
-        .title {
-            text-align: center;
-            font-size: 16pt;
-            font-weight: bold;
-            text-transform: uppercase;
-            text-decoration: underline;
-            margin: 20px 0;
-            padding: 10px;
-            background-color: #E2E8F0;
-            border: 1px solid #475569;
-        }
-        .info-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 20px;
-        }
-        .info-table td {
-            padding: 5px;
-            font-size: 11pt;
-        }
-        .info-label {
-            font-weight: bold;
-            width: 25%;
-        }
-        .info-value {
-            border-bottom: 1px dotted #475569;
-            width: 75%;
-        }
-        .result-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 20px;
-        }
-        .result-table th, .result-table td {
-            border: 1px solid #475569;
-            padding: 10px;
-            text-align: center;
-        }
-        .result-table th {
-            background-color: #CBD5E1;
-            font-weight: bold;
-        }
-        .details-section {
-            margin-top: 20px;
-            border: 1px solid #475569;
-            padding: 15px;
-        }
-        .details-title {
-            font-weight: bold;
-            text-decoration: underline;
-            margin-bottom: 10px;
-        }
-        .signature-table {
-            width: 100%;
-            margin-top: 40px;
-        }
-        .signature-table td {
-            text-align: center;
-            font-weight: bold;
-            width: 50%;
-        }
-        .watermark {
-            position: absolute;
-            top: 30%;
-            left: 20%;
-            opacity: 0.1;
-            font-size: 60pt;
-            transform: rotate(-45deg);
-            z-index: -1;
-            color: #475569;
-        }
+        @page { size: A4; margin: 8mm 10mm; }
+        body { font-family: 'Times New Roman', serif; color: #000; font-size: 8.5pt; line-height: 1.2; margin: 0; padding: 0; }
+
+        /* Drapeau Benin horizontal */
+        .flag-header { width: 100%; height: 8mm; margin-bottom: 3mm; }
+        .flag-header .green { background-color: #008751; width: 100%; height: 33.33%; }
+        .flag-header .yellow { background-color: #FCD116; width: 100%; height: 33.33%; }
+        .flag-header .red { background-color: #E8112D; width: 100%; height: 33.34%; }
+
+        /* En-tete officiel */
+        .header-row { display: table; width: 100%; margin-bottom: 3mm; }
+        .header-row td { display: table-cell; vertical-align: top; }
+        .header-left { width: 18mm; text-align: center; }
+        .header-center { text-align: center; }
+        .header-right { width: 18mm; text-align: center; }
+
+        .flag-benin-v { width: 16mm; height: 10mm; border: 1px solid #000; margin: 0 auto; }
+        .flag-benin-v .green { background-color: #008751; width: 40%; height: 100%; float: left; }
+        .flag-benin-v .yellow { background-color: #FCD116; width: 30%; height: 50%; float: right; }
+        .flag-benin-v .red { background-color: #E8112D; width: 30%; height: 50%; float: right; clear: none; }
+
+        .republique { font-size: 9pt; font-weight: bold; text-transform: uppercase; margin: 0; }
+        .ministere { font-size: 7.5pt; font-weight: bold; margin: 0.5mm 0; }
+        .etablissement { font-size: 9.5pt; font-weight: bold; font-style: italic; color: #006633; margin: 0.5mm 0; }
+        .annee-scolaire { font-size: 8.5pt; font-weight: bold; }
+
+        .armoiries { width: 15mm; height: 15mm; margin: 0 auto; }
+
+        /* Info eleve */
+        .info-section { border: 1px solid #000; margin-bottom: 2mm; padding: 1.5mm 2mm; }
+        .info-grid { display: table; width: 100%; }
+        .info-grid td { display: table-cell; padding: 0.5mm 1.5mm; font-size: 8.5pt; border: none; }
+        .info-label { font-weight: bold; white-space: nowrap; }
+        .info-value { border-bottom: 1px dotted #333; }
+        .photo-box { width: 16mm; height: 20mm; border: 1px solid #000; text-align: center; vertical-align: middle; background: #f5f5f5; font-size: 7pt; color: #666; }
+
+        /* Titre */
+        .titre-bulletin { text-align: center; font-size: 11pt; font-weight: bold; text-transform: uppercase; border: 2px solid #000; padding: 1.5mm; margin: 2mm 0; background-color: #f0f0f0; letter-spacing: 1px; }
+
+        /* Tableau des notes */
+        .table-notes { width: 100%; border-collapse: collapse; margin: 2mm 0; font-size: 7.5pt; }
+        .table-notes th { background-color: #e0e0e0; border: 1px solid #000; padding: 1.5mm 0.5mm; text-align: center; font-size: 6.5pt; font-weight: bold; text-transform: uppercase; }
+        .table-notes td { border: 1px solid #000; padding: 1.5mm 0.5mm; text-align: center; }
+        .table-notes td:first-child { text-align: left; font-weight: bold; }
+        .table-notes tfoot td { background-color: #f8f8f8; font-weight: bold; }
+
+        .note-excellente { color: #006600; font-weight: bold; }
+        .note-moyenne { color: #cc6600; }
+        .note-faible { color: #cc0000; }
+
+        /* Resultats */
+        .resultats-row { display: table; width: 100%; margin: 2mm 0; }
+        .resultats-row td { display: table-cell; border: 1px solid #000; padding: 1.5mm; font-size: 8.5pt; }
+        .resultats-label { font-weight: bold; }
+
+        /* Comportement */
+        .comportement-table { width: 100%; border-collapse: collapse; margin: 2mm 0; font-size: 7pt; }
+        .comportement-table th { background-color: #e0e0e0; border: 1px solid #000; padding: 1.5mm; text-align: center; font-size: 6.5pt; font-weight: bold; }
+        .comportement-table td { border: 1px solid #000; padding: 1.5mm; text-align: center; }
+        .comportement-table td:first-child { text-align: left; font-weight: bold; }
+        .check { font-size: 9pt; font-weight: bold; }
+        .check-yes { color: #006600; }
+
+        /* Observations */
+        .observations-box { border: 1px solid #000; padding: 1.5mm 2mm; margin: 2mm 0; min-height: 10mm; }
+        .observations-box h4 { margin: 0 0 1mm 0; font-size: 7.5pt; font-weight: bold; text-transform: uppercase; }
+        .observations-box p { margin: 0; font-size: 8.5pt; }
+
+        /* Signature */
+        .signature-section { display: table; width: 100%; margin-top: 4mm; }
+        .signature-section td { display: table-cell; width: 50%; vertical-align: top; text-align: center; }
+        .signature-block .titre-sig { font-weight: bold; font-size: 8.5pt; margin-bottom: 8mm; }
+
+        /* Footer */
+        .footer-section { margin-top: 3mm; border-top: 1px solid #000; padding-top: 1.5mm; display: table; width: 100%; }
+        .footer-section td { display: table-cell; width: 33.33%; text-align: center; vertical-align: top; }
+        .qr-code { width: 18mm; height: 18mm; border: 1px solid #ccc; margin: 0 auto; }
+        .footer-mentions { font-size: 5.5pt; color: #666; text-align: center; margin-top: 1mm; }
+        .footer-legal { font-size: 5.5pt; margin-top: 1.5mm; text-align: center; color: #999; }
+
+        /* Drapeau footer */
+        .flag-footer { width: 100%; height: 5mm; margin-top: 2mm; }
+        .flag-footer .green { background-color: #008751; width: 100%; height: 33.33%; }
+        .flag-footer .yellow { background-color: #FCD116; width: 100%; height: 33.33%; }
+        .flag-footer .red { background-color: #E8112D; width: 100%; height: 33.34%; }
     </style>
 </head>
 <body>
-
-    <div class="watermark">ACADÉMIE NUMÉRIQUE</div>
-
-    <table class="header-table">
-        <tr>
-            <td class="header-left">
-                MINISTÈRE DES ENSEIGNEMENTS SECONDAIRE, TECHNIQUE ET DE LA FORMATION PROFESSIONNELLE<br>
-                <hr style="width: 50%; margin: 5px auto;">
-                DIRECTION DÉPARTEMENTALE DE L'ENSEIGNEMENT<br>
-                <hr style="width: 50%; margin: 5px auto;">
-                <strong>ACADÉMIE NUMÉRIQUE D'EXCELLENCE</strong>
-            </td>
-            <td class="header-center">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Coat_of_arms_of_Benin.svg/200px-Coat_of_arms_of_Benin.svg.png" width="60" alt="Armoiries">
-            </td>
-            <td class="header-right">
-                <span class="republique">RÉPUBLIQUE DU BÉNIN</span><br>
-                <em>Fraternité - Justice - Travail</em><br>
-                <hr style="width: 50%; margin: 5px auto;">
-                Année Scolaire : 2025 - 2026<br>
-                Imprimé le : {% now "d/m/Y" %}
-            </td>
-        </tr>
-    </table>
-
-    <div class="title">RELEVÉ DE NOTE ADMINISTRATIF</div>
-
-    <table class="info-table">
-        <tr>
-            <td style="width: 75%; vertical-align: top;">
-                <table style="width: 100%;">
-                    <tr>
-                        <td class="info-label" style="width: 35%;">Nom et Prénom(s) :</td>
-                        <td class="info-value" style="width: 65%;">{{ resultat.session.eleve.last_name|upper }} {{ resultat.session.eleve.first_name }}</td>
-                    </tr>
-                    <tr>
-                        <td class="info-label">Matricule :</td>
-                        <td class="info-value">{{ resultat.session.eleve.matricule|default:"N/A" }}</td>
-                    </tr>
-                    <tr>
-                        <td class="info-label">Classe :</td>
-                        <td class="info-value">{{ resultat.session.eleve.classe|default:"N/A" }}</td>
-                    </tr>
-                    <tr>
-                        <td class="info-label">Évaluation :</td>
-                        <td class="info-value">{{ resultat.session.exam.titre }} ({{ resultat.session.exam.get_type_exam_display }})</td>
-                    </tr>
-                    <tr>
-                        <td class="info-label">Matière :</td>
-                        <td class="info-value">{{ resultat.session.exam.matiere.nom|default:"Général" }}</td>
-                    </tr>
-                </table>
-            </td>
-            <td style="width: 25%; text-align: center; vertical-align: top;">
-                {% if resultat.session.eleve.avatar %}
-                <div style="width: 100px; height: 120px; border: 1px solid #475569; padding: 2px; margin: 0 auto;">
-                    <img src="{{ resultat.session.eleve.avatar.path }}" style="width: 100%; height: 100%;" alt="Photo de l'élève">
-                </div>
-                {% else %}
-                <div style="width: 100px; height: 120px; border: 1px solid #475569; padding: 2px; margin: 0 auto; background-color: #E2E8F0; text-align: center; line-height: 120px; font-size: 8pt; color: #94A3B8;">
-                    Pas de photo
-                </div>
-                {% endif %}
-            </td>
-        </tr>
-    </table>
-
-    <table class="result-table">
-        <tr>
-            <th>Coefficient</th>
-            <th>Note Obtenue (sur {{ resultat.note_sur|floatformat:0 }})</th>
-            <th>Note Définitive (Note × Coef)</th>
-            <th>Rang</th>
-            <th>Mention</th>
-        </tr>
-        <tr>
-            <td>{{ resultat.session.exam.coefficient|floatformat:1 }}</td>
-            <td style="font-weight: bold; font-size: 14pt;">{{ resultat.note }}</td>
-            <td style="font-weight: bold;">
-                {% widthratio resultat.note 1 resultat.session.exam.coefficient %}
-            </td>
-            <td>{% if resultat.classement > 0 %}{{ resultat.classement }}{% if resultat.classement == 1 %}er{% else %}ème{% endif %} / {{ resultat.total_participants }}{% else %}N/A{% endif %}</td>
-            <td>{{ resultat.get_mention_display|default:"-" }}</td>
-        </tr>
-    </table>
-
-    <div class="details-section">
-        <div class="details-title">APPRÉCIATION DU CORRECTEUR :</div>
-        <p>{{ resultat.appreciation|default:"Aucune appréciation générale." }}</p>
-
-        {% if resultat.details_correction.points_forts %}
-        <div class="details-title" style="margin-top: 15px;">POINTS FORTS :</div>
-        <p>{{ resultat.details_correction.points_forts }}</p>
-        {% endif %}
-
-        {% if resultat.details_correction.axes_amelioration %}
-        <div class="details-title" style="margin-top: 15px;">AXES D'AMÉLIORATION :</div>
-        <p>{{ resultat.details_correction.axes_amelioration }}</p>
-        {% endif %}
+    <!-- Drapeau Benin header -->
+    <div class="flag-header">
+        <div class="green"></div>
+        <div class="yellow"></div>
+        <div class="red"></div>
     </div>
 
-    <table class="signature-table">
+    <!-- En-tete officiel -->
+    <table class="header-row">
         <tr>
-            <td>
-                Le Correcteur / L'IA Évaluatrice<br>
-                <br><br><br>
-                <em>{% if resultat.corrige_par_ia %}Système IA Académie Numérique{% else %}{{ resultat.corrigeur.full_name }}{% endif %}</em>
+            <td class="header-left">
+                <div class="flag-benin-v">
+                    <div class="green"></div>
+                    <div class="yellow"></div>
+                    <div class="red"></div>
+                </div>
             </td>
-            <td>
-                Le Directeur des Études<br>
-                <br><br><br>
-                <em>Cachet et Signature</em>
+            <td class="header-center">
+                <p class="republique">Republique du Benin</p>
+                <p class="ministere">Ministere de l'Enseignement Secondaire,<br>Technique et de la Formation Professionnelle</p>
+                <p class="etablissement">ACADEMIE NUMERIQUE INTELLIGENTE</p>
+                <p class="annee-scolaire">ANNEE SCOLAIRE : {{ annee_scolaire|default:"2025-2026" }}</p>
+            </td>
+            <td class="header-right">
+                <svg class="armoiries" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="10" y="5" width="80" height="90" rx="5" fill="#fff" stroke="#000" stroke-width="2"/>
+                    <rect x="15" y="10" width="70" height="25" fill="#008751"/>
+                    <rect x="15" y="35" width="70" height="25" fill="#FCD116"/>
+                    <rect x="15" y="60" width="70" height="25" fill="#E8112D"/>
+                    <circle cx="50" cy="72" r="8" fill="#000"/>
+                    <polygon points="50,40 45,55 55,55" fill="#FCD116"/>
+                    <text x="50" y="82" text-anchor="middle" font-size="6" fill="#fff" font-weight="bold">BENIN</text>
+                </svg>
             </td>
         </tr>
     </table>
 
+    <!-- Informations Eleve -->
+    <div class="info-section">
+        <table class="info-grid">
+            <tr>
+                <td style="width: 18mm; vertical-align: top; padding-right: 2mm;" rowspan="4">
+                    <div class="photo-box">
+                        {% if resultat.session.eleve.avatar %}
+                        <img src="{{ resultat.session.eleve.avatar.url }}" style="width:100%;height:100%;object-fit:cover;">
+                        {% else %}
+                        Photo
+                        {% endif %}
+                    </div>
+                </td>
+                <td class="info-label">Nom :</td>
+                <td class="info-value" style="width: 30%;">{{ resultat.session.eleve.last_name|upper }}</td>
+                <td class="info-label">Sexe :</td>
+                <td class="info-value">{{ resultat.session.eleve.sexe|default:"Masculin" }}</td>
+            </tr>
+            <tr>
+                <td class="info-label">Prenom(s) :</td>
+                <td class="info-value">{{ resultat.session.eleve.first_name }}</td>
+                <td class="info-label">Date naissance :</td>
+                <td class="info-value">{{ resultat.session.eleve.profile.birth_date|date:"d/m/Y"|default:"N/A" }}</td>
+            </tr>
+            <tr>
+                <td class="info-label">Classe :</td>
+                <td class="info-value">{{ resultat.session.eleve.classe|default:"N/A" }}</td>
+                <td class="info-label">Effectif :</td>
+                <td class="info-value">{{ resultat.total_participants|default:"N/A" }}</td>
+            </tr>
+            <tr>
+                <td class="info-label">Matricule :</td>
+                <td class="info-value">{{ resultat.session.eleve.matricule|default:"N/A" }}</td>
+                <td class="info-label">Moyenne Generale :</td>
+                <td class="info-value" style="font-weight:bold; font-size:9.5pt;">{{ resultat.note }}/{{ resultat.note_sur|floatformat:0 }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- Titre -->
+    <div class="titre-bulletin">
+        BULLETIN DE NOTES — {{ resultat.session.exam.titre|default:"Composition" }}
+    </div>
+
+    <!-- Tableau des Notes -->
+    <table class="table-notes">
+        <thead>
+            <tr>
+                <th style="width: 30%;">Discipline</th>
+                <th style="width: 8%;">Devoir</th>
+                <th style="width: 8%;">Controle</th>
+                <th style="width: 8%;">Moy</th>
+                <th style="width: 6%;">Coeff</th>
+                <th style="width: 10%;">Moy*Coeff</th>
+                <th style="width: 6%;">Rang</th>
+                <th style="width: 24%;">Appreciation</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>{{ resultat.session.exam.matiere.nom|default:"Evaluation" }}</td>
+                <td>-</td>
+                <td>{{ resultat.note }}</td>
+                <td class="{% if resultat.note >= 16 %}note-excellente{% elif resultat.note >= 10 %}note-moyenne{% else %}note-faible{% endif %}">{{ resultat.note }}</td>
+                <td>{{ resultat.session.exam.coefficient|floatformat:1|default:"1" }}</td>
+                <td>{{ resultat.note_moy_coeff|default:"-" }}</td>
+                <td>{% if resultat.classement > 0 %}{{ resultat.classement }}{% else %}-{% endif %}</td>
+                <td style="font-size: 6.5pt; text-align: left;">{{ resultat.appreciation|truncatechars:35|default:"-" }}</td>
+            </tr>
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="3" style="text-align: right;">TOTAUX :</td>
+                <td></td>
+                <td></td>
+                <td style="font-size: 9pt;">{{ resultat.note }}.00</td>
+                <td></td>
+                <td></td>
+            </tr>
+        </tfoot>
+    </table>
+
+    <!-- Resultats -->
+    <table class="resultats-row">
+        <tr>
+            <td style="width: 25%;"><span class="resultats-label">Moyenne :</span> {{ resultat.note }}/{{ resultat.note_sur|floatformat:0 }}</td>
+            <td style="width: 18%;"><span class="resultats-label">Rang :</span> {{ resultat.classement|default:"-" }} / {{ resultat.total_participants|default:"N/A" }}</td>
+            <td style="width: 22%;"><span class="resultats-label">Retards :</span> 0 heure(s) 0 min</td>
+            <td style="width: 35%;"><span class="resultats-label">Absences :</span> 0 jour(s) 0 heure(s)</td>
+        </tr>
+    </table>
+
+    <!-- Comportement -->
+    <table class="comportement-table">
+        <thead>
+            <tr>
+                <th style="width: 15%;">Ponctualite</th>
+                <th style="width: 15%;">Travail</th>
+                <th style="width: 15%;">Discipline</th>
+                <th style="width: 15%;">Assiduite</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>
+                    <span class="check check-yes">+</span> Excellent<br>
+                    <span class="check"> </span> Passable<br>
+                    <span class="check"> </span> Moyen<br>
+                    <span class="check"> </span> Mauvais
+                </td>
+                <td>
+                    <span class="check check-yes">+</span> Excellent<br>
+                    <span class="check"> </span> Passable<br>
+                    <span class="check"> </span> Moyen<br>
+                    <span class="check"> </span> Mauvais
+                </td>
+                <td>
+                    <span class="check check-yes">+</span> Excellent<br>
+                    <span class="check"> </span> Passable<br>
+                    <span class="check"> </span> Moyen<br>
+                    <span class="check"> </span> Mauvais
+                </td>
+                <td>
+                    <span class="check check-yes">+</span> Excellent<br>
+                    <span class="check"> </span> Passable<br>
+                    <span class="check"> </span> Moyen<br>
+                    <span class="check"> </span> Mauvais
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- Observations -->
+    <div class="observations-box">
+        <h4>Observation du conseil de classe :</h4>
+        <p>{{ resultat.appreciation|default:"Travail satisfaisant. Continue dans cette voie." }}</p>
+    </div>
+
+    <!-- Signature -->
+    <table class="signature-section">
+        <tr>
+            <td></td>
+            <td>
+                <div class="signature-block">
+                    <div class="titre-sig">Le Chef de l'Administration Scolaire</div>
+                    <div style="font-family: 'Brush Script MT', cursive; font-size: 14pt; color: #333;">Signature Numerique</div>
+                    <div style="font-size: 6.5pt; color: #666;">Cachet et Signature</div>
+                </div>
+            </td>
+        </tr>
+    </table>
+
+    <!-- Footer avec QR codes -->
+    <table class="footer-section">
+        <tr>
+            <td>
+                <div class="qr-code">
+                    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="100" height="100" fill="#fff"/>
+                        <rect x="10" y="10" width="25" height="25" fill="#000"/>
+                        <rect x="15" y="15" width="15" height="15" fill="#fff"/>
+                        <rect x="18" y="18" width="9" height="9" fill="#000"/>
+                        <rect x="65" y="10" width="25" height="25" fill="#000"/>
+                        <rect x="70" y="15" width="15" height="15" fill="#fff"/>
+                        <rect x="73" y="18" width="9" height="9" fill="#000"/>
+                        <rect x="10" y="65" width="25" height="25" fill="#000"/>
+                        <rect x="15" y="70" width="15" height="15" fill="#fff"/>
+                        <rect x="18" y="73" width="9" height="9" fill="#000"/>
+                        <rect x="40" y="40" width="5" height="5" fill="#000"/>
+                        <rect x="50" y="50" width="5" height="5" fill="#000"/>
+                        <rect x="60" y="45" width="5" height="5" fill="#000"/>
+                    </svg>
+                </div>
+                <div class="footer-mentions">Verification en ligne</div>
+            </td>
+            <td>
+                <div class="footer-mentions" style="margin-top: 6mm; font-size: 6.5pt; line-height: 1.4;">
+                    <strong>AUTH-ID :</strong> {{ resultat.session.id.hex|slice:":12"|upper }}<br>
+                    Document certifie conforme<br>
+                    Academie Numerique Intelligente
+                </div>
+            </td>
+            <td>
+                <div class="qr-code">
+                    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="100" height="100" fill="#fff"/>
+                        <rect x="10" y="10" width="25" height="25" fill="#000"/>
+                        <rect x="15" y="15" width="15" height="15" fill="#fff"/>
+                        <rect x="18" y="18" width="9" height="9" fill="#000"/>
+                        <rect x="65" y="10" width="25" height="25" fill="#000"/>
+                        <rect x="70" y="15" width="15" height="15" fill="#fff"/>
+                        <rect x="73" y="18" width="9" height="9" fill="#000"/>
+                        <rect x="10" y="65" width="25" height="25" fill="#000"/>
+                        <rect x="15" y="70" width="15" height="15" fill="#fff"/>
+                        <rect x="18" y="73" width="9" height="9" fill="#000"/>
+                        <rect x="45" y="55" width="5" height="5" fill="#000"/>
+                        <rect x="55" y="60" width="5" height="5" fill="#000"/>
+                        <rect x="65" y="65" width="5" height="5" fill="#000"/>
+                    </svg>
+                </div>
+                <div class="footer-mentions">Contact : +229 01 97 65 08 17</div>
+            </td>
+        </tr>
+    </table>
+
+    <!-- Mentions legales -->
+    <p class="footer-legal">
+        N.B. : Ce releve est delivre grace aux TICE. Toute demande de duplicata pourra faire l'objet d'un controle rigoureux.
+    </p>
+
+    <!-- Drapeau Benin footer -->
+    <div class="flag-footer">
+        <div class="green"></div>
+        <div class="yellow"></div>
+        <div class="red"></div>
+    </div>
 </body>
 </html>
