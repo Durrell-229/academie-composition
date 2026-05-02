@@ -513,8 +513,15 @@ def register_view(request):
         classe = request.POST.get('classe', '')
 
         # Vérification des rôles privilégiés
-        if role in ['admin', 'conseiller', 'professeur']:
-            expected = getattr(settings, f'ROLE_PASSWORD_{role.upper()}', None)
+        # Mapping nom formulaire → nom variable settings
+        role_password_map = {
+            'admin': 'ROLE_PASSWORD_ADMIN',
+            'professeur': 'ROLE_PASSWORD_PROF',
+            'conseiller': 'ROLE_PASSWORD_CP',
+        }
+        if role in role_password_map:
+            var_name = role_password_map[role]
+            expected = getattr(settings, var_name, None)
             if not expected or role_password != expected:
                 messages.error(request, "Code d'accès invalide pour ce rôle.")
                 return render(request, 'accounts/register.html', {'is_auth_page': True})
