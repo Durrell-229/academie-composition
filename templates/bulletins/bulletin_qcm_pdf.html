@@ -105,10 +105,11 @@
         <table>
             <tr>
                 <td class="label-field" rowspan="3" style="vertical-align:top; width:15%;">
-                    {% if eleve.avatar %}
-                    <img src="{{ eleve.avatar.url }}" style="width:70px;height:70px;object-fit:cover;border:1px solid #000;">
+                    {% if eleve.avatar and eleve.avatar.name %}
+                    <img src="{{ eleve.avatar.url }}" style="width:70px;height:70px;object-fit:cover;border:1px solid #000;" onerror="this.style.display:none;this.nextElementSibling.style.display:flex;">
+                    <div style="width:70px;height:70px;border:1px solid #000;display:none;align-items:center;justify-content:center;background:#f0f0f0;font-size:24pt;font-weight:bold;color:#666;">?</div>
                     {% else %}
-                    <div style="width:70px;height:70px;border:1px solid #000;display:flex;align-items:center;justify-content:center;background:#f0f0f0;font-size:24pt;font-weight:bold;">{{ eleve.first_name|slice:":1" }}</div>
+                    <div style="width:70px;height:70px;border:1px solid #000;display:flex;align-items:center;justify-content:center;background:#f0f0f0;font-size:24pt;font-weight:bold;color:#666;">?</div>
                     {% endif %}
                 </td>
                 <td class="label-field">Nom et Prénom :</td>
@@ -119,8 +120,8 @@
             <tr>
                 <td class="label-field">Classe :</td>
                 <td>{{ classe }}</td>
-                <td class="label-field">Année scolaire :</td>
-                <td>{{ annee_scolaire }}</td>
+                <td class="label-field">Série :</td>
+                <td><strong>{{ serie|default:"N/A"|upper }}</strong></td>
             </tr>
             <tr>
                 <td class="label-field">Date d'évaluation :</td>
@@ -145,21 +146,17 @@
             </tr>
         </thead>
         <tbody>
-            {% for ligne in lignes %}
             <tr>
-                <td><strong>{{ ligne.matiere }}</strong></td>
-                <td style="font-weight: bold;">{{ ligne.coefficient|default:"1" }}</td>
-                <td class="note-val">{{ ligne.note }}</td>
+                <td><strong>{{ matiere }}</strong></td>
+                <td style="font-weight: bold;">{{ coefficient|default:"1" }}</td>
+                <td class="note-val">{{ moyenne }}/20</td>
                 <td>{{ bonnes_reponses|default:"-" }}</td>
                 <td>{{ total_questions|default:"-" }}</td>
                 <td>
-                    {% if ligne.note >= 16 %}Excellent{% elif ligne.note >= 14 %}Très Bien{% elif ligne.note >= 12 %}Bien{% elif ligne.note >= 10 %}Passable{% else %}Insuffisant{% endif %}
+                    {% if moyenne >= 16 %}Excellent{% elif moyenne >= 14 %}Très Bien{% elif moyenne >= 12 %}Bien{% elif moyenne >= 10 %}Passable{% else %}Insuffisant{% endif %}
                 </td>
                 <td>{{ rang }}/{{ effectif }}</td>
             </tr>
-            {% empty %}
-            <tr><td colspan="7" style="text-align:center; padding:10px;">Données non disponibles</td></tr>
-            {% endfor %}
         </tbody>
     </table>
 

@@ -575,18 +575,31 @@ def profile_edit_view(request):
                 if not avatar.content_type.startswith('image/'):
                     messages.error(request, "Le fichier doit être une image valide.")
                     return render(request, 'accounts/profile_edit.html', {'form': form})
-                # Sanitize filename: remove accents, spaces, special chars
+                # Sanitize filename: remove accents, spaces, special chars, domains
                 original_name = avatar.name
                 # Remove accents
                 sanitized = unicodedata.normalize('NFKD', original_name).encode('ascii', 'ignore').decode('ascii')
-                # Replace spaces and special chars with underscores, remove consecutive underscores
+                # Remove common domain patterns (www., .com, .bing, etc.)
+                sanitized = re.sub(r'(www\.|\.com|\.org|\.net|\.fr|\.bing|\.google)', '', sanitized, flags=re.IGNORECASE)
+                # Replace spaces and special chars with underscores
                 sanitized = re.sub(r'[^a-zA-Z0-9._-]', '_', sanitized)
-                sanitized = re.sub(r'_+', '_', sanitized)  # Remove consecutive underscores
-                sanitized = sanitized.strip('_')  # Remove leading/trailing underscores
+                # Remove consecutive underscores
+                sanitized = re.sub(r'_+', '_', sanitized)
+                # Remove leading/trailing underscores and dots
+                sanitized = sanitized.strip('_.')
+                # Limit filename length (max 50 chars before extension)
+                if len(sanitized) > 50:
+                    sanitized = sanitized[:50]
                 # Prefix with user id to avoid collisions
                 sanitized = f"user_{user.id.hex[:8]}_{sanitized}"
-                # Ensure file extension is valid
-                if not sanitized.lower().endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp')):
+                # Force valid extension
+                if sanitized.lower().endswith('.png'):
+                    sanitized = sanitized[:-4] + '.jpg'
+                elif sanitized.lower().endswith('.gif'):
+                    sanitized = sanitized[:-4] + '.jpg'
+                elif sanitized.lower().endswith('.webp'):
+                    sanitized = sanitized[:-5] + '.jpg'
+                elif not sanitized.lower().endswith(('.jpg', '.jpeg')):
                     sanitized += '.jpg'
                 avatar.name = sanitized
                 user.avatar = avatar

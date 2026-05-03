@@ -4,7 +4,7 @@ from django.shortcuts import get_object_or_404
 from .models import CompositionSession, Resultat
 from ai_engine.multi_ai import multi_ai
 from ai_engine.services import extract_text_from_file
-from bulletins.services import link_callback
+from bulletins.services import BulletinService, link_callback
 from io import BytesIO
 from django.template.loader import render_to_string
 from xhtml2pdf import pisa
@@ -153,9 +153,23 @@ def process_ia_correction(session_id):
     
     # ═══ 5. GÉNÉRATION DU BULLETIN PDF ═══
     try:
+        from bulletins.services import BulletinService
+        from bulletins.coefficients_benin import get_coefficient as get_benin_coefficient
+        
+        # Extraire la série de la classe de l'élève
+        eleve = session.eleve
+        classe = eleve.classe or ''
+        serie = BulletinService._extract_serial(classe)
+        
+        # Obtenir le coefficient officiel
+        matiere_nom = exam.matiere.nom if exam.matiere else ''
+        coeff_officiel = get_benin_coefficient(matiere_nom, serie)
+
         context = {
             'resultat': resultat,
             'annee_scolaire': '2025-2026',
+            'serie': serie,
+            'coefficient_officiel': coeff_officiel,
         }
         html = render_to_string('compositions/bulletin_resultat_benin.html', context)
         pdf_file = BytesIO()

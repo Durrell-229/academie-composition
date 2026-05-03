@@ -4,6 +4,11 @@ from xhtml2pdf import pisa
 from django.conf import settings
 import hashlib
 import os
+import logging
+
+from .coefficients_benin import get_coefficient as get_benin_coefficient
+
+logger = logging.getLogger(__name__)
 
 
 def link_callback(uri, rel):
@@ -71,16 +76,32 @@ class BulletinService:
     def generate_bulletin_administratif_pdf(bulletin):
         """Génère un bulletin administratif PDF (format officiel Ministère Bénin)."""
         lignes = list(bulletin.lignes.all())
+        eleve = bulletin.eleve
+        
+        # Déterminer la série depuis la classe de l'élève
+        classe = bulletin.classe or (eleve.classe if eleve else '')
+        serie = BulletinService._extract_serial(classe)
+        
+        # Appliquer les coefficients officiels béninois
+        for ligne in lignes:
+            coeff_officiel = get_benin_coefficient(ligne.matiere, serie)
+            # Utiliser le coefficient officiel s'il est plus grand que celui défini
+            if ligne.coefficient < coeff_officiel:
+                ligne.coefficient = coeff_officiel
         
         # Calculer total moy*coeff
         total_moy_coeff = sum(l.note * l.coefficient for l in lignes) if lignes else 0
+        total_coeffs = sum(l.coefficient for l in lignes) if lignes else 1
+        moyenne_calculee = round(total_moy_coeff / total_coeffs, 2) if total_coeffs > 0 else bulletin.moyenne_generale
 
         context = {
             'bulletin': bulletin,
-            'eleve': bulletin.eleve,
-            'classe': bulletin.classe,
+            'eleve': eleve,
+            'classe': classe,
+            'serie': serie,
             'periode': bulletin.get_periode_display(),
             'moyenne': bulletin.moyenne_generale,
+            'moyenne_calculee': moyenne_calculee,
             'rang': bulletin.rang,
             'effectif': bulletin.effectif_total,
             'appreciation': bulletin.appreciation_ia,
@@ -97,6 +118,7 @@ class BulletinService:
             'comportement': bulletin.comportement,
             'observation': bulletin.observation_conseil or "Travail satisfaisant. Continue dans cette voie.",
             'total_moy_coeff': round(total_moy_coeff, 2),
+            'total_coeffs': round(total_coeffs, 2),
         }
 
         html = render_to_string('bulletins/bulletin_administratif_pdf.html', context)
@@ -143,13 +165,28 @@ class BulletinService:
 
     @staticmethod
     def generate_bulletin_qcm_pdf(bulletin):
-        """Génère un bulletin QCM PDF (format officiel Ministère Bénin)."""
+        """Génère un bulletin QCM PDF (format officiel Ministère Bénin) avec coefficients."""
         qcm_resultat = bulletin.qcm_resultats.first()
+        eleve = bulletin.eleve
+        
+        # Déterminer la série depuis la classe de l'élève
+        classe = bulletin.classe or (eleve.classe if eleve else '')
+        serie = BulletinService._extract_serial(classe)
+        
+        # Récupérer la matière et appliquer le coefficient officiel
+        ligne = bulletin.lignes.first()
+        matiere_nom = ligne.matiere if ligne else (qcm_resultat.matiere if qcm_resultat else '')
+        coefficient_officiel = get_benin_coefficient(matiere_nom, serie)
+        
+        # Si la ligne n'a pas de coefficient, utiliser le coefficient officiel
+        if ligne and ligne.coefficient == 1.00 and coefficient_officiel > 1:
+            ligne.coefficient = coefficient_officiel
 
         context = {
             'bulletin': bulletin,
-            'eleve': bulletin.eleve,
-            'classe': bulletin.classe,
+            'eleve': eleve,
+            'classe': classe,
+            'serie': serie,
             'periode': bulletin.get_periode_display(),
             'moyenne': bulletin.moyenne_generale,
             'rang': bulletin.rang,
@@ -160,8 +197,8 @@ class BulletinService:
             'lignes': bulletin.lignes.all(),
             'verification_token': bulletin.verification_token,
             'signature': hashlib.sha256(f"{bulletin.id}{bulletin.verification_token}".encode()).hexdigest()[:16],
-            'matiere': bulletin.lignes.first().matiere if bulletin.lignes.exists() else '',
-            'coefficient': bulletin.lignes.first().coefficient if bulletin.lignes.exists() else 1,
+            'matiere': matiere_nom,
+            'coefficient': coefficient_officiel,
             'bonnes_reponses': qcm_resultat.bonnes_reponses if qcm_resultat else '-',
             'total_questions': qcm_resultat.total_questions if qcm_resultat else '-',
         }
@@ -173,7 +210,7 @@ class BulletinService:
         if not pdf.err:
             pdf_content = result.getvalue()
             from django.core.files.base import ContentFile
-            filename = f"bulletin_qcm_{bulletin.eleve.last_name}_{bulletin.created_at.strftime('%Y%m%d')}.pdf"
+            filename = f"bulletin_qcm_{eleve.last_name}_{bulletin.created_at.strftime('%Y%m%d')}.pdf"
             bulletin.file_pdf.save(filename, ContentFile(pdf_content), save=True)
             return pdf_content
         return None
@@ -204,3 +241,35 @@ class BulletinService:
     def generate_pdf_from_bulletin(bulletin):
         """Alias pour compatibilité — génère un bulletin administratif PDF."""
         return BulletinService.generate_bulletin_administratif_pdf(bulletin)
+
+    @staticmethod
+    def _extract_serial(classe):
+        """
+        Extrait la série (A1, A2, B, C, D, E, G1, G2, G3) du nom de classe.
+        Exemples:
+            "Terminale C" -> "C"
+            "Terminale D" -> "D"
+            "Terminale A1" -> "A1"
+            "Terminale G2" -> "G2"
+            "3ème" -> "bepc"
+            "Terminale" sans série -> "bepc"
+        """
+        if not classe:
+            return "bepc"
+        
+        classe_upper = classe.upper().strip()
+        
+        # Si c'est une classe du premier cycle (6ème, 5ème, 4ème, 3ème, 2nde)
+        premier_cycle = ["6EME", "5EME", "4EME", "3EME", "2NDE", "SECONDE"]
+        if any(c in classe_upper for c in premier_cycle):
+            return "bepc"
+        
+        # Pour le second cycle (1ère, Terminale), chercher la série
+        # Ordre: plus long d'abord pour éviter G1 -> G
+        series_ordered = ["G1", "G2", "G3", "A1", "A2", "C", "D", "E", "B"]
+        for serie in series_ordered:
+            if serie in classe_upper:
+                return serie
+        
+        # Par défaut, BEPC (pas de série détectée)
+        return "bepc"

@@ -125,13 +125,13 @@
                 </div>
             </div>
 
-            <div class="titre-bulletin">RELEVÉ DE NOTE — {{ resultat.session.exam.matiere.nom|default:"Évaluation" }}</div>
+            <div class="titre-bulletin">RELEVÉ DE NOTE — {{ resultat.session.exam.matiere.nom|default:"Évaluation" }} {% if serie and serie != "bepc" %}— Série {{ serie|upper }}{% endif %}</div>
 
             <table class="tableau-notes">
                 <thead>
                     <tr>
                         <th style="width:30%;">DISCIPLINE</th>
-                        <th style="width:10%;">COEFF</th>
+                        <th style="width:10%;">COEFF OFFICIEL</th>
                         <th style="width:15%;">NOTE OBTENUE</th>
                         <th style="width:15%;">NOTE DÉFINITIVE</th>
                         <th style="width:10%;">RANG</th>
@@ -141,7 +141,7 @@
                 <tbody>
                     <tr>
                         <td class="matiere">{{ resultat.session.exam.matiere.nom|default:"Évaluation" }}</td>
-                        <td>{{ resultat.session.exam.coefficient|floatformat:1|default:"1" }}</td>
+                        <td style="font-weight:bold;">{{ coefficient_officiel|default:1 }}</td>
                         <td style="font-size:11pt;font-weight:bold;">{{ resultat.note }}/{{ resultat.note_sur|floatformat:0 }}</td>
                         <td style="font-weight:bold;">{{ resultat.note_moy_coeff|default:"-" }}</td>
                         <td>{% if resultat.classement > 0 %}{{ resultat.classement }}{% else %}N/A{% endif %} / {{ resultat.total_participants|default:"N/A" }}</td>

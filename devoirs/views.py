@@ -817,6 +817,12 @@ def _corriger_copie_ia(reponse, devoir_matiere):
 def _generer_bulletin_pour_eleve(devoir, eleve, classe):
     """Generate a BulletinDevoir for a student from their corrected copies."""
     try:
+        from bulletins.coefficients_benin import get_coefficient as get_benin_coefficient
+        from bulletins.services import BulletinService
+        
+        # Déterminer la série
+        serie = BulletinService._extract_serial(classe or (eleve.classe if eleve else ''))
+        
         with transaction.atomic():
             # Get all corrected responses for this student
             reponses = DevoirReponseEleve.objects.filter(
@@ -843,10 +849,14 @@ def _generer_bulletin_pour_eleve(devoir, eleve, classe):
 
             for reponse in reponses:
                 dm = reponse.devoir_matiere
-                coeff = devoir.coefficients_par_matiere.get(
-                    str(dm.matiere.id),
-                    devoir.coefficient_default
-                )
+                matiere_nom = dm.matiere.nom if dm.matiere else ''
+                
+                # Utiliser le coefficient du devoir ou le coefficient officiel béninois
+                coeff_devoir = devoir.coefficients_par_matiere.get(str(dm.matiere.id) if dm.matiere else None, devoir.coefficient_default)
+                coeff_officiel = get_benin_coefficient(matiere_nom, serie)
+                # Utiliser le plus grand des deux
+                coeff = max(float(coeff_devoir), float(coeff_officiel))
+                
                 note = reponse.note_finale or reponse.note_ia or 0
 
                 appreciation = reponse.appreciation_ia or ''
@@ -855,7 +865,7 @@ def _generer_bulletin_pour_eleve(devoir, eleve, classe):
 
                 ligne = BulletinDevoirLigne.objects.create(
                     bulletin=bulletin,
-                    matiere=dm.matiere.nom,
+                    matiere=matiere_nom,
                     coefficient=coeff,
                     note_devoir=0,  # Can be updated later
                     note_exam=note,
@@ -911,12 +921,29 @@ def _recalculer_moyenne_bulletin(bulletin):
 
 def _generer_bulletin_pdf(bulletin):
     """Generate PDF for a bulletin using bulletin.jpg-inspired template."""
+    from bulletins.coefficients_benin import get_coefficient as get_benin_coefficient
+    from bulletins.services import BulletinService
+    
+    # Déterminer la série
+    eleve = bulletin.eleve
+    classe = bulletin.classe or (eleve.classe if eleve else '')
+    serie = BulletinService._extract_serial(classe)
+    
+    # Appliquer les coefficients officiels aux lignes
+    lignes = bulletin.lignes.all().order_by('matiere')
+    for ligne in lignes:
+        coeff_officiel = get_benin_coefficient(ligne.matiere, serie)
+        if ligne.coefficient < coeff_officiel:
+            ligne.coefficient = coeff_officiel
+            ligne.save(update_fields=['coefficient'])
+    
     context = {
         'bulletin': bulletin,
-        'eleve': bulletin.eleve,
+        'eleve': eleve,
         'devoir': bulletin.devoir,
-        'classe': bulletin.classe,
-        'lignes': bulletin.lignes.all().order_by('matiere'),
+        'classe': classe,
+        'serie': serie,
+        'lignes': lignes,
         'moyenne': bulletin.moyenne_generale,
         'rang': bulletin.rang,
         'effectif': bulletin.effectif_total,
