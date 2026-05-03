@@ -654,12 +654,23 @@ def oauth_choose_role_view(request):
     Role assignment page for new Google OAuth users.
     Only accessible if user just logged in via Google and needs role assignment.
     """
-    # If not coming from OAuth flow, redirect to dashboard
+    import logging
+    logger = logging.getLogger(__name__)
+
+    # Check if user is authenticated
+    if not request.user.is_authenticated:
+        logger.warning("oauth_choose_role: User not authenticated, redirecting to login")
+        messages.error(request, "Session expirée. Veuillez vous reconnecter.")
+        return redirect('login')
+
+    # Check OAuth session flag
     if not request.session.get('oauth_needs_role'):
+        logger.warning(f"oauth_choose_role: No oauth_needs_role flag for user {request.user.email}, redirecting to dashboard")
         return redirect('dashboard')
 
-    # User is already logged in from google_callback
+    # User is logged in from google_callback
     user = request.user
+    logger.info(f"oauth_choose_role: Displaying role choice for user {user.email}")
 
     if request.method == 'POST':
         role = request.POST.get('role', '').strip()
@@ -691,6 +702,7 @@ def oauth_choose_role_view(request):
         # Clear OAuth session flag
         request.session.pop('oauth_needs_role', None)
 
+        logger.info(f"oauth_choose_role: Role '{role}' assigned to user {user.email}")
         messages.success(request, f"Rôle '{user.get_role_display()}' attribué. Bienvenue !")
         return redirect('dashboard')
 

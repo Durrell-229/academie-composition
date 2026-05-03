@@ -52,8 +52,16 @@ def notification_list_view(request):
         messages.success(request, "Toutes les notifications ont été marquées comme lues.")
         return redirect('notification_list')
 
+    # Récupérer les notifications de l'utilisateur
     notifications = Notification.objects.filter(recipient=request.user).order_by('-created_at')[:50]
-    return render(request, 'notifications/list.html', {'notifications': notifications})
+    
+    # Compter les non lues
+    unread_count = Notification.objects.filter(recipient=request.user, is_read=False).count()
+    
+    return render(request, 'notifications/list.html', {
+        'notifications': notifications,
+        'unread_count': unread_count,
+    })
 
 
 @login_required

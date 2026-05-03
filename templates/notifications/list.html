@@ -12,7 +12,12 @@
   <div class="animate-in flex items-center justify-between">
     <div>
       <h1 class="text-2xl font-black tracking-tight text-text-primary">Mes <span class="text-primary">Notifications</span></h1>
-      <p class="text-sm text-text-muted mt-1">{{ notifications|length }} notification{{ notifications|length|pluralize }}</p>
+      <p class="text-sm text-text-muted mt-1">
+        {{ notifications|length }} notification{{ notifications|length|pluralize }}
+        {% if unread_count > 0 %}
+        — <span class="text-primary font-bold">{{ unread_count }} non lue{{ unread_count|pluralize }}</span>
+        {% endif %}
+      </p>
     </div>
     {% if notifications %}
     <form method="post" action="{% url 'notification_list' %}">
