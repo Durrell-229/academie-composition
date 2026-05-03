@@ -87,6 +87,8 @@
             color: #F1F5F9 !important;
             background-color: #1E293B !important;
             border-color: #475569 !important;
+            position: relative;
+            z-index: 1;
         }
         input::placeholder, textarea::placeholder {
             color: #94A3B8 !important;
@@ -96,9 +98,17 @@
             outline: none;
             box-shadow: 0 0 0 2px rgba(99,102,241,0.25);
         }
+        /* Select options: fond clair + texte foncé pour visibilité */
         select option {
-            background-color: #1E293B;
-            color: #F1F5F9;
+            background-color: #F1F5F9 !important;
+            color: #0F172A !important;
+            padding: 8px;
+        }
+        select option:hover,
+        select option:focus,
+        select option:checked {
+            background-color: #E2E8F0 !important;
+            color: #0F172A !important;
         }
         [x-cloak] { display: none !important; }
 

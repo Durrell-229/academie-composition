@@ -38,20 +38,20 @@
   <div class="animate-in delay-1 grid grid-cols-1 md:grid-cols-3 gap-4">
     <div class="glass p-4 rounded-xl border border-border-standard">
       <label class="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Filtrer par Matière</label>
-      <select name="matiere" class="w-full bg-bg-tertiary border border-border-standard rounded-lg px-4 py-2.5 text-sm text-white focus:border-border-focus transition outline-none">
-        <option value="">Toutes les matières</option>
+      <select name="matiere" class="w-full bg-bg-tertiary border border-border-standard rounded-lg px-4 py-2.5 text-sm text-white focus:border-border-focus transition outline-none" style="background-color: #334155;">
+        <option value="" style="color: #0F172A; background-color: #F1F5F9;">Toutes les matières</option>
         {% for m in matieres %}
-        <option value="{{ m.id }}">{{ m.nom }}</option>
+        <option value="{{ m.id }}" style="color: #0F172A; background-color: #F1F5F9;">{{ m.nom }}</option>
         {% endfor %}
       </select>
     </div>
     
     <div class="glass p-4 rounded-xl border border-border-standard">
       <label class="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Niveau / Classe</label>
-      <select name="classe" class="w-full bg-bg-tertiary border border-border-standard rounded-lg px-4 py-2.5 text-sm text-white focus:border-border-focus transition outline-none">
-        <option value="">Tous les niveaux</option>
+      <select name="classe" class="w-full bg-bg-tertiary border border-border-standard rounded-lg px-4 py-2.5 text-sm text-white focus:border-border-focus transition outline-none" style="background-color: #334155;">
+        <option value="" style="color: #0F172A; background-color: #F1F5F9;">Tous les niveaux</option>
         {% for c in classes %}
-          <option value="{{ c.id }}">{{ c.nom }}</option>
+          <option value="{{ c.id }}" style="color: #0F172A; background-color: #F1F5F9;">{{ c.nom }}</option>
         {% endfor %}
       </select>
     </div>

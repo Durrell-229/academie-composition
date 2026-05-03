@@ -20,10 +20,10 @@
 
     <div>
       <label class="block text-sm font-bold text-text-secondary mb-2">Matière *</label>
-      <select name="matiere_id" required class="w-full bg-bg-tertiary border border-border-standard rounded-xl px-4 py-3 text-text-primary focus:border-primary outline-none">
-        <option value="">-- Choisir une matière --</option>
+      <select name="matiere_id" required class="w-full bg-bg-tertiary border border-border-standard rounded-xl px-4 py-3 text-text-primary focus:border-primary outline-none" style="background-color: #334155;">
+        <option value="" style="color: #0F172A; background-color: #F1F5F9;">-- Choisir une matière --</option>
         {% for m in matieres %}
-        <option value="{{ m.id }}" {% if matiere and matiere.id == m.id %}selected{% endif %}>{{ m.nom }}</option>
+        <option value="{{ m.id }}" style="color: #0F172A; background-color: #F1F5F9;" {% if matiere and matiere.id == m.id %}selected{% endif %}>{{ m.nom }}</option>
         {% endfor %}
       </select>
     </div>

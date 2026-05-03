@@ -46,11 +46,11 @@
 
         <div>
             <label class="block text-sm text-text-muted mb-2">Rôle *</label>
-            <select name="role" x-model="role" class="w-full bg-bg-secondary border border-border-standard rounded-xl p-3 focus:ring-2 focus:ring-primary" style="color: #F1F5F9;">
-                <option value="eleve">Élève</option>
-                <option value="professeur">Professeur</option>
-                <option value="conseiller">Conseiller Pédagogique</option>
-                <option value="admin">Administrateur</option>
+            <select name="role" x-model="role" class="w-full bg-bg-secondary border border-border-standard rounded-xl p-3 focus:ring-2 focus:ring-primary" style="color: #F1F5F9; background-color: #1E293B;">
+                <option value="eleve" style="color: #0F172A; background-color: #F1F5F9;">Élève</option>
+                <option value="professeur" style="color: #0F172A; background-color: #F1F5F9;">Professeur</option>
+                <option value="conseiller" style="color: #0F172A; background-color: #F1F5F9;">Conseiller Pédagogique</option>
+                <option value="admin" style="color: #0F172A; background-color: #F1F5F9;">Administrateur</option>
             </select>
         </div>
 
@@ -65,10 +65,10 @@
             
             <div>
                 <label class="block text-sm text-text-muted mb-2">Classe *</label>
-                <select name="classe" class="w-full bg-bg-primary border border-border-standard rounded-xl p-3 focus:ring-2 focus:ring-primary" style="color: #F1F5F9;">
-                    <option value="">-- Choisir sa classe --</option>
+                <select name="classe" class="w-full bg-bg-primary border border-border-standard rounded-xl p-3 focus:ring-2 focus:ring-primary" style="color: #F1F5F9; background-color: #1E293B;">
+                    <option value="" style="color: #0F172A; background-color: #F1F5F9;">-- Choisir sa classe --</option>
                     {% for c in classes %}
-                    <option value="{{ c.nom }}">{{ c.nom }}</option>
+                    <option value="{{ c.nom }}" style="color: #0F172A; background-color: #F1F5F9;">{{ c.nom }}</option>
                     {% endfor %}
                 </select>
                 <p class="text-xs text-text-muted mt-1">Ta classe apparaîtra sur tes bulletins</p>
@@ -76,27 +76,27 @@
 
             <div>
                 <label class="block text-sm text-text-muted mb-2">Série (si Terminale)</label>
-                <select name="serie" class="w-full bg-bg-primary border border-border-standard rounded-xl p-3 focus:ring-2 focus:ring-primary" style="color: #F1F5F9;">
-                    <option value="">-- Choisir sa série (ou laisser vide) --</option>
-                    <option value="A1">A1 — Lettres Langues</option>
-                    <option value="A2">A2 — Lettres Sciences Humaines</option>
-                    <option value="B">B — Lettres Sciences Sociales</option>
-                    <option value="C">C — Sciences et Mathématiques</option>
-                    <option value="D">D — Biologie Géologie</option>
-                    <option value="E">E — Mathématiques et Techniques</option>
-                    <option value="G1">G1 — Techniques Administratives</option>
-                    <option value="G2">G2 — Techniques Quantitatives de Gestion</option>
-                    <option value="G3">G3 — Techniques Commerciales</option>
+                <select name="serie" class="w-full bg-bg-primary border border-border-standard rounded-xl p-3 focus:ring-2 focus:ring-primary" style="color: #F1F5F9; background-color: #1E293B;">
+                    <option value="" style="color: #0F172A; background-color: #F1F5F9;">-- Choisir sa série (ou laisser vide) --</option>
+                    <option value="A1" style="color: #0F172A; background-color: #F1F5F9;">A1 — Lettres Langues</option>
+                    <option value="A2" style="color: #0F172A; background-color: #F1F5F9;">A2 — Lettres Sciences Humaines</option>
+                    <option value="B" style="color: #0F172A; background-color: #F1F5F9;">B — Lettres Sciences Sociales</option>
+                    <option value="C" style="color: #0F172A; background-color: #F1F5F9;">C — Sciences et Mathématiques</option>
+                    <option value="D" style="color: #0F172A; background-color: #F1F5F9;">D — Biologie Géologie</option>
+                    <option value="E" style="color: #0F172A; background-color: #F1F5F9;">E — Mathématiques et Techniques</option>
+                    <option value="G1" style="color: #0F172A; background-color: #F1F5F9;">G1 — Techniques Administratives</option>
+                    <option value="G2" style="color: #0F172A; background-color: #F1F5F9;">G2 — Techniques Quantitatives de Gestion</option>
+                    <option value="G3" style="color: #0F172A; background-color: #F1F5F9;">G3 — Techniques Commerciales</option>
                 </select>
                 <p class="text-xs text-text-muted mt-1">La série est requise en Première/Terminale</p>
             </div>
 
             <div>
                 <label class="block text-sm text-text-muted mb-2">Sexe</label>
-                <select name="sexe" class="w-full bg-bg-primary border border-border-standard rounded-xl p-3 focus:ring-2 focus:ring-primary" style="color: #F1F5F9;">
-                    <option value="">-- Choisir --</option>
-                    <option value="Masculin">Masculin</option>
-                    <option value="Féminin">Féminin</option>
+                <select name="sexe" class="w-full bg-bg-primary border border-border-standard rounded-xl p-3 focus:ring-2 focus:ring-primary" style="color: #F1F5F9; background-color: #1E293B;">
+                    <option value="" style="color: #0F172A; background-color: #F1F5F9;">-- Choisir --</option>
+                    <option value="Masculin" style="color: #0F172A; background-color: #F1F5F9;">Masculin</option>
+                    <option value="Féminin" style="color: #0F172A; background-color: #F1F5F9;">Féminin</option>
                 </select>
             </div>
 
@@ -113,12 +113,12 @@
 
         <div>
             <label class="block text-sm text-text-muted mb-2">Pays</label>
-            <select name="country" class="w-full bg-bg-secondary border border-border-standard rounded-xl p-3 focus:ring-2 focus:ring-primary" style="color: #F1F5F9;">
-                <option value="Bénin">🇧🇯 Bénin</option>
-                <option value="France">🇫🇷 France</option>
-                <option value="Togo">🇹🇬 Togo</option>
-                <option value="Nigeria">🇳🇬 Nigeria</option>
-                <option value="Autre">Autre</option>
+            <select name="country" class="w-full bg-bg-secondary border border-border-standard rounded-xl p-3 focus:ring-2 focus:ring-primary" style="color: #F1F5F9; background-color: #1E293B;">
+                <option value="Bénin" style="color: #0F172A; background-color: #F1F5F9;">🇧🇯 Bénin</option>
+                <option value="France" style="color: #0F172A; background-color: #F1F5F9;">🇫🇷 France</option>
+                <option value="Togo" style="color: #0F172A; background-color: #F1F5F9;">🇹🇬 Togo</option>
+                <option value="Nigeria" style="color: #0F172A; background-color: #F1F5F9;">🇳🇬 Nigeria</option>
+                <option value="Autre" style="color: #0F172A; background-color: #F1F5F9;">Autre</option>
             </select>
         </div>
 
