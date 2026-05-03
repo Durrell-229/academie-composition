@@ -14,6 +14,9 @@ class ProfileUpdateForm(forms.ModelForm):
     class Meta:
         model = User
         fields = ['first_name', 'last_name', 'phone', 'bio', 'avatar']
+        widgets = {
+            'avatar': forms.FileInput(attrs={'accept': 'image/*'}),
+        }
 
 
 
@@ -573,15 +576,15 @@ def profile_edit_view(request):
                     messages.error(request, "Le fichier doit être une image valide.")
                     return render(request, 'accounts/profile_edit.html', {'form': form})
                 # Sanitize filename: remove accents, spaces, special chars
-                original_name = avatar.name
-                # Remove accents
-                sanitized = unicodedata.normalize('NFKD', original_name).encode('ascii', 'ignore').decode('ascii')
-                # Replace spaces and special chars with underscores
+                sanitized = unicodedata.normalize('NFKD', avatar.name).encode('ascii', 'ignore').decode('ascii')
                 sanitized = re.sub(r'[^a-zA-Z0-9._-]', '_', sanitized)
-                # Prefix with user id to avoid collisions
                 sanitized = f"user_{user.id.hex[:8]}_{sanitized}"
                 avatar.name = sanitized
-            form.save()
+                user.avatar = avatar
+                user.save()  # Save avatar field explicitly
+            else:
+                form.save()  # Save other fields normally
+
             request.user.refresh_from_db()
             messages.success(request, "Votre profil a été mis à jour avec succès.")
             return redirect('profile_edit')
