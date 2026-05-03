@@ -9,8 +9,15 @@ import os
 def link_callback(uri, rel):
     """Convert media/static URLs to absolute file paths for xhtml2pdf."""
     import urllib.parse
+    import logging
+
+    logger = logging.getLogger(__name__)
 
     if not uri:
+        return uri
+
+    # Skip external URLs (http, https, data URIs)
+    if uri.startswith(('http://', 'https://', 'data:')):
         return uri
 
     # Decode URL-encoded characters (e.g. %20 for spaces)
@@ -21,24 +28,39 @@ def link_callback(uri, rel):
         rel_path = uri[len(settings.MEDIA_URL):]
         abs_path = os.path.join(str(settings.MEDIA_ROOT), rel_path)
         # Normalize path for Windows
-        return os.path.normpath(abs_path)
+        abs_path = os.path.normpath(abs_path)
+        # Check if file exists
+        if not os.path.exists(abs_path):
+            logger.warning(f"[link_callback] File not found: {abs_path}")
+        else:
+            logger.debug(f"[link_callback] Resolved: {uri} -> {abs_path}")
+        return abs_path
 
     # Handle static files
     if uri.startswith(settings.STATIC_URL):
         rel_path = uri[len(settings.STATIC_URL):]
         abs_path = os.path.join(str(settings.STATIC_ROOT), rel_path)
-        return os.path.normpath(abs_path)
+        abs_path = os.path.normpath(abs_path)
+        if not os.path.exists(abs_path):
+            logger.warning(f"[link_callback] Static file not found: {abs_path}")
+        return abs_path
 
     # Handle relative paths starting with /media/ or /static/
     if uri.startswith('/media/'):
         rel_path = uri[7:]  # strip '/media/'
         abs_path = os.path.join(str(settings.MEDIA_ROOT), rel_path)
-        return os.path.normpath(abs_path)
+        abs_path = os.path.normpath(abs_path)
+        if not os.path.exists(abs_path):
+            logger.warning(f"[link_callback] File not found (/media/): {abs_path}")
+        return abs_path
 
     if uri.startswith('/static/'):
         rel_path = uri[8:]  # strip '/static/'
         abs_path = os.path.join(str(settings.STATIC_ROOT), rel_path)
-        return os.path.normpath(abs_path)
+        abs_path = os.path.normpath(abs_path)
+        if not os.path.exists(abs_path):
+            logger.warning(f"[link_callback] Static file not found (/static/): {abs_path}")
+        return abs_path
 
     # Already absolute path or other URL — return as-is
     return uri

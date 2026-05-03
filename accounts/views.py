@@ -576,9 +576,18 @@ def profile_edit_view(request):
                     messages.error(request, "Le fichier doit être une image valide.")
                     return render(request, 'accounts/profile_edit.html', {'form': form})
                 # Sanitize filename: remove accents, spaces, special chars
-                sanitized = unicodedata.normalize('NFKD', avatar.name).encode('ascii', 'ignore').decode('ascii')
+                original_name = avatar.name
+                # Remove accents
+                sanitized = unicodedata.normalize('NFKD', original_name).encode('ascii', 'ignore').decode('ascii')
+                # Replace spaces and special chars with underscores, remove consecutive underscores
                 sanitized = re.sub(r'[^a-zA-Z0-9._-]', '_', sanitized)
+                sanitized = re.sub(r'_+', '_', sanitized)  # Remove consecutive underscores
+                sanitized = sanitized.strip('_')  # Remove leading/trailing underscores
+                # Prefix with user id to avoid collisions
                 sanitized = f"user_{user.id.hex[:8]}_{sanitized}"
+                # Ensure file extension is valid
+                if not sanitized.lower().endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp')):
+                    sanitized += '.jpg'
                 avatar.name = sanitized
                 user.avatar = avatar
                 user.save()  # Save avatar field explicitly

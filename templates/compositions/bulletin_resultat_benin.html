@@ -104,17 +104,22 @@
 
             <div class="eleve-info">
                 <div style="width:18mm;flex:0 0 18mm;align-items:flex-start;">
-                    {% if resultat.session.eleve.avatar %}
-                    <img src="{{ resultat.session.eleve.avatar.url }}" style="width:16mm;height:20mm;object-fit:cover;border:1px solid #000;">
+                    {% if resultat.session.eleve.avatar and resultat.session.eleve.avatar.name %}
+                    <img src="{{ resultat.session.eleve.avatar.url }}" style="width:16mm;height:20mm;object-fit:cover;border:1px solid #000;" onerror="this.style.display:none;this.nextElementSibling.style.display:flex;">
+                    <div style="width:16mm;height:20mm;border:1px solid #000;display:none;align-items:center;justify-content:center;background:#f0f0f0;font-size:6px;text-align:center;color:#666;">Photo</div>
                     {% else %}
                     <div style="width:16mm;height:20mm;border:1px solid #000;display:flex;align-items:center;justify-content:center;background:#f0f0f0;font-size:6px;text-align:center;color:#666;">Photo</div>
                     {% endif %}
                 </div>
                 <div style="flex:1;display:flex;flex-wrap:wrap;gap:2mm 4mm;">
-                <div class="info-item"><label>NOM :</label><div class="value">{{ resultat.session.eleve.last_name|upper }}</div></div>
-                <div class="info-item"><label>PRÉNOM(S) :</label><div class="value">{{ resultat.session.eleve.first_name }}</div></div>
+                <div class="info-item"><label>NOM :</label><div class="value">{{ resultat.session.eleve.last_name|upper|default:"N/A" }}</div></div>
+                <div class="info-item"><label>PRÉNOM(S) :</label><div class="value">{{ resultat.session.eleve.first_name|default:"N/A" }}</div></div>
+                <div class="info-item"><label>SEXE :</label><div class="value">{{ resultat.session.eleve.sexe|default:"N/A" }}</div></div>
                 <div class="info-item"><label>MATRICULE :</label><div class="value">{{ resultat.session.eleve.matricule|default:"N/A" }}</div></div>
                 <div class="info-item"><label>CLASSE :</label><div class="value">{{ resultat.session.eleve.classe|default:"N/A" }}</div></div>
+                <div class="info-item"><label>TÉLÉPHONE :</label><div class="value">{{ resultat.session.eleve.phone|default:"N/A" }}</div></div>
+                <div class="info-item"><label>ÉCOLE :</label><div class="value">Académie Numérique Intelligente</div></div>
+                <div class="info-item"><label>ANNÉE SCOLAIRE :</label><div class="value">{{ annee_scolaire|default:"2025-2026" }}</div></div>
                 <div class="info-item"><label>ÉVALUATION :</label><div class="value">{{ resultat.session.exam.titre|default:"Composition" }}</div></div>
                 <div class="info-item"><label>MOYENNE :</label><div class="value" style="font-weight:bold;font-size:9.5px;">{{ resultat.note }}/{{ resultat.note_sur|floatformat:0 }}</div></div>
                 </div>
