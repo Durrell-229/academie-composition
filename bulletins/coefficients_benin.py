@@ -271,7 +271,7 @@ def get_all_coefficients(serie="bepc"):
     return serie_data.get("matieres", {})
 
 
-def get serie_info(serie="bepc"):
+def get_serie_info(serie="bepc"):
     """Retourne les informations d'une série."""
     serie_data = COEFFICIENTS_BENIN.get(serie, COEFFICIENTS_BENIN["bepc"])
     return {
