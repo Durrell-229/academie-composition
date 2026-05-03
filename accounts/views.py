@@ -648,3 +648,51 @@ def laravel_sso_login(request):
         messages.error(request, "Échec de l'authentification Laravel. Le token est invalide ou expiré.")
         return redirect('login')
 
+
+@login_required
+def oauth_choose_role_view(request):
+    """
+    Role assignment page for new Google OAuth users.
+    Only accessible if user is already logged in (from google_callback redirect).
+    """
+    # If not coming from OAuth flow, redirect to dashboard
+    if not request.session.get('oauth_user_id'):
+        return redirect('dashboard')
+
+    user = request.user
+
+    if request.method == 'POST':
+        role = request.POST.get('role', '').strip()
+        role_password = request.POST.get('role_password', '').strip()
+
+        valid_roles = ['eleve', 'professeur', 'conseiller', 'admin']
+        if role not in valid_roles:
+            messages.error(request, "Rôle invalide.")
+            return render(request, 'auth/oauth_choose_role.html', {'user': user})
+
+        # Role password verification for privileged roles
+        role_password_map = {
+            'admin': 'ROLE_PASSWORD_ADMIN',
+            'professeur': 'ROLE_PASSWORD_PROF',
+            'conseiller': 'ROLE_PASSWORD_CP',
+        }
+
+        if role in role_password_map:
+            var_name = role_password_map[role]
+            expected = getattr(settings, var_name, None)
+            if not expected or role_password != expected:
+                messages.error(request, "Code d'accès invalide pour ce rôle.")
+                return render(request, 'auth/oauth_choose_role.html', {'user': user})
+
+        # Assign role
+        user.role = role
+        user.save()
+
+        # Clear OAuth session key
+        request.session.pop('oauth_user_id', None)
+
+        messages.success(request, f"Rôle '{user.get_role_display()}' attribué. Bienvenue !")
+        return redirect('dashboard')
+
+    return render(request, 'auth/oauth_choose_role.html', {'user': user})
+

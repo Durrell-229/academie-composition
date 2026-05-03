@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+{% block title %}Choisissez votre rôle | Académie Numérique{% endblock %}
+
+{% block content_empty %}
+<div class="min-h-screen flex items-center justify-center px-6 py-12 relative overflow-hidden" style="background-color: #0F172A;">
+    <!-- Background orbes -->
+    <div class="absolute top-0 left-0 w-[500px] h-[500px] bg-primary/10 rounded-full blur-[120px]"></div>
+    <div class="absolute bottom-0 right-0 w-[500px] h-[500px] bg-secondary/10 rounded-full blur-[120px]"></div>
+
+    <div class="w-full max-w-3xl relative z-10" style="color: #F1F5F9;">
+        <!-- User info header -->
+        <div class="text-center mb-10">
+            <div class="w-20 h-20 rounded-full mx-auto mb-4 overflow-hidden border-4 border-primary shadow-lg shadow-primary/30">
+                {% if user.avatar %}
+                    <img src="{{ user.avatar.url }}" alt="Avatar" class="w-full h-full object-cover">
+                {% else %}
+                    <div class="w-full h-full bg-button-gradient flex items-center justify-center text-2xl font-black text-white">
+                        {{ user.first_name|slice:":1" }}{{ user.last_name|slice:":1" }}
+                    </div>
+                {% endif %}
+            </div>
+            <h1 class="text-2xl font-black" style="color: #F1F5F9;">Bienvenue, {{ user.full_name }}</h1>
+            <p class="text-sm mt-1" style="color: #94A3B8;">{{ user.email }}</p>
+            <p class="text-sm mt-4 font-bold" style="color: #94A3B8;">Choisissez votre rôle pour continuer</p>
+        </div>
+
+        {% if messages %}
+        <div class="mb-6 space-y-2 max-w-lg mx-auto">
+            {% for message in messages %}
+            <div class="p-4 rounded-2xl text-sm font-bold {% if message.tags %}{% if 'error' in message.tags %}bg-danger/15 border border-danger/25{% elif 'success' in message.tags %}bg-success/15 border border-success/25{% else %}bg-info/15 border border-info/25{% endif %}{% else %}bg-info/15 border border-info/25{% endif %}" style="color: #F1F5F9;">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Role cards grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+            <!-- ÉLÈVE -->
+            <form method="post" class="glass rounded-2xl border border-border-standard p-6 hover:border-success/40 transition-all group">
+                {% csrf_token %}
+                <input type="hidden" name="role" value="eleve">
+                <div class="text-center">
+                    <div class="w-14 h-14 rounded-2xl bg-success/10 flex items-center justify-center mx-auto mb-4 group-hover:bg-success/20 transition">
+                        <i class="fa-solid fa-graduation-cap text-2xl text-success"></i>
+                    </div>
+                    <h3 class="text-lg font-black mb-1">Élève / Étudiant</h3>
+                    <p class="text-xs mb-5" style="color: #94A3B8;">Accédez à vos cours, devoirs et bulletins</p>
+                    <button type="submit" class="w-full py-3 rounded-xl bg-success/15 text-success font-bold text-sm border border-success/25 hover:bg-success/25 transition">
+                        Continuer en tant qu'Élève
+                    </button>
+                </div>
+            </form>
+
+            <!-- PROFESSEUR -->
+            <div class="glass rounded-2xl border border-border-standard p-6 hover:border-primary/40 transition-all group" x-data="{ open: false }">
+                <div class="text-center" x-show="!open">
+                    <div class="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4 group-hover:bg-primary/20 transition">
+                        <i class="fa-solid fa-chalkboard-user text-2xl text-primary"></i>
+                    </div>
+                    <h3 class="text-lg font-black mb-1">Professeur</h3>
+                    <p class="text-xs mb-5" style="color: #94A3B8;">Créez et corrigez des examens</p>
+                    <button @click="open = true" class="w-full py-3 rounded-xl bg-primary/15 text-primary font-bold text-sm border border-primary/25 hover:bg-primary/25 transition">
+                        Continuer en tant que Professeur
+                    </button>
+                </div>
+                <form method="post" x-show="open" x-transition>
+                    {% csrf_token %}
+                    <input type="hidden" name="role" value="professeur">
+                    <div class="text-center">
+                        <div class="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                            <i class="fa-solid fa-chalkboard-user text-2xl text-primary"></i>
+                        </div>
+                        <h3 class="text-lg font-black mb-1">Professeur</h3>
+                        <p class="text-xs mb-4" style="color: #94A3B8;">Entrez le code d'accès</p>
+                        <input type="password" name="role_password" required placeholder="Code d'accès" class="w-full bg-bg-tertiary border border-border-standard rounded-xl px-4 py-3 text-center text-sm focus:border-primary outline-none mb-4" style="color: #F1F5F9;">
+                        <div class="flex gap-2">
+                            <button type="submit" class="flex-1 py-3 rounded-xl bg-button-gradient text-white font-bold text-sm hover:opacity-90 transition">
+                                Valider
+                            </button>
+                            <button type="button" @click="open = false" class="px-4 py-3 rounded-xl bg-bg-tertiary border border-border-standard text-sm font-bold hover:bg-bg-tertiary/50 transition" style="color: #94A3B8;">
+                                Annuler
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- CONSEILLER PÉDAGOGIQUE -->
+            <div class="glass rounded-2xl border border-border-standard p-6 hover:border-warning/40 transition-all group" x-data="{ open: false }">
+                <div class="text-center" x-show="!open">
+                    <div class="w-14 h-14 rounded-2xl bg-warning/10 flex items-center justify-center mx-auto mb-4 group-hover:bg-warning/20 transition">
+                        <i class="fa-solid fa-clipboard-check text-2xl text-warning"></i>
+                    </div>
+                    <h3 class="text-lg font-black mb-1">Conseiller Pédagogique</h3>
+                    <p class="text-xs mb-5" style="color: #94A3B8;">Supervisez les résultats et bulletins</p>
+                    <button @click="open = true" class="w-full py-3 rounded-xl bg-warning/15 text-warning font-bold text-sm border border-warning/25 hover:bg-warning/25 transition">
+                        Continuer en tant que CP
+                    </button>
+                </div>
+                <form method="post" x-show="open" x-transition>
+                    {% csrf_token %}
+                    <input type="hidden" name="role" value="conseiller">
+                    <div class="text-center">
+                        <div class="w-14 h-14 rounded-2xl bg-warning/10 flex items-center justify-center mx-auto mb-4">
+                            <i class="fa-solid fa-clipboard-check text-2xl text-warning"></i>
+                        </div>
+                        <h3 class="text-lg font-black mb-1">Conseiller Pédagogique</h3>
+                        <p class="text-xs mb-4" style="color: #94A3B8;">Entrez le code d'accès</p>
+                        <input type="password" name="role_password" required placeholder="Code d'accès" class="w-full bg-bg-tertiary border border-border-standard rounded-xl px-4 py-3 text-center text-sm focus:border-warning outline-none mb-4" style="color: #F1F5F9;">
+                        <div class="flex gap-2">
+                            <button type="submit" class="flex-1 py-3 rounded-xl bg-button-gradient text-white font-bold text-sm hover:opacity-90 transition">
+                                Valider
+                            </button>
+                            <button type="button" @click="open = false" class="px-4 py-3 rounded-xl bg-bg-tertiary border border-border-standard text-sm font-bold hover:bg-bg-tertiary/50 transition" style="color: #94A3B8;">
+                                Annuler
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- ADMINISTRATEUR -->
+            <div class="glass rounded-2xl border border-border-standard p-6 hover:border-danger/40 transition-all group" x-data="{ open: false }">
+                <div class="text-center" x-show="!open">
+                    <div class="w-14 h-14 rounded-2xl bg-danger/10 flex items-center justify-center mx-auto mb-4 group-hover:bg-danger/20 transition">
+                        <i class="fa-solid fa-shield-halved text-2xl text-danger"></i>
+                    </div>
+                    <h3 class="text-lg font-black mb-1">Administrateur</h3>
+                    <p class="text-xs mb-5" style="color: #94A3B8;">Gérez la plateforme et les utilisateurs</p>
+                    <button @click="open = true" class="w-full py-3 rounded-xl bg-danger/15 text-danger font-bold text-sm border border-danger/25 hover:bg-danger/25 transition">
+                        Continuer en tant qu'Admin
+                    </button>
+                </div>
+                <form method="post" x-show="open" x-transition>
+                    {% csrf_token %}
+                    <input type="hidden" name="role" value="admin">
+                    <div class="text-center">
+                        <div class="w-14 h-14 rounded-2xl bg-danger/10 flex items-center justify-center mx-auto mb-4">
+                            <i class="fa-solid fa-shield-halved text-2xl text-danger"></i>
+                        </div>
+                        <h3 class="text-lg font-black mb-1">Administrateur</h3>
+                        <p class="text-xs mb-4" style="color: #94A3B8;">Entrez le code d'accès</p>
+                        <input type="password" name="role_password" required placeholder="Code d'accès" class="w-full bg-bg-tertiary border border-border-standard rounded-xl px-4 py-3 text-center text-sm focus:border-danger outline-none mb-4" style="color: #F1F5F9;">
+                        <div class="flex gap-2">
+                            <button type="submit" class="flex-1 py-3 rounded-xl bg-button-gradient text-white font-bold text-sm hover:opacity-90 transition">
+                                Valider
+                            </button>
+                            <button type="button" @click="open = false" class="px-4 py-3 rounded-xl bg-bg-tertiary border border-border-standard text-sm font-bold hover:bg-bg-tertiary/50 transition" style="color: #94A3B8;">
+                                Annuler
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
