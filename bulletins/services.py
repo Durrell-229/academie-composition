@@ -251,23 +251,24 @@ class BulletinService:
     def _extract_serial(classe):
         """
         Extrait la série (A1, A2, B, C, D, E, G1, G2, G3) du nom de classe.
+        Ne retourne JAMAIS "bepc" car ce n'est pas un examen.
         Exemples:
             "Terminale C" -> "C"
             "Terminale D" -> "D"
             "Terminale A1" -> "A1"
             "Terminale G2" -> "G2"
-            "3ème" -> "bepc"
-            "Terminale" sans série -> "bepc"
+            "3ème" -> "Premier Cycle"
+            "Terminale" sans série -> "Second Cycle"
         """
         if not classe:
-            return "bepc"
+            return "N/A"
         
         classe_upper = classe.upper().strip()
         
         # Si c'est une classe du premier cycle (6ème, 5ème, 4ème, 3ème, 2nde)
         premier_cycle = ["6EME", "5EME", "4EME", "3EME", "2NDE", "SECONDE"]
         if any(c in classe_upper for c in premier_cycle):
-            return "bepc"
+            return "Premier Cycle"
         
         # Pour le second cycle (1ère, Terminale), chercher la série
         # Ordre: plus long d'abord pour éviter G1 -> G
@@ -276,5 +277,5 @@ class BulletinService:
             if serie in classe_upper:
                 return serie
         
-        # Par défaut, BEPC (pas de série détectée)
-        return "bepc"
+        # Par défaut, Second Cycle (pas de série détectée mais classe du second cycle)
+        return "Second Cycle"

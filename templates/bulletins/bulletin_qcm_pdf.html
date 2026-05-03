@@ -121,13 +121,13 @@
                 <td class="label-field">Classe :</td>
                 <td>{{ classe }}</td>
                 <td class="label-field">Série :</td>
-                <td><strong>{{ serie|default:"N/A"|upper }}</strong></td>
+                <td><strong>{{ serie|upper }}</strong></td>
             </tr>
             <tr>
                 <td class="label-field">Date d'évaluation :</td>
                 <td>{{ bulletin.created_at|date:"d/m/Y" }}</td>
                 <td class="label-field">Type :</td>
-                <td>Évaluation QCM par IA</td>
+                <td><strong>Test de Connaissances</strong></td>
             </tr>
         </table>
     </div>

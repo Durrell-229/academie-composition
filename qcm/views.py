@@ -181,11 +181,22 @@ def submit_qcm(request):
 
     try:
         with transaction.atomic():
+            from bulletins.coefficients_benin import get_coefficient
+            from bulletins.services import BulletinService
+
+            # Récupérer la classe et déterminer la série
+            classe_nom = ctx.get('classe', '')
+            serie = BulletinService._extract_serial(classe_nom)
+            matiere_nom = ctx.get('matiere', '')
+
+            # Calculer le coefficient exact de la matière pour cette série/classe
+            coefficient = get_coefficient(matiere_nom, serie)
+
             # 1. Créer le Bulletin professionnel
             annee_scolaire = timezone.now().strftime('%Y-%Y')
             bulletin = Bulletin.objects.create(
                 eleve=request.user,
-                classe=ctx.get('classe', ''),
+                classe=classe_nom,
                 annee_scolaire=annee_scolaire,
                 periode=Bulletin.Periode.QCM,
                 type_bulletin=Bulletin.TypeBulletin.PROFESSIONNEL,
@@ -196,12 +207,13 @@ def submit_qcm(request):
                 decision_conseil='Évaluation QCM complétée',
             )
 
-            # 2. Créer la ligne du bulletin
+            # 2. Créer la ligne du bulletin AVEC le coefficient exact
             BulletinLigne.objects.create(
                 bulletin=bulletin,
-                matiere=ctx.get('matiere', ''),
+                matiere=matiere_nom,
                 note=note,
                 note_max=20,
+                coefficient=coefficient,
                 moyenne_classe=note,
                 appreciation=feedback.get('remediation', ''),
             )
@@ -215,8 +227,8 @@ def submit_qcm(request):
             # 4. Créer le QCMResultat
             resultat = QCMResultat.objects.create(
                 eleve=request.user,
-                matiere=ctx.get('matiere', ''),
-                classe=ctx.get('classe', ''),
+                matiere=matiere_nom,
+                classe=classe_nom,
                 theme=ctx.get('theme', ''),
                 note_sur_20=note,
                 bonnes_reponses=bonnes_reponses_count,
