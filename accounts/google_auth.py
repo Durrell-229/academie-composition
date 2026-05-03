@@ -29,6 +29,15 @@ SCOPES = 'openid email profile'
 
 def google_login_redirect(request):
     """Redirect user to Google OAuth consent screen."""
+    # Check credentials are configured
+    client_id = getattr(settings, 'GOOGLE_CLIENT_ID', '')
+    redirect_uri = getattr(settings, 'GOOGLE_REDIRECT_URI', '')
+
+    if not client_id:
+        from django.contrib import messages
+        messages.error(request, "Google OAuth non configuré. Contactez l'administrateur.")
+        return redirect('login')
+
     # Generate state for CSRF protection
     state = secrets.token_urlsafe(32)
     request.session['google_oauth_state'] = state
@@ -38,8 +47,8 @@ def google_login_redirect(request):
 
     # Build authorization URL
     params = {
-        'client_id': settings.GOOGLE_CLIENT_ID,
-        'redirect_uri': settings.GOOGLE_REDIRECT_URI,
+        'client_id': client_id,
+        'redirect_uri': redirect_uri,
         'response_type': 'code',
         'scope': SCOPES,
         'state': state,
