@@ -23,11 +23,9 @@
       {% if dm %}
       <div class="flex gap-3 mb-4">
         <a href="{{ dm.epreuve_file.url }}" target="_blank" class="px-4 py-2 rounded-lg bg-primary/10 text-primary text-sm font-bold hover:bg-primary/20 transition">
-          <i class="fa-solid fa-download"></i> Épreuve
+          <i class="fa-solid fa-download"></i> Télécharger l'épreuve
         </a>
-        <a href="{{ dm.corrige_type_file.url }}" target="_blank" class="px-4 py-2 rounded-lg bg-accent/10 text-accent text-sm font-bold hover:bg-accent/20 transition">
-          <i class="fa-solid fa-file-lines"></i> Corrigé
-        </a>
+        {# CORRIGÉ TYPE: Jamais visible par l'élève - uniquement pour l'IA correction #}
       </div>
 
       {% if reponse and reponse.dm_id in reponse %}
