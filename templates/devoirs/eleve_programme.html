@@ -23,19 +23,17 @@
             </a>
           {% else %}
             <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase bg-info/10 text-info">Programmé</span>
+            <a href="{% url 'eleve_devoir_calendar' devoir_id=devoir.pk %}" class="block mt-2 px-4 py-2 rounded-lg bg-accent text-white text-xs font-bold hover:bg-accent/80 transition">
+              <i class="fa-solid fa-calendar"></i> Voir le calendrier
+            </a>
           {% endif %}
         </div>
       </div>
 
-      <!-- Horaires par matière -->
-      <div class="mt-4 grid grid-cols-2 md:grid-cols-3 gap-2">
+      <!-- Matières du devoir -->
+      <div class="mt-4 flex flex-wrap gap-2">
         {% for m in devoir.matieres.all %}
-        <div class="bg-bg-tertiary rounded-lg p-2 text-center">
-          <p class="text-[10px] font-bold text-text-muted">{{ m.nom }}</p>
-          {% if devoir.horaires.m.nom %}
-            <p class="text-xs text-primary">{{ devoir.horaires.m.nom.date }} {{ devoir.horaires.m.nom.start }}-{{ devoir.horaires.m.nom.end }}</p>
-          {% endif %}
-        </div>
+        <span class="bg-bg-tertiary rounded-lg px-3 py-2 text-xs font-bold text-text-primary">{{ m.nom }}</span>
         {% endfor %}
       </div>
     </div>
