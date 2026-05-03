@@ -1,8 +1,8 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponseForbidden
+from django.http import HttpResponseForbidden, HttpResponse
 from django.utils import timezone
-from .models import CompositionSession
+from .models import CompositionSession, Resultat
 from exams.models import Exam, ExamAssignment
 
 
@@ -222,3 +222,20 @@ def upload_screenshot(request):
 
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+
+def download_composition_bulletin(request, resultat_id):
+    """
+    Endpoint PUBLIC pour télécharger le bulletin d'une composition via QR code.
+    Pas d'authentification requise — le resultat ID (UUID) sert de clé.
+    """
+    resultat = get_object_or_404(Resultat, id=resultat_id)
+
+    if not resultat.bulletin_pdf:
+        return HttpResponse("Bulletin PDF non disponible.", status=404)
+
+    response = HttpResponse(resultat.bulletin_pdf.read(), content_type='application/pdf')
+    eleve = resultat.session.eleve
+    filename = f"bulletin_{eleve.last_name}_{resultat.session.exam.titre[:10]}.pdf"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response

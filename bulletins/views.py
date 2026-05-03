@@ -70,3 +70,28 @@ def preview_bulletin(request, bulletin_id):
     if request.user.role == 'eleve' and bulletin.eleve != request.user:
         return HttpResponseForbidden("Accès non autorisé.")
     return render(request, 'bulletins/preview.html', {'bulletin': bulletin})
+
+
+def verify_and_download(request, token):
+    """
+    Endpoint PUBLIC pour verification via QR code.
+    Permet de télécharger le bulletin PDF en scannant le QR.
+    Pas d'authentification requise — le token sert de clé de sécurité.
+    """
+    bulletin = get_object_or_404(Bulletin, verification_token=token)
+
+    # Générer le PDF s'il n'existe pas
+    if not bulletin.file_pdf:
+        if bulletin.type_bulletin == Bulletin.TypeBulletin.ADMINISTRATIF:
+            BulletinService.generate_bulletin_administratif_pdf(bulletin)
+        else:
+            BulletinService.generate_bulletin_professionnel_pdf(bulletin)
+        bulletin.refresh_from_db()
+
+    if not bulletin.file_pdf:
+        return HttpResponse("Erreur lors de la génération du PDF.", status=500)
+
+    response = HttpResponse(bulletin.file_pdf.read(), content_type='application/pdf')
+    filename = f"bulletin_{bulletin.eleve.last_name}_{bulletin.periode}_{bulletin.annee_scolaire}.pdf"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response

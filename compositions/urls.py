@@ -8,4 +8,6 @@ urlpatterns = [
     path('ia-corrections/', views.ia_corrections_list_view, name='ia_corrections_list'),
     path('api/log-cheat/', views.log_cheat_event, name='log_cheat'),
     path('api/upload-screenshot/', views.upload_screenshot, name='upload_screenshot'),
+    # Endpoint public pour téléchargement bulletin via QR
+    path('bulletin/<uuid:resultat_id>/download/', views.download_composition_bulletin, name='bulletin_download'),
 ]

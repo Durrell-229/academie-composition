@@ -155,6 +155,7 @@ def process_ia_correction(session_id):
     try:
         from bulletins.services import BulletinService
         from bulletins.coefficients_benin import get_coefficient as get_benin_coefficient
+        from api.services.qr_service import QRService
         
         # Extraire la série de la classe de l'élève
         eleve = session.eleve
@@ -170,6 +171,7 @@ def process_ia_correction(session_id):
             'annee_scolaire': '2025-2026',
             'serie': serie,
             'coefficient_officiel': coeff_officiel,
+            'qr_data_uri': QRService.generate_composition_qr(resultat),
         }
         html = render_to_string('compositions/bulletin_resultat_benin.html', context)
         pdf_file = BytesIO()

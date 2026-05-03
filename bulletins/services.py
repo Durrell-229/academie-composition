@@ -7,6 +7,7 @@ import os
 import logging
 
 from .coefficients_benin import get_coefficient as get_benin_coefficient
+from api.services.qr_service import QRService
 
 logger = logging.getLogger(__name__)
 
@@ -119,6 +120,8 @@ class BulletinService:
             'observation': bulletin.observation_conseil or "Travail satisfaisant. Continue dans cette voie.",
             'total_moy_coeff': round(total_moy_coeff, 2),
             'total_coeffs': round(total_coeffs, 2),
+            # QR Code
+            'qr_data_uri': QRService.generate_bulletin_qr(bulletin),
         }
 
         html = render_to_string('bulletins/bulletin_administratif_pdf.html', context)
@@ -149,6 +152,7 @@ class BulletinService:
             'lignes': bulletin.lignes.all(),
             'verification_token': bulletin.verification_token,
             'signature': hashlib.sha256(f"{bulletin.id}{bulletin.verification_token}".encode()).hexdigest()[:16],
+            'qr_data_uri': QRService.generate_bulletin_qr(bulletin),
         }
 
         html = render_to_string('bulletins/bulletin_professionnel_pdf.html', context)
@@ -201,6 +205,7 @@ class BulletinService:
             'coefficient': coefficient_officiel,
             'bonnes_reponses': qcm_resultat.bonnes_reponses if qcm_resultat else '-',
             'total_questions': qcm_resultat.total_questions if qcm_resultat else '-',
+            'qr_data_uri': QRService.generate_bulletin_qr(bulletin),
         }
 
         html = render_to_string('bulletins/bulletin_qcm_pdf.html', context)

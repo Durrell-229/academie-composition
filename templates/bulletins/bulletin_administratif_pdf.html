@@ -314,24 +314,7 @@
                 <div class="qr-item">
                     <p>CODE SÉCURITÉ</p>
                     <div class="qr-box">
-                        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                            <rect width="100" height="100" fill="#fff"/>
-                            <rect x="10" y="10" width="25" height="25" fill="#000"/>
-                            <rect x="15" y="15" width="15" height="15" fill="#fff"/>
-                            <rect x="18" y="18" width="9" height="9" fill="#000"/>
-                            <rect x="65" y="10" width="25" height="25" fill="#000"/>
-                            <rect x="70" y="15" width="15" height="15" fill="#fff"/>
-                            <rect x="73" y="18" width="9" height="9" fill="#000"/>
-                            <rect x="10" y="65" width="25" height="25" fill="#000"/>
-                            <rect x="15" y="70" width="15" height="15" fill="#fff"/>
-                            <rect x="18" y="73" width="9" height="9" fill="#000"/>
-                            <rect x="40" y="40" width="5" height="5" fill="#000"/>
-                            <rect x="50" y="50" width="5" height="5" fill="#000"/>
-                            <rect x="60" y="45" width="5" height="5" fill="#000"/>
-                            <rect x="45" y="55" width="5" height="5" fill="#000"/>
-                            <rect x="55" y="60" width="5" height="5" fill="#000"/>
-                            <rect x="65" y="65" width="5" height="5" fill="#000"/>
-                        </svg>
+                        <img src="{{ qr_data_uri }}" style="width:15mm;height:15mm;">
                     </div>
                     <p style="font-size:6px;">{{ verification_token|slice:":8"|upper }}</p>
                 </div>
@@ -340,28 +323,11 @@
                     <p>Cotonou, le {{ date_bulletin|date:"d/m/Y"|default:"__________" }}</p>
                 </div>
                 <div class="qr-item">
-                    <p>CODE AUTHENTIQUE</p>
+                    <p>SCAN POUR TÉLÉCHARGER</p>
                     <div class="qr-box">
-                        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                            <rect width="100" height="100" fill="#fff"/>
-                            <rect x="10" y="10" width="25" height="25" fill="#000"/>
-                            <rect x="15" y="15" width="15" height="15" fill="#fff"/>
-                            <rect x="18" y="18" width="9" height="9" fill="#000"/>
-                            <rect x="65" y="10" width="25" height="25" fill="#000"/>
-                            <rect x="70" y="15" width="15" height="15" fill="#fff"/>
-                            <rect x="73" y="18" width="9" height="9" fill="#000"/>
-                            <rect x="10" y="65" width="25" height="25" fill="#000"/>
-                            <rect x="15" y="70" width="15" height="15" fill="#fff"/>
-                            <rect x="18" y="73" width="9" height="9" fill="#000"/>
-                            <rect x="45" y="55" width="5" height="5" fill="#000"/>
-                            <rect x="55" y="60" width="5" height="5" fill="#000"/>
-                            <rect x="65" y="65" width="5" height="5" fill="#000"/>
-                            <rect x="40" y="45" width="5" height="5" fill="#000"/>
-                            <rect x="50" y="40" width="5" height="5" fill="#000"/>
-                            <rect x="60" y="50" width="5" height="5" fill="#000"/>
-                        </svg>
+                        <img src="{{ qr_data_uri }}" style="width:15mm;height:15mm;">
                     </div>
-                    <p style="font-size:6px;">{{ signature|slice:":8"|upper }}</p>
+                    <p style="font-size:6px;">BULLETIN PDF</p>
                 </div>
             </div>
 

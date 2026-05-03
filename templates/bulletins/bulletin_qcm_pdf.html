@@ -200,10 +200,12 @@
                 </div>
             </td>
             <td style="border: none; width: 50%; vertical-align: top;">
-                <div style="text-align: center; padding: 10px;">
+                <div style="text-align:center; padding: 10px;">
                     <div style="font-weight: bold; margin-bottom: 40px;">Le Chef de l'Administration Scolaire</div>
-                    <div style="font-family: 'Brush Script MT', cursive; font-size: 18pt; color: #333; margin-bottom: 5px;">Signature Numérique</div>
-                    <div style="font-size: 7pt; color: #666;">Tél: +2290197650817</div>
+                    {% if qr_data_uri %}
+                    <img src="{{ qr_data_uri }}" style="width:20mm;height:20mm; margin: 0 auto 5px auto;">
+                    {% endif %}
+                    <div style="font-size:7pt; font-weight:bold; color:#666;">SCAN POUR TÉLÉCHARGER LE PDF</div>
                 </div>
             </td>
         </tr>
