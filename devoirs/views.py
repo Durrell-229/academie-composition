@@ -279,6 +279,46 @@ def devoir_matiere_reject_view(request, pk):
 
 
 @login_required
+def admin_upload_epreuve_view(request, pk):
+    """Admin directly uploads epreuve + corrige for a matiere."""
+    if request.user.role != 'admin':
+        messages.error(request, "Accès refusé.")
+        return redirect('dashboard')
+
+    devoir = get_object_or_404(Devoir, pk=pk)
+    matiere_id = request.GET.get('matiere_id')
+    matiere = get_object_or_404(Matiere, pk=matiere_id) if matiere_id else None
+
+    if request.method == 'POST':
+        matiere_id = request.POST.get('matiere_id')
+        matiere = get_object_or_404(Matiere, pk=matiere_id)
+        epreuve = request.FILES.get('epreuve')
+        corrige = request.FILES.get('corrige')
+
+        if not epreuve or not corrige:
+            messages.error(request, "L'épreuve et le corrigé sont requis.")
+            return redirect('admin_upload_epreuve', pk=pk, matiere_id=matiere_id)
+
+        dm, created = DevoirMatiere.objects.update_or_create(
+            devoir=devoir, matiere=matiere,
+            defaults={
+                'epreuve_file': epreuve,
+                'corrige_type_file': corrige,
+                'soumis_par': request.user,
+                'statut': DevoirMatiere.StatutEP.SOUMIS,
+            }
+        )
+        messages.success(request, f"Épreuve '{matiere.nom}' soumise. À valider.")
+        return redirect('devoir_detail', pk=pk)
+
+    return render(request, 'devoirs/admin_upload_epreuve.html', {
+        'devoir': devoir,
+        'matiere': matiere,
+        'matieres': devoir.matieres.all(),
+    })
+
+
+@login_required
 def devoir_set_coefficients_view(request, pk):
     if request.user.role != 'admin':
         messages.error(request, "Accès refusé.")

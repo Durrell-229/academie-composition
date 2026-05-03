@@ -592,16 +592,18 @@ def profile_edit_view(request):
                 elif ct == 'image/webp':
                     ext = 'webp'
                 # Fixed predictable filename — no original name used
-                new_name = f"user_{user.id.hex[:8]}.{ext}"
-                avatar_file.name = new_name
+                new_name = f"profiles/user_{user.id.hex[:8]}.{ext}"
+                # Read file content BEFORE it gets closed
+                file_content = avatar_file.read()
+                from django.core.files.base import ContentFile
                 # Delete old avatar file to avoid orphans
                 if user.avatar and user.avatar.name:
                     try:
                         user.avatar.delete(save=False)
                     except Exception:
                         pass
-                user.avatar = avatar_file
-                user.save()
+                # Save with ContentFile wrapping the bytes
+                user.avatar.save(new_name, ContentFile(file_content), save=True)
             else:
                 form.save()
 

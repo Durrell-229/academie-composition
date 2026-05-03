@@ -18,6 +18,7 @@ urlpatterns = [
     # Admin: validate/reject epreuves
     path('matiere/<uuid:pk>/validate/', views.devoir_matiere_validate_view, name='devoir_matiere_validate'),
     path('matiere/<uuid:pk>/reject/', views.devoir_matiere_reject_view, name='devoir_matiere_reject'),
+    path('<uuid:pk>/upload-epreuve/', views.admin_upload_epreuve_view, name='admin_upload_epreuve'),
 
     # Admin: approve/reject bulletins
     path('bulletin/<uuid:pk>/approve/', views.devoir_approuver_bulletin_view, name='devoir_approuver_bulletin'),

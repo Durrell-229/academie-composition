@@ -81,11 +81,11 @@
               {% if info.epreuve.commentaire_admin %}
                 <p class="text-[10px] text-danger mt-1">Motif: {{ info.epreuve.commentaire_admin }}</p>
               {% endif %}
-              <a href="{% url 'devoir_submit_epreuve' devoir_id=devoir.pk matiere_id=info.matiere.pk %}" class="mt-2 inline-block px-3 py-1 rounded-lg bg-primary/10 text-primary text-xs font-bold hover:bg-primary/20 transition"><i class="fa-solid fa-rotate"></i> Resoumettre</a>
+              <a href="{% url 'admin_upload_epreuve' pk=devoir.pk %}?matiere_id={{ info.matiere.pk }}" class="mt-2 inline-block px-3 py-1 rounded-lg bg-primary/10 text-primary text-xs font-bold hover:bg-primary/20 transition"><i class="fa-solid fa-rotate"></i> Resoumettre</a>
             {% endif %}
           {% else %}
             <span class="text-[10px] bg-bg-tertiary text-text-muted px-2 py-1 rounded-full">En attente de soumission</span>
-            <a href="{% url 'devoir_submit_epreuve' devoir_id=devoir.pk matiere_id=info.matiere.pk %}" class="mt-2 inline-block px-3 py-1 rounded-lg bg-primary/10 text-primary text-xs font-bold hover:bg-primary/20 transition"><i class="fa-solid fa-upload"></i> Soumettre l'épreuve</a>
+            <a href="{% url 'admin_upload_epreuve' pk=devoir.pk %}?matiere_id={{ info.matiere.pk }}" class="mt-2 inline-block px-3 py-1 rounded-lg bg-primary/10 text-primary text-xs font-bold hover:bg-primary/20 transition"><i class="fa-solid fa-upload"></i> Soumettre l'épreuve</a>
           {% endif %}
         </div>
       </div>
