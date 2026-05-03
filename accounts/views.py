@@ -503,6 +503,9 @@ def register_view(request):
     if request.user.is_authenticated:
         return redirect('dashboard')
 
+    from core.models import Classe
+    classes = Classe.objects.filter(is_active=True).order_by('nom')
+
     if request.method == 'POST':
         email = request.POST.get('email', '').strip()
         password = request.POST.get('password', '')
@@ -511,12 +514,18 @@ def register_view(request):
         role = request.POST.get('role', 'eleve')
         role_password = request.POST.get('role_password', '')
         phone = request.POST.get('phone', '')
-        country = request.POST.get('country', 'France')
+        country = request.POST.get('country', 'Bénin')
         niveau = request.POST.get('niveau', '')
         classe = request.POST.get('classe', '')
+        serie = request.POST.get('serie', '')
+        sexe = request.POST.get('sexe', '')
+        matricule = request.POST.get('matricule', '')
+
+        # Combine classe + serie for display (e.g. "Terminale C")
+        if role == 'eleve' and classe and serie:
+            classe = f"{classe} {serie}" if not serie in classe else classe
 
         # Vérification des rôles privilégiés
-        # Mapping nom formulaire → nom variable settings
         role_password_map = {
             'admin': 'ROLE_PASSWORD_ADMIN',
             'professeur': 'ROLE_PASSWORD_PROF',
@@ -527,7 +536,7 @@ def register_view(request):
             expected = getattr(settings, var_name, None)
             if not expected or role_password != expected:
                 messages.error(request, "Code d'accès invalide pour ce rôle.")
-                return render(request, 'accounts/register.html', {'is_auth_page': True})
+                return render(request, 'accounts/register.html', {'is_auth_page': True, 'classes': classes})
 
         if User.objects.filter(email=email).exists():
             messages.error(request, "Cet email est déjà utilisé.")
@@ -545,6 +554,8 @@ def register_view(request):
                     country=country,
                     niveau=niveau,
                     classe=classe,
+                    sexe=sexe,
+                    matricule=matricule if matricule else None,
                 )
                 # Explicitly set auth backend for multi-backend setup
                 user.backend = 'django.contrib.auth.backends.ModelBackend'
@@ -554,7 +565,7 @@ def register_view(request):
             except Exception as e:
                 messages.error(request, f"Erreur lors de l'inscription : {str(e)}")
 
-    return render(request, 'accounts/register.html', {'is_auth_page': True})
+    return render(request, 'accounts/register.html', {'is_auth_page': True, 'classes': classes})
 
 @login_required
 def profile_edit_view(request):

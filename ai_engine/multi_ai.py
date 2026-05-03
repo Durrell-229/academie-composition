@@ -203,19 +203,27 @@ FORMAT DE RÉPONSE EXIGÉ (JSON valide UNIQUEMENT) :
     def generate_qcm(self, matiere: str, classe: str, nb_questions: int = 10,
                      difficulte: str = 'moyen', theme: str = '') -> str:
         """Génère un QCM complet strictement sur le chapitre demandé."""
+        from qcm.referentiel_programmes import get_referentiel_context, get_langue_for_matiere
+
         if not theme:
             theme = f"Programme général de {matiere} pour {classe}"
 
         theme_str = theme.strip()
 
+        # Récupérer le contexte du programme officiel béninois
+        referentiel_context = get_referentiel_context(classe, matiere)
+
         # Déterminer la langue du QCM selon la matière
-        matiere_lower = matiere.lower()
-        if matiere_lower in ('anglais', 'anglais lv1', 'anglais lv2', 'english'):
+        langue_code = get_langue_for_matiere(matiere)
+        if langue_code == 'en':
             langue_qcm = 'ANGLAIS'
-            instruction_langue = 'TOUTES les questions, choix de réponses et explications doivent être rédigées EXCLUSIVEMENT EN ANGLAIS.'
-        elif matiere_lower in ('arabe',):
-            langue_qcm = 'ARABE'
-            instruction_langue = 'TOUTES les questions et choix de réponses doivent être rédigés EN ARABE.'
+            instruction_langue = 'CRITIQUE : TOUTES les questions, choix de réponses et explications doivent être rédigées EXCLUSIVEMENT EN ANGLAIS. N\'utilise AUCUN mot en français.'
+        elif langue_code == 'es':
+            langue_qcm = 'ESPAGNOL'
+            instruction_langue = 'CRITIQUE : TOUTES les questions, choix de réponses et explications doivent être rédigées EXCLUSIVEMENT EN ESPAGNOL. N\'utilise AUCUN mot en français.'
+        elif langue_code == 'de':
+            langue_qcm = 'ALLEMAND'
+            instruction_langue = 'CRITIQUE : TOUTES les questions, choix de réponses et explications doivent être rédigées EXCLUSIVEMENT EN ALLEMAND. N\'utilise AUCUN mot en français.'
         else:
             langue_qcm = 'FRANÇAIS'
             instruction_langue = 'TOUTES les questions, choix de réponses et explications doivent être rédigés EXCLUSIVEMENT EN FRANÇAIS.'
@@ -224,14 +232,17 @@ FORMAT DE RÉPONSE EXIGÉ (JSON valide UNIQUEMENT) :
 
 LANGUE : {instruction_langue}
 
+{referentiel_context}
+
 CHAPITRE CIBLE : {theme_str}
 
 CONTRAINTE ABSOLUE :
-- TOUTES les questions doivent porter EXCLUSIVEMENT sur le chapitre "{theme_str}"
-- NE JAMAIS poser de questions sur un autre chapitre
-- Si tu ne connais pas le contenu de ce chapitre, adapte-toi mais reste DANS le thème
+- TOUTES les questions doivent porter EXCLUSIVEMENT sur le chapitre "{theme_str}" ou sur les chapitres du programme officiel listés ci-dessus
+- NE JAMAIS poser de questions sur un chapitre hors-programme
+- NE JAMAIS inventer de notions qui ne sont pas dans les chapitres officiels
 - Niveau de difficulté : {difficulte}
 - Sois STRICT et RIGOUREUX comme un vrai examen
+- Utilise des exemples et contextes béninois quand c'est pertinent (villes : Cotonou, Porto-Novo, Parakou ; histoire du Bénin ; faune et flore locales)
 
 OBJECTIF :
 Génère exactement {nb_questions} questions QCM sur "{theme_str}".
@@ -243,6 +254,7 @@ RÈGLES STRICTES :
 4. Les distracteurs (mauvaises réponses) doivent être plausibles mais clairement incorrects
 5. Numérote les questions de 1 à {nb_questions}
 6. La bonne réponse doit être JUSTE et sans ambiguïté
+7. {instruction_langue}
 
 FORMAT DE RÉPONSE EXIGÉ — JSON valide UNIQUEMENT, rien d'autre :
 ```json

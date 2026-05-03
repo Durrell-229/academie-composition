@@ -9,10 +9,12 @@ from core.constants import CLASSE_CHOICES, MATIERE_CHOICES
 @login_required
 def exam_list_view(request):
     exams = Exam.objects.all()
+    matieres = Matiere.objects.filter(is_active=True).order_by('nom')
+    classes = Classe.objects.filter(is_active=True).order_by('nom')
     return render(request, 'exams/exam_list.html', {
         'exams': exams,
-        'matiere_choices': MATIERE_CHOICES,
-        'classe_choices': CLASSE_CHOICES
+        'matieres': matieres,
+        'classes': classes,
     })
 
 @login_required
@@ -20,6 +22,9 @@ def exam_create_view(request):
     if request.user.role not in ['professeur', 'admin']:
         messages.error(request, "Accès refusé.")
         return redirect('dashboard')
+    
+    matieres = Matiere.objects.filter(is_active=True).order_by('nom')
+    classes = Classe.objects.filter(is_active=True).order_by('nom')
     
     if request.method == 'POST':
         titre = request.POST.get('titre')
@@ -75,8 +80,8 @@ def exam_create_view(request):
         return redirect('dashboard')
 
     return render(request, 'exams/exam_form.html', {
-        'matieres': Matiere.objects.all(),
-        'classes': Classe.objects.all()
+        'matieres': matieres,
+        'classes': classes,
     })
 
 @login_required

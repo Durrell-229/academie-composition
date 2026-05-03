@@ -40,8 +40,8 @@
       <label class="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Filtrer par Matière</label>
       <select name="matiere" class="w-full bg-bg-tertiary border border-border-standard rounded-lg px-4 py-2.5 text-sm text-white focus:border-border-focus transition outline-none">
         <option value="">Toutes les matières</option>
-        {% for code, label in matiere_choices %}
-        <option value="{{ code }}">{{ label }}</option>
+        {% for m in matieres %}
+        <option value="{{ m.id }}">{{ m.nom }}</option>
         {% endfor %}
       </select>
     </div>
@@ -50,12 +50,8 @@
       <label class="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Niveau / Classe</label>
       <select name="classe" class="w-full bg-bg-tertiary border border-border-standard rounded-lg px-4 py-2.5 text-sm text-white focus:border-border-focus transition outline-none">
         <option value="">Tous les niveaux</option>
-        {% for niveau, choices in classe_choices %}
-          <optgroup label="{{ niveau }}">
-            {% for code, label in choices %}
-              <option value="{{ code }}">{{ label }}</option>
-            {% endfor %}
-          </optgroup>
+        {% for c in classes %}
+          <option value="{{ c.id }}">{{ c.nom }}</option>
         {% endfor %}
       </select>
     </div>
