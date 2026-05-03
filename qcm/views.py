@@ -199,7 +199,7 @@ def submit_qcm(request):
                 classe=classe_nom,
                 annee_scolaire=annee_scolaire,
                 periode=Bulletin.Periode.QCM,
-                type_bulletin=Bulletin.TypeBulletin.PROFESSIONNEL,
+                type_bulletin=Bulletin.TypeBulletin.QCM,
                 moyenne_generale=note,
                 rang=1,
                 effectif_total=1,

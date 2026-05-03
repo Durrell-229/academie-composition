@@ -182,6 +182,9 @@ GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '')
 GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET', '')
 GOOGLE_REDIRECT_URI = os.environ.get('GOOGLE_REDIRECT_URI', 'http://localhost:8000/accounts/google/callback/')
 
+# Site URL for QR codes and external links (configure via Render)
+SITE_URL = os.environ.get('SITE_URL', 'https://academie-composition.onrender.com')
+
 # WhiteNoise
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 

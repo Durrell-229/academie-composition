@@ -80,10 +80,19 @@ def verify_and_download(request, token):
     """
     bulletin = get_object_or_404(Bulletin, verification_token=token)
 
-    # Générer le PDF s'il n'existe pas
+    # Générer le PDF s'il n'existe pas selon le type de bulletin
     if not bulletin.file_pdf:
         if bulletin.type_bulletin == Bulletin.TypeBulletin.ADMINISTRATIF:
             BulletinService.generate_bulletin_administratif_pdf(bulletin)
+        elif bulletin.type_bulletin == Bulletin.TypeBulletin.QCM:
+            # Pour les bulletins QCM, utiliser la méthode spéciale QCM
+            try:
+                BulletinService.generate_bulletin_qcm_pdf(bulletin)
+            except Exception as e:
+                # Fallback: essayer professionnel si QCM échoue
+                from django.utils.log import logger
+                logger.error(f"Erreur génération QCM PDF: {e}")
+                BulletinService.generate_bulletin_professionnel_pdf(bulletin)
         else:
             BulletinService.generate_bulletin_professionnel_pdf(bulletin)
         bulletin.refresh_from_db()

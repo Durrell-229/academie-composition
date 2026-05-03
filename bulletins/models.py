@@ -16,6 +16,7 @@ class Bulletin(models.Model):
     class TypeBulletin(models.TextChoices):
         ADMINISTRATIF = 'administratif', 'Administratif (Format Ministère)'
         PROFESSIONNEL = 'professionnel', 'Professionnel (Format Entreprise)'
+        QCM = 'qcm', 'QCM (Test de Connaissances)'
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     eleve = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='bulletins')
