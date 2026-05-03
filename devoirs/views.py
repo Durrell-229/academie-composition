@@ -907,9 +907,12 @@ def certificat_download_view(request, pk):
 def _corriger_copie_ia(reponse, devoir_matiere):
     """Run IA auto-correction on a student's copy using the specific answer key."""
     try:
+        logger.info(f"[IA Correction] Démarrage pour {reponse.eleve.full_name} - {devoir_matiere.matiere.nom}")
+        logger.info(f"[IA Correction] Devoir: {devoir_matiere.devoir.titre}")
+        
         engine = _get_ai_engine()
         if not engine:
-            logger.warning("IA non disponible, copie en attente de correction manuelle.")
+            logger.warning("[IA Correction] IA non disponible, copie en attente de correction manuelle.")
             reponse.statut = DevoirReponseEleve.StatutReponse.EN_COURS_CORRECTION
             reponse.save()
             return
@@ -918,22 +921,34 @@ def _corriger_copie_ia(reponse, devoir_matiere):
         copie_text = ""
         if reponse.copie_file:
             copie_path = reponse.copie_file.path
+            logger.info(f"[IA Correction] Copie fichier: {copie_path}")
             copie_text = _extract_text_from_file(copie_path)
             if not copie_text and reponse.copie_text:
                 copie_text = reponse.copie_text
+                logger.info(f"[IA Correction] Copie texte direct: {len(copie_text)} caractères")
+        
+        logger.info(f"[IA Correction] Copie extraite: {len(copie_text)} caractères")
 
         # Extract text from the answer key (corrigé type)
         corrige_text = ""
         corrige_doc_id = getattr(devoir_matiere, 'corrige_document_id', '')
+        logger.info(f"[IA Correction] Corrigé document ID: {corrige_doc_id}")
+        
         if devoir_matiere.corrige_type_file:
             corrige_path = devoir_matiere.corrige_type_file.path
+            logger.info(f"[IA Correction] Corrigé fichier trouvé: {corrige_path}")
             corrige_text = _extract_text_from_file(corrige_path)
+            logger.info(f"[IA Correction] Corrigé extrait: {len(corrige_text)} caractères")
+        else:
+            logger.error(f"[IA Correction] PAS DE CORRIGÉ TYPE pour {devoir_matiere.matiere.nom} - fichier manquant!")
 
         if not corrige_text:
-            logger.error(f"Pas de corrigé type pour {devoir_matiere.matiere.nom}")
+            logger.error(f"[IA Correction] ÉCHEC: Pas de corrigé type extrait pour {devoir_matiere.matiere.nom}")
             reponse.statut = DevoirReponseEleve.StatutReponse.EN_COURS_CORRECTION
             reponse.save()
             return
+        
+        logger.info(f"[IA Correction] SUCCÈS: Corrigé type récupéré et extrait ({len(corrige_text)} caractères)")
 
         # Get coefficient for this subject
         coeff = devoir_matiere.devoir.coefficients_par_matiere.get(
@@ -954,10 +969,13 @@ def _corriger_copie_ia(reponse, devoir_matiere):
             'session_id': str(reponse.id),
         }
 
-        logger.info(f"[Devoirs IA] Correction: corrige={corrige_doc_id} copie={copie_doc_id} eleve={reponse.eleve.full_name}")
+        logger.info(f"[Devoirs IA] Envoi à IA: corrige={corrige_doc_id} copie={copie_doc_id} eleve={reponse.eleve.full_name}")
+        logger.info(f"[Devoirs IA] Corrigé: {len(corrige_text)} caractères, Copie: {len(copie_text)} caractères")
 
         # Call AI correction
         result = engine.correct_copy(corrige_text, copie_text, exam_info)
+        
+        logger.info(f"[Devoirs IA] Réponse IA reçue: {type(result)}")
 
         if isinstance(result, dict) and 'note' in result:
             note = float(result.get('note', 0))
