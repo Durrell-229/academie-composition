@@ -569,54 +569,41 @@ def register_view(request):
 
 @login_required
 def profile_edit_view(request):
-    import unicodedata
-    import re
     if request.method == 'POST':
         form = ProfileUpdateForm(request.POST, request.FILES, instance=request.user)
         if form.is_valid():
             user = form.save(commit=False)
-            # Handle avatar upload with sanitized filename
+            # Handle avatar upload with predictable filename
             if 'avatar' in request.FILES:
-                avatar = request.FILES['avatar']
+                avatar_file = request.FILES['avatar']
                 # Validate file size (5MB max)
-                if avatar.size > 5 * 1024 * 1024:
+                if avatar_file.size > 5 * 1024 * 1024:
                     messages.error(request, "La photo de profil ne doit pas dépasser 5 Mo.")
                     return render(request, 'accounts/profile_edit.html', {'form': form})
                 # Validate file type
-                if not avatar.content_type.startswith('image/'):
+                if not avatar_file.content_type.startswith('image/'):
                     messages.error(request, "Le fichier doit être une image valide.")
                     return render(request, 'accounts/profile_edit.html', {'form': form})
-                # Sanitize filename: remove accents, spaces, special chars, domains
-                original_name = avatar.name
-                # Remove accents
-                sanitized = unicodedata.normalize('NFKD', original_name).encode('ascii', 'ignore').decode('ascii')
-                # Remove common domain patterns (www., .com, .bing, etc.)
-                sanitized = re.sub(r'(www\.|\.com|\.org|\.net|\.fr|\.bing|\.google)', '', sanitized, flags=re.IGNORECASE)
-                # Replace spaces and special chars with underscores
-                sanitized = re.sub(r'[^a-zA-Z0-9._-]', '_', sanitized)
-                # Remove consecutive underscores
-                sanitized = re.sub(r'_+', '_', sanitized)
-                # Remove leading/trailing underscores and dots
-                sanitized = sanitized.strip('_.')
-                # Limit filename length (max 50 chars before extension)
-                if len(sanitized) > 50:
-                    sanitized = sanitized[:50]
-                # Prefix with user id to avoid collisions
-                sanitized = f"user_{user.id.hex[:8]}_{sanitized}"
-                # Force valid extension
-                if sanitized.lower().endswith('.png'):
-                    sanitized = sanitized[:-4] + '.jpg'
-                elif sanitized.lower().endswith('.gif'):
-                    sanitized = sanitized[:-4] + '.jpg'
-                elif sanitized.lower().endswith('.webp'):
-                    sanitized = sanitized[:-5] + '.jpg'
-                elif not sanitized.lower().endswith(('.jpg', '.jpeg')):
-                    sanitized += '.jpg'
-                avatar.name = sanitized
-                user.avatar = avatar
-                user.save()  # Save avatar field explicitly
+                # Determine extension from content type
+                ext = 'jpg'
+                ct = avatar_file.content_type
+                if ct == 'image/png':
+                    ext = 'png'
+                elif ct == 'image/webp':
+                    ext = 'webp'
+                # Fixed predictable filename — no original name used
+                new_name = f"user_{user.id.hex[:8]}.{ext}"
+                avatar_file.name = new_name
+                # Delete old avatar file to avoid orphans
+                if user.avatar and user.avatar.name:
+                    try:
+                        user.avatar.delete(save=False)
+                    except Exception:
+                        pass
+                user.avatar = avatar_file
+                user.save()
             else:
-                form.save()  # Save other fields normally
+                form.save()
 
             request.user.refresh_from_db()
             messages.success(request, "Votre profil a été mis à jour avec succès.")
@@ -625,7 +612,7 @@ def profile_edit_view(request):
             messages.error(request, "Veuillez corriger les erreurs ci-dessous.")
     else:
         form = ProfileUpdateForm(instance=request.user)
-        
+
     return render(request, 'accounts/profile_edit.html', {'form': form})
 
 

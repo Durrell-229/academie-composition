@@ -42,23 +42,31 @@
     </div>
 
     <div>
-      <label class="block text-sm font-bold text-text-secondary mb-1">Classes concernées</label>
-      <select name="classes" multiple class="w-full bg-bg-card border border-border-standard rounded-xl px-4 py-3 text-text-primary focus:border-primary outline-none">
+      <label class="block text-sm font-bold text-text-secondary mb-2">Classes concernées</label>
+      <div class="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto border border-border-standard rounded-xl p-3 bg-bg-tertiary/30">
         {% for c in classes %}
-          <option value="{{ c.id }}">{{ c.nom }}</option>
+        <label class="flex items-center gap-2 cursor-pointer hover:bg-bg-tertiary/50 rounded px-2 py-1">
+          <input type="checkbox" name="classes" value="{{ c.id }}" class="w-4 h-4 rounded border-border-standard text-primary focus:ring-primary">
+          <span class="text-sm text-text-primary">{{ c.nom }}</span>
+        </label>
+        {% empty %}
+        <p class="text-xs text-text-muted col-span-full">Aucune classe configurée.</p>
         {% endfor %}
-      </select>
-      <p class="text-[10px] text-text-muted mt-1">Maintenez Ctrl pour sélectionner plusieurs classes</p>
+      </div>
     </div>
 
     <div>
-      <label class="block text-sm font-bold text-text-secondary mb-1">Matières concernées</label>
-      <select name="matieres" multiple class="w-full bg-bg-card border border-border-standard rounded-xl px-4 py-3 text-text-primary focus:border-primary outline-none">
+      <label class="block text-sm font-bold text-text-secondary mb-2">Matières concernées</label>
+      <div class="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto border border-border-standard rounded-xl p-3 bg-bg-tertiary/30">
         {% for m in matieres %}
-          <option value="{{ m.id }}">{{ m.nom }}</option>
+        <label class="flex items-center gap-2 cursor-pointer hover:bg-bg-tertiary/50 rounded px-2 py-1">
+          <input type="checkbox" name="matieres" value="{{ m.id }}" class="w-4 h-4 rounded border-border-standard text-primary focus:ring-primary">
+          <span class="text-sm text-text-primary">{{ m.nom }}</span>
+        </label>
+        {% empty %}
+        <p class="text-xs text-text-muted col-span-full">Aucune matière configurée.</p>
         {% endfor %}
-      </select>
-      <p class="text-[10px] text-text-muted mt-1">Maintenez Ctrl pour sélectionner plusieurs matières</p>
+      </div>
     </div>
 
     <div class="flex justify-end gap-3">

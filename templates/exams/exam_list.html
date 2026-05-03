@@ -130,3 +130,56 @@
   </div>
 </div>
 {% endblock %}
+
+{% block extra_js %}
+<script>
+function filterExams() {
+    const matiereSel = document.querySelector('select[name="matiere"]');
+    const classeSel = document.querySelector('select[name="classe"]');
+    const searchInput = document.querySelector('input[placeholder="Rechercher une épreuve..."]');
+    
+    const matiereId = matiereSel ? matiereSel.value : '';
+    const classeId = classeSel ? classeSel.value : '';
+    const search = searchInput ? searchInput.value.toLowerCase().trim() : '';
+
+    // Get all exam cards (the glass elements inside the grid)
+    const grid = document.querySelector('.grid.grid-cols-1.md\\:grid-cols-2.lg\\:grid-cols-3');
+    if (!grid) return;
+    const cards = grid.querySelectorAll(':scope > div');
+
+    cards.forEach(card => {
+        const text = card.textContent.toLowerCase();
+        
+        // Filter by search text
+        if (search && !text.includes(search)) {
+            card.style.display = 'none';
+            return;
+        }
+
+        // Filter by matiere — check if card mentions the selected matiere name
+        if (matiereId) {
+            const selectedOption = matiereSel.querySelector(`option[value="${matiereId}"]`);
+            if (selectedOption) {
+                const matiereName = selectedOption.textContent.toLowerCase();
+                if (!text.includes(matiereName)) {
+                    card.style.display = 'none';
+                    return;
+                }
+            }
+        }
+
+        card.style.display = '';
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const matiereSel = document.querySelector('select[name="matiere"]');
+    const classeSel = document.querySelector('select[name="classe"]');
+    const searchInput = document.querySelector('input[placeholder="Rechercher une épreuve..."]');
+    
+    if (matiereSel) matiereSel.addEventListener('change', filterExams);
+    if (classeSel) classeSel.addEventListener('change', filterExams);
+    if (searchInput) searchInput.addEventListener('input', filterExams);
+});
+</script>
+{% endblock %}
