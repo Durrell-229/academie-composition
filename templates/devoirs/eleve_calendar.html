@@ -1,0 +1,187 @@
+{% extends 'base.html' %}
+{% block title %}Calendrier - {{ devoir.titre }} | Académie Numérique{% endblock %}
+{% block breadcrumb %}
+  <a href="{% url 'dashboard' %}" class="hover:text-primary transition">Dashboard</a>
+  <span class="mx-2 text-text-muted">/</span>
+  <a href="{% url 'eleve_programme' %}" class="hover:text-primary">Programme</a>
+  <span class="mx-2 text-text-muted">/</span>
+  <span class="text-text-primary font-semibold">{{ devoir.titre }}</span>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-6">
+
+  <!-- Header -->
+  <div class="animate-in relative overflow-hidden rounded-2xl p-6 md:p-8 bg-bg-card border border-border-standard">
+    <div class="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-accent/5 pointer-events-none"></div>
+    <div class="relative flex flex-col md:flex-row md:items-center justify-between gap-5">
+      <div>
+        <p class="text-xs font-bold uppercase tracking-[0.25em] text-text-muted mb-2 flex items-center gap-2">
+          <i class="fa-solid fa-calendar-days text-primary"></i> Calendrier des épreuves
+        </p>
+        <h1 class="text-2xl md:text-3xl font-black tracking-tight mb-1">
+          {{ devoir.titre }}
+        </h1>
+        <p class="text-sm text-text-secondary">
+          {{ devoir.date_debut|date:"d/m/Y" }} — {{ devoir.date_fin|date:"d/m/Y" }} • Année scolaire {{ devoir.annee_scolaire }}
+        </p>
+      </div>
+      <div class="flex gap-3">
+        {% if devoir.statut == 'en_cours' %}
+        <a href="{% url 'eleve_compose' devoir_id=devoir.id %}" class="px-5 py-2.5 rounded-xl bg-button-gradient text-white font-bold text-sm hover:opacity-90 transition shadow-lg shadow-primary/20 flex items-center gap-2">
+          <i class="fa-solid fa-pen-to-square"></i> Composer maintenant
+        </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Status Banner -->
+  {% if devoir.statut == 'programme_publie' %}
+  <div class="bg-warning/10 border border-warning/25 rounded-xl p-4 flex items-start gap-3">
+    <i class="fa-solid fa-clock text-warning text-xl mt-1"></i>
+    <div>
+      <p class="font-bold text-warning">Devoir programmé</p>
+      <p class="text-sm text-text-secondary">Les épreuves seront bientôt disponibles. Préparez-vous !</p>
+    </div>
+  </div>
+  {% elif devoir.statut == 'en_cours' %}
+  <div class="bg-success/10 border border-success/25 rounded-xl p-4 flex items-start gap-3">
+    <i class="fa-solid fa-play-circle text-success text-xl mt-1"></i>
+    <div>
+      <p class="font-bold text-success">Devoir en cours</p>
+      <p class="text-sm text-text-secondary">Vous pouvez maintenant composer. Respectez les horaires !</p>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Planning Table -->
+  <div class="animate-in delay-1 bg-bg-card rounded-2xl border border-border-standard overflow-hidden">
+    <div class="p-6 border-b border-border-standard">
+      <h2 class="text-lg font-black text-text-primary">Planning des épreuves</h2>
+      <p class="text-sm text-text-muted mt-1">{{ planning|length }} matière{{ planning|length|pluralize }} programmée{{ planning|length|pluralize }}</p>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full">
+        <thead>
+          <tr class="bg-bg-tertiary/50">
+            <th class="text-left px-6 py-4 text-[10px] font-black uppercase tracking-widest text-text-muted">Matière</th>
+            <th class="text-center px-4 py-4 text-[10px] font-black uppercase tracking-widest text-text-muted">Date</th>
+            <th class="text-center px-4 py-4 text-[10px] font-black uppercase tracking-widest text-text-muted">Horaire</th>
+            <th class="text-center px-4 py-4 text-[10px] font-black uppercase tracking-widest text-text-muted">Coefficient</th>
+            <th class="text-center px-4 py-4 text-[10px] font-black uppercase tracking-widest text-text-muted">Statut</th>
+            <th class="text-center px-6 py-4 text-[10px] font-black uppercase tracking-widest text-text-muted">Action</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-border-standard">
+          {% for item in planning %}
+          <tr class="hover:bg-bg-tertiary/30 transition {% if item.devoir_matiere.id in reponses_map %}bg-success/5{% endif %}">
+            <td class="px-6 py-4">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
+                  {{ forloop.counter|stringformat:"02d" }}
+                </div>
+                <div>
+                  <p class="font-bold text-text-primary">{{ item.matiere.nom }}</p>
+                  {% if item.salle %}
+                  <p class="text-xs text-text-muted"><i class="fa-solid fa-location-dot"></i> {{ item.salle }}</p>
+                  {% endif %}
+                </div>
+              </div>
+            </td>
+            <td class="px-4 py-4 text-center">
+              <span class="text-sm font-bold text-text-primary">{{ item.date }}</span>
+            </td>
+            <td class="px-4 py-4 text-center">
+              <div class="text-sm font-bold text-text-primary">{{ item.heure_demarrage }}</div>
+              <div class="text-xs text-text-muted">→ {{ item.heure_fin }}</div>
+            </td>
+            <td class="px-4 py-4 text-center">
+              <span class="px-3 py-1 rounded-lg bg-primary/15 text-primary font-bold text-sm">{{ item.coeff }}</span>
+            </td>
+            <td class="px-4 py-4 text-center">
+              {% if item.devoir_matiere.id in reponses_map %}
+                {% with reponse=reponses_map|dict_lookup:item.devoir_matiere.id %}
+                {% if reponse.statut == 'corrige' or reponse.statut == 'approuve' %}
+                <span class="px-2 py-1 rounded-lg bg-success/15 text-success text-[9px] font-black uppercase">✓ Corrigé</span>
+                {% elif reponse.statut == 'en_cours_correction' %}
+                <span class="px-2 py-1 rounded-lg bg-warning/15 text-warning text-[9px] font-black uppercase">⟳ En correction</span>
+                {% else %}
+                <span class="px-2 py-1 rounded-lg bg-info/15 text-info text-[9px] font-black uppercase">✓ Soumis</span>
+                {% endif %}
+                {% endwith %}
+              {% else %}
+                {% if devoir.statut == 'en_cours' %}
+                <span class="px-2 py-1 rounded-lg bg-warning/15 text-warning text-[9px] font-black uppercase">⏳ À faire</span>
+                {% else %}
+                <span class="px-2 py-1 rounded-lg bg-text-muted/10 text-text-muted text-[9px] font-black uppercase">—</span>
+                {% endif %}
+              {% endif %}
+            </td>
+            <td class="px-6 py-4 text-center">
+              {% if devoir.statut == 'en_cours' and item.devoir_matiere.id not in reponses_map %}
+              <a href="{% url 'eleve_upload_copie' devoir_matiere_id=item.devoir_matiere.id %}" class="px-4 py-2 rounded-xl bg-button-gradient text-white text-xs font-bold hover:opacity-90 transition flex items-center gap-2 inline-flex">
+                <i class="fa-solid fa-upload"></i> Déposer
+              </a>
+              {% elif item.devoir_matiere.id in reponses_map %}
+              <span class="text-xs text-success font-bold"><i class="fa-solid fa-check"></i> Fait</span>
+              {% else %}
+              <span class="text-xs text-text-muted">Non disponible</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="6" class="px-6 py-12 text-center">
+              <div class="w-16 h-16 rounded-2xl bg-bg-tertiary flex items-center justify-center mx-auto mb-4">
+                <i class="fa-solid fa-calendar-xmark text-2xl text-text-muted"></i>
+              </div>
+              <p class="text-sm text-text-primary font-bold">Aucune épreuve programmée</p>
+              <p class="text-xs text-text-muted mt-1">L'administrateur n'a pas encore validé les épreuves.</p>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Instructions -->
+  {% if devoir.instructions %}
+  <div class="animate-in delay-2 bg-bg-card rounded-2xl border border-border-standard p-6">
+    <h3 class="text-sm font-black text-text-primary mb-3 flex items-center gap-2">
+      <i class="fa-solid fa-circle-info text-primary"></i> Instructions
+    </h3>
+    <div class="text-sm text-text-secondary whitespace-pre-line">
+      {{ devoir.instructions }}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Next Exam Countdown -->
+  {% if devoir.statut == 'en_cours' %}
+  <div class="animate-in delay-2 bg-gradient-to-r from-primary/10 to-accent/10 rounded-2xl border border-primary/25 p-6">
+    <h3 class="text-sm font-black text-primary mb-2 flex items-center gap-2">
+      <i class="fa-solid fa-hourglass-half"></i> Prochaine épreuve
+    </h3>
+    {% for item in planning %}
+    {% if item.devoir_matiere.id not in reponses_map %}
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-lg font-black text-text-primary">{{ item.matiere.nom }}</p>
+        <p class="text-sm text-text-muted">{{ item.date }} à {{ item.heure_demarrage }}</p>
+      </div>
+      <a href="{% url 'eleve_upload_copie' devoir_matiere_id=item.devoir_matiere.id %}" class="px-6 py-3 rounded-xl bg-button-gradient text-white font-bold text-sm hover:opacity-90 transition shadow-lg shadow-primary/20">
+        <i class="fa-solid fa-pen"></i> Composer
+      </a>
+    </div>
+    {% break %}
+    {% empty %}
+    <p class="text-sm text-text-secondary">Toutes les épreuves ont été composées !</p>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

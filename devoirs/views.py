@@ -221,7 +221,21 @@ def devoir_publish_view(request, pk):
     devoir = get_object_or_404(Devoir, pk=pk)
     devoir.statut = Devoir.Statut.PROGRAMME_PUBLIE
     devoir.save()
-    messages.success(request, "Programme publié.")
+    
+    # NOTIFICATION: Notify profs and CP that a new devoir is published
+    from notifications.models import Notification
+    profs = User.objects.filter(role=User.Role.PROFESSEUR, is_active=True)
+    cps = User.objects.filter(role=User.Role.CONSEILLER, is_active=True)
+    
+    for user in profs | cps:
+        Notification.objects.create(
+            recipient=user,
+            title=f"Nouveau devoir publié: {devoir.titre}",
+            message=f"Le devoir '{devoir.titre}' a été publié. Veuillez soumettre les épreuves pour vos matières.",
+            type='INSCRIPTION',
+        )
+    
+    messages.success(request, "Programme publié. Profs et CP notifiés.")
     return redirect('devoir_detail', pk=pk)
 
 
@@ -262,7 +276,24 @@ def devoir_matiere_validate_view(request, pk):
     dm.valide_par = request.user
     dm.validated_at = timezone.now()
     dm.save()
-    messages.success(request, f"Épreuve '{dm.matiere.nom}' validée.")
+    
+    # NOTIFICATION: Notify students that epreuve is validated and available
+    from notifications.models import Notification
+    eleves = User.objects.filter(
+        role=User.Role.ELEVE, 
+        is_active=True,
+        classe__in=dm.devoir.classes.all()
+    ).distinct()
+    
+    for eleve in eleves:
+        Notification.objects.create(
+            recipient=eleve,
+            title=f"Épreuve disponible: {dm.matiere.nom}",
+            message=f"L'épreuve de {dm.matiere.nom} pour le devoir '{dm.devoir.titre}' est maintenant disponible. Vous pouvez composer.",
+            type='INSCRIPTION',
+        )
+    
+    messages.success(request, f"Épreuve '{dm.matiere.nom}' validée. Élèves notifiés.")
     return redirect('devoir_detail', pk=dm.devoir.pk)
 
 
@@ -276,6 +307,44 @@ def devoir_matiere_reject_view(request, pk):
     dm.save()
     messages.warning(request, f"Épreuve '{dm.matiere.nom}' rejetée.")
     return redirect('devoir_detail', pk=dm.devoir.pk)
+
+
+@login_required
+def admin_validate_all_view(request):
+    """Vue globale pour valider/rejeter toutes les soumissions d'épreuves."""
+    if request.user.role != 'admin':
+        messages.error(request, "Accès refusé.")
+        return redirect('dashboard')
+    
+    statut = request.GET.get('statut', 'soumis')
+    
+    epreuves = DevoirMatiere.objects.select_related(
+        'devoir', 'matiere', 'soumis_par', 'valide_par'
+    ).order_by('-submitted_at')
+    
+    if statut == 'tous':
+        pass
+    elif statut == 'soumis':
+        epreuves = epreuves.filter(statut=DevoirMatiere.StatutEP.SOUMIS)
+    elif statut == 'valide':
+        epreuves = epreuves.filter(statut=DevoirMatiere.StatutEP.VALIDE)
+    elif statut == 'rejete':
+        epreuves = epreuves.filter(statut=DevoirMatiere.StatutEP.REJETE)
+    
+    # Stats
+    pending_count = DevoirMatiere.objects.filter(statut=DevoirMatiere.StatutEP.SOUMIS).count()
+    valides_count = DevoirMatiere.objects.filter(statut=DevoirMatiere.StatutEP.VALIDE).count()
+    rejetes_count = DevoirMatiere.objects.filter(statut=DevoirMatiere.StatutEP.REJETE).count()
+    total_count = DevoirMatiere.objects.count()
+    
+    return render(request, 'devoirs/admin_validate.html', {
+        'epreuves': epreuves,
+        'statut': statut,
+        'pending_count': pending_count,
+        'valides_count': valides_count,
+        'rejetes_count': rejetes_count,
+        'total_count': total_count,
+    })
 
 
 @login_required
@@ -507,8 +576,20 @@ def devoir_submit_epreuve_view(request, devoir_id, matiere_id):
                 'statut': DevoirMatiere.StatutEP.SOUMIS,
             }
         )
-        messages.success(request, "Épreuve soumise avec succès.")
-        return redirect('dashboard')
+        
+        # NOTIFICATION: Notify admin that prof has submitted
+        from notifications.models import Notification
+        admins = User.objects.filter(role=User.Role.ADMIN, is_active=True)
+        for admin in admins:
+            Notification.objects.create(
+                recipient=admin,
+                title=f"Épreuve soumise: {matiere.nom}",
+                message=f"Le professeur {request.user.full_name} a soumis l'épreuve de {matiere.nom} pour le devoir '{devoir.titre}'.",
+                type='INSCRIPTION',
+            )
+        
+        messages.success(request, "Épreuve soumise avec succès. Admin notifié.")
+        return redirect('prof_dashboard')
 
     return render(request, 'devoirs/prof_submit.html', {
         'devoir': devoir,
@@ -528,6 +609,58 @@ def eleve_programme_view(request):
     ).distinct().order_by('date_debut')
 
     return render(request, 'devoirs/eleve_programme.html', {'devoirs': devoirs})
+
+
+@login_required
+def eleve_devoir_calendar_view(request, devoir_id):
+    """Vue calendrier détaillée pour un devoir avec horaires par matière."""
+    devoir = get_object_or_404(Devoir, pk=devoir_id)
+    
+    # Vérifier que l'élève est dans les classes concernées
+    if not devoir.classes.filter(nom=request.user.classe).exists():
+        messages.error(request, "Ce devoir n'est pas pour votre classe.")
+        return redirect('eleve_programme')
+    
+    # Récupérer les matières validées avec leurs horaires
+    matieres_valides = DevoirMatiere.objects.filter(
+        devoir=devoir, 
+        statut=DevoirMatiere.StatutEP.VALIDE
+    ).select_related('matiere').order_by('devoir__date_debut')
+    
+    # Construire le planning détaillé
+    planning = []
+    for dm in matieres_valides:
+        horaire = devoir.horaires.get(dm.matiere.nom, {})
+        planning.append({
+            'matiere': dm.matiere,
+            'devoir_matiere': dm,
+            'date': horaire.get('date', str(devoir.date_debut)),
+            'heure_demarrage': horaire.get('heure_demarrage', '08:00'),
+            'heure_fin': horaire.get('heure_fin', '10:00'),
+            'salle': horaire.get('salle', ''),
+            'coeff': devoir.coefficients_par_matiere.get(str(dm.matiere.id), devoir.coefficient_default),
+        })
+    
+    # Récupérer les réponses existantes de l'élève
+    reponses = DevoirReponseEleve.objects.filter(
+        devoir_matiere__devoir=devoir, 
+        eleve=request.user
+    )
+    reponses_map = {r.devoir_matiere_id: r for r in reponses}
+    
+    # Composition de l'élève
+    composition, _ = DevoirComposition.objects.get_or_create(
+        devoir=devoir, 
+        eleve=request.user,
+        defaults={'classe': devoir.classes.filter(nom=request.user.classe).first()}
+    )
+    
+    return render(request, 'devoirs/eleve_calendar.html', {
+        'devoir': devoir,
+        'planning': planning,
+        'composition': composition,
+        'reponses_map': reponses_map,
+    })
 
 
 @login_required

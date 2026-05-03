@@ -1,0 +1,149 @@
+{% extends 'base.html' %}
+{% block title %}Validation des épreuves | Admin{% endblock %}
+{% block breadcrumb %}<span class="text-text-primary">Validation des épreuves</span>{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <!-- Header -->
+  <div class="bg-bg-card rounded-2xl border border-border-standard p-6">
+    <h1 class="text-2xl font-black">Validation des épreuves</h1>
+    <p class="text-text-muted text-sm mt-1">Vérifiez et validez les épreuves soumises par les professeurs</p>
+    
+    <!-- Stats -->
+    <div class="grid grid-cols-3 gap-4 mt-4">
+      <div class="bg-warning/5 rounded-xl p-4 border border-warning/20">
+        <div class="text-2xl font-bold text-warning">{{ pending_count }}</div>
+        <div class="text-xs text-text-muted">En attente</div>
+      </div>
+      <div class="bg-success/5 rounded-xl p-4 border border-success/20">
+        <div class="text-2xl font-bold text-success">{{ valides_count }}</div>
+        <div class="text-xs text-text-muted">Validées</div>
+      </div>
+      <div class="bg-danger/5 rounded-xl p-4 border border-danger/20">
+        <div class="text-2xl font-bold text-danger">{{ rejetes_count }}</div>
+        <div class="text-xs text-text-muted">Rejetées</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="flex gap-2">
+    <a href="?statut=tous" class="px-4 py-2 rounded-lg text-sm font-bold transition {% if statut == 'tous' or not statut %}bg-primary/10 text-primary{% else %}bg-bg-card border border-border-standard text-text-muted hover:bg-bg-tertiary{% endif %}">
+      Tous ({{ total_count }})
+    </a>
+    <a href="?statut=soumis" class="px-4 py-2 rounded-lg text-sm font-bold transition {% if statut == 'soumis' %}bg-warning/10 text-warning{% else %}bg-bg-card border border-border-standard text-text-muted hover:bg-bg-tertiary{% endif %}">
+      En attente ({{ pending_count }})
+    </a>
+    <a href="?statut=valide" class="px-4 py-2 rounded-lg text-sm font-bold transition {% if statut == 'valide' %}bg-success/10 text-success{% else %}bg-bg-card border border-border-standard text-text-muted hover:bg-bg-tertiary{% endif %}">
+      Validées ({{ valides_count }})
+    </a>
+    <a href="?statut=rejete" class="px-4 py-2 rounded-lg text-sm font-bold transition {% if statut == 'rejete' %}bg-danger/10 text-danger{% else %}bg-bg-card border border-border-standard text-text-muted hover:bg-bg-tertiary{% endif %}">
+      Rejetées ({{ rejetes_count }})
+    </a>
+  </div>
+
+  <!-- Épreuves List -->
+  {% if epreuves %}
+    <div class="space-y-4">
+      {% for ep in epreuves %}
+      <div class="bg-bg-card rounded-2xl border border-border-standard p-6">
+        <div class="flex justify-between items-start">
+          <div class="flex-1">
+            <div class="flex items-center gap-3">
+              <h3 class="font-bold text-lg">{{ ep.matiere.nom }}</h3>
+              {% if ep.statut == 'soumis' %}
+                <span class="px-2 py-1 rounded-full text-[10px] font-bold bg-warning/10 text-warning">En attente</span>
+              {% elif ep.statut == 'valide' %}
+                <span class="px-2 py-1 rounded-full text-[10px] font-bold bg-success/10 text-success"><i class="fa-solid fa-check"></i> Validée</span>
+              {% elif ep.statut == 'rejete' %}
+                <span class="px-2 py-1 rounded-full text-[10px] font-bold bg-danger/10 text-danger">Rejetée</span>
+              {% endif %}
+            </div>
+            
+            <div class="grid grid-cols-2 gap-2 mt-3 text-sm">
+              <div>
+                <span class="text-text-muted">Devoir:</span>
+                <span class="ml-2 font-medium">{{ ep.devoir.titre }}</span>
+              </div>
+              <div>
+                <span class="text-text-muted">Soumis par:</span>
+                <span class="ml-2 font-medium">{{ ep.soumis_par.full_name|default:"Professeur" }}</span>
+              </div>
+              <div>
+                <span class="text-text-muted">Date:</span>
+                <span class="ml-2 font-medium">{{ ep.submitted_at|date:"d/m/Y H:i" }}</span>
+              </div>
+              {% if ep.statut == 'valide' and ep.valide_par %}
+              <div>
+                <span class="text-text-muted">Validé par:</span>
+                <span class="ml-2 font-medium">{{ ep.valide_par.full_name }}</span>
+              </div>
+              {% endif %}
+            </div>
+
+            <!-- Fichiers -->
+            <div class="flex gap-3 mt-4">
+              <a href="{{ ep.epreuve_file.url }}" target="_blank" class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/5 text-primary text-sm font-medium hover:bg-primary/10 transition border border-primary/20">
+                <i class="fa-solid fa-file-pdf"></i> Voir l'épreuve
+              </a>
+              <a href="{{ ep.corrige_type_file.url }}" target="_blank" class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-accent/5 text-accent text-sm font-medium hover:bg-accent/10 transition border border-accent/20">
+                <i class="fa-solid fa-file-lines"></i> Voir le corrigé
+              </a>
+            </div>
+
+            {% if ep.statut == 'rejete' and ep.commentaire_admin %}
+            <div class="mt-3 p-3 bg-danger/5 border border-danger/20 rounded-lg">
+              <p class="text-xs text-danger"><strong>Motif du rejet:</strong> {{ ep.commentaire_admin }}</p>
+            </div>
+            {% endif %}
+          </div>
+
+          <!-- Actions -->
+          <div class="ml-6">
+            {% if ep.statut == 'soumis' %}
+            <div class="space-y-2">
+              <a href="{% url 'devoir_matiere_validate' pk=ep.pk %}" class="block w-full px-4 py-2 rounded-lg bg-success/10 text-success text-sm font-bold hover:bg-success/20 transition text-center">
+                <i class="fa-solid fa-check"></i> Valider
+              </a>
+              <button onclick="document.getElementById('reject-form-{{ ep.pk }}').classList.remove('hidden')" class="w-full px-4 py-2 rounded-lg bg-danger/10 text-danger text-sm font-bold hover:bg-danger/20 transition">
+                <i class="fa-solid fa-xmark"></i> Rejeter
+              </button>
+              
+              <form id="reject-form-{{ ep.pk }}" method="post" action="{% url 'devoir_matiere_reject' pk=ep.pk %}" class="hidden space-y-2">
+                {% csrf_token %}
+                <input type="text" name="commentaire" placeholder="Motif du rejet..." class="w-full px-3 py-2 rounded-lg bg-bg-tertiary text-sm border border-border-standard" required>
+                <button type="submit" class="w-full px-4 py-2 rounded-lg bg-danger text-white text-sm font-bold hover:bg-danger/90 transition">
+                  Confirmer le rejet
+                </button>
+                <button type="button" onclick="this.parentElement.classList.add('hidden')" class="w-full px-4 py-2 rounded-lg bg-bg-card border border-border-standard text-text-muted text-sm font-medium hover:bg-bg-tertiary transition">
+                  Annuler
+                </button>
+              </form>
+            </div>
+            {% elif ep.statut == 'rejete' %}
+            <a href="{% url 'admin_upload_epreuve' pk=ep.devoir.pk %}?matiere_id={{ ep.matiere.pk }}" class="block w-full px-4 py-2 rounded-lg bg-primary/10 text-primary text-sm font-bold hover:bg-primary/20 transition text-center">
+              <i class="fa-solid fa-rotate"></i> Resoumettre
+            </a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="bg-bg-card rounded-2xl border border-border-standard p-12 text-center">
+      <i class="fa-solid fa-inbox text-4xl text-text-muted mb-4"></i>
+      <h3 class="text-lg font-bold text-text-muted">Aucune épreuve trouvée</h3>
+      <p class="text-sm text-text-muted mt-2">
+        {% if statut == 'soumis' %}
+          Aucune épreuve en attente de validation.
+        {% elif statut %}
+          Aucune épreuve avec ce statut.
+        {% else %}
+          Les professeurs n'ont pas encore soumis d'épreuves.
+        {% endif %}
+      </p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

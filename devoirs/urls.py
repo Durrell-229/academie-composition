@@ -16,6 +16,7 @@ urlpatterns = [
     path('<uuid:pk>/generate-certificates/', views.devoir_generate_certificates_view, name='devoir_generate_certificates'),
 
     # Admin: validate/reject epreuves
+    path('validate/', views.admin_validate_all_view, name='admin_validate_all'),
     path('matiere/<uuid:pk>/validate/', views.devoir_matiere_validate_view, name='devoir_matiere_validate'),
     path('matiere/<uuid:pk>/reject/', views.devoir_matiere_reject_view, name='devoir_matiere_reject'),
     path('<uuid:pk>/upload-epreuve/', views.admin_upload_epreuve_view, name='admin_upload_epreuve'),
@@ -30,6 +31,7 @@ urlpatterns = [
 
     # Eleve: programme + compose
     path('programme/', views.eleve_programme_view, name='eleve_programme'),
+    path('programme/<uuid:devoir_id>/calendar/', views.eleve_devoir_calendar_view, name='eleve_devoir_calendar'),
     path('programme/<uuid:devoir_id>/', views.eleve_compose_view, name='eleve_compose'),
     path('programme/<uuid:devoir_id>/submit/', views.eleve_submit_reponse_view, name='eleve_submit_reponse'),
     path('copie/<uuid:devoir_matiere_id>/', views.eleve_upload_copie_view, name='eleve_upload_copie'),
