@@ -73,6 +73,28 @@
   </div>
   {% endif %}
 
+  <!-- ═══ DEVOIRS NATIONAUX ═══ -->
+  {% if devoirs_programmes > 0 %}
+  <div class="animate-in relative overflow-hidden rounded-2xl p-6 bg-bg-card border border-primary/30">
+    <div class="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 pointer-events-none"></div>
+    <div class="relative flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div>
+        <h3 class="font-black text-lg flex items-center gap-2">
+          <i class="fa-solid fa-file-pen text-primary"></i> Devoirs Nationaux
+        </h3>
+        <p class="text-sm text-text-secondary mt-1">
+          {{ devoirs_programmes }} devoir{{ devoirs_programmes|pluralize }} programmé{{ devoirs_programmes|pluralize }} pour votre classe
+        </p>
+      </div>
+      <div class="flex gap-3">
+        <a href="{% url 'eleve_programme' %}" class="px-5 py-2.5 rounded-xl bg-primary text-white font-bold text-sm hover:opacity-90 transition shadow-lg flex items-center gap-2">
+          <i class="fa-solid fa-calendar-days"></i> Voir le programme
+        </a>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
   <!-- ═══ STATS RAPIDES ═══ -->
   <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 animate-in delay-1">
     <div class="stat-card glass p-5 rounded-2xl border border-border-standard">

@@ -159,6 +159,16 @@ def dashboard_view(request):
             cheat_logs = []
             cheat_total = 0
 
+        # Devoirs nationaux programmés
+        try:
+            from devoirs.models import Devoir
+            devoirs_programmes = Devoir.objects.filter(
+                statut__in=['programme_publie', 'en_cours'],
+                classes__nom=user.classe
+            ).distinct().count()
+        except Exception:
+            devoirs_programmes = 0
+
         context.update({
             'assigned_exams': assigned_qs,
             'upcoming_exams': upcoming_exams,
@@ -186,6 +196,7 @@ def dashboard_view(request):
             'qcm_count': qcm_count,
             'cheat_logs': cheat_logs,
             'cheat_total': cheat_total,
+            'devoirs_programmes': devoirs_programmes,
         })
         return render(request, 'accounts/dashboard_eleve.html', context)
 
@@ -437,6 +448,13 @@ def dashboard_view(request):
             pro_count = 0
             bulletins_mois = 0
 
+        # 8. Devoirs nationaux stats
+        try:
+            from devoirs.models import DevoirMatiere
+            pending_epreuves = DevoirMatiere.objects.filter(statut=DevoirMatiere.StatutEP.SOUMIS).count()
+        except Exception:
+            pending_epreuves = 0
+
         # 7. Users et Badges pour modals admin
         all_users = list(User.objects.filter(is_active=True).order_by('first_name')[:200])
         try:
@@ -485,6 +503,7 @@ def dashboard_view(request):
             'admin_count': admin_count,
             'pro_count': pro_count,
             'bulletins_mois': bulletins_mois,
+            'pending_epreuves': pending_epreuves,
             'all_users': all_users,
             'all_badges': all_badges,
         })

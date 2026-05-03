@@ -30,6 +30,14 @@
         <a href="{% url 'exam_create' %}" class="px-5 py-2.5 rounded-xl bg-button-gradient text-white font-bold text-sm hover:opacity-90 transition shadow-lg shadow-primary/20 flex items-center gap-2">
           <i class="fa-solid fa-plus"></i> Épreuve
         </a>
+        <a href="{% url 'devoir_list' %}" class="px-5 py-2.5 rounded-xl glass border border-border-standard font-bold text-sm hover:bg-bg-tertiary/50 transition flex items-center gap-2">
+          <i class="fa-solid fa-file-pen text-primary"></i> Devoirs Nationaux
+        </a>
+        {% if pending_epreuves > 0 %}
+        <a href="{% url 'admin_validate_all' %}" class="px-5 py-2.5 rounded-xl bg-warning/10 text-warning font-bold text-sm hover:bg-warning/20 transition flex items-center gap-2 border border-warning/30">
+          <i class="fa-solid fa-clock"></i> Validation ({{ pending_epreuves }})
+        </a>
+        {% endif %}
         <a href="{% url 'supervision' %}" class="px-5 py-2.5 rounded-xl glass border border-border-standard font-bold text-sm hover:bg-bg-tertiary/50 transition flex items-center gap-2">
           <i class="fa-solid fa-users-gear"></i> Supervision
         </a>
