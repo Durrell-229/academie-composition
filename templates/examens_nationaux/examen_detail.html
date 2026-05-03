@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+{% block title %}{{ examen.get_type_examen_display }}{% endblock %}
+{% block breadcrumb %}
+  <a href="{% url 'dashboard' %}" class="hover:text-primary transition">Dashboard</a>
+  <span class="mx-2 text-text-muted">/</span>
+  <a href="{% url 'examens_nationaux:list' %}" class="hover:text-primary transition">Examens Nationaux</a>
+  <span class="mx-2 text-text-muted">/</span>
+  <span class="text-white font-semibold">{{ examen.get_type_examen_display }}</span>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+  <div class="animate-in glass rounded-2xl border border-border-standard p-6">
+    <h1 class="text-2xl font-black">{{ examen.get_type_examen_display }} — {{ examen.annee_scolaire }}</h1>
+    <p class="text-sm text-text-muted mt-1">
+      <i class="fa-solid fa-calendar"></i> {{ examen.date_debut|date:"d/m/Y" }} — {{ examen.date_fin|date:"d/m/Y" }}
+    </p>
+    <span class="inline-block mt-2 px-3 py-1 rounded-lg text-xs font-black uppercase
+      {% if examen.statut == 'termine' %}bg-success/10 text-success
+      {% elif examen.statut == 'en_cours' %}bg-warning/10 text-warning
+      {% else %}bg-text-muted/10 text-text-muted{% endif %}">
+      {{ examen.get_statut_display }}
+    </span>
+  </div>
+
+  {% if reponses %}
+  <div class="animate-in delay-1 glass rounded-2xl border border-border-standard p-6">
+    <h2 class="text-lg font-black mb-4">Vos Notes par Matière</h2>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-border-standard">
+            <th class="text-left py-2 px-3 font-bold text-text-muted">Matière</th>
+            <th class="text-center py-2 px-3 font-bold text-text-muted">Note</th>
+            <th class="text-center py-2 px-3 font-bold text-text-muted">Statut</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for rep in reponses %}
+          <tr class="border-b border-border-standard/50">
+            <td class="py-2 px-3">{{ rep.examen_matiere.matiere.nom }}</td>
+            <td class="py-2 px-3 text-center font-bold">
+              {% if rep.note_finale %}
+                <span class="{% if rep.note_finale >= 10 %}text-success{% else %}text-danger{% endif %}">
+                  {{ rep.note_finale }}/20
+                </span>
+              {% elif rep.note_ia %}
+                {{ rep.note_ia }}/20 <span class="text-xs text-text-muted">(IA)</span>
+              {% else %}
+                <span class="text-text-muted">En attente</span>
+              {% endif %}
+            </td>
+            <td class="py-2 px-3 text-center text-xs">
+              <span class="px-2 py-0.5 rounded
+                {% if rep.statut == 'corrige' %}bg-success/10 text-success
+                {% elif rep.statut == 'en_cours_correction' %}bg-warning/10 text-warning
+                {% else %}bg-text-muted/10 text-text-muted{% endif %}">
+                {{ rep.get_statut_display }}
+              </span>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% if composition and composition.moyenne_generale %}
+  <div class="animate-in delay-2 glass rounded-2xl border border-primary/30 p-6 text-center">
+    <h2 class="text-lg font-black mb-2">Résultat Final</h2>
+    <p class="text-3xl font-black text-primary">{{ composition.moyenne_generale }}/20</p>
+    <p class="text-sm text-text-muted mt-1">Rang : {{ composition.rang }} — {{ composition.get_resultat_display|default:"En attente" }}</p>
+    <a href="{% url 'examens_nationaux:bulletin' examen.id %}" class="mt-4 inline-block px-6 py-3 rounded-xl bg-button-gradient text-white font-bold shadow-lg shadow-primary/20 hover:opacity-90 transition">
+      <i class="fa-solid fa-file-pdf"></i> Télécharger mon bulletin officiel
+    </a>
+  </div>
+  {% endif %}
+
+  {% else %}
+  <div class="glass rounded-3xl border border-dashed border-border-standard p-16 text-center">
+    <i class="fa-solid fa-clipboard-question text-4xl text-text-muted opacity-50 mb-4"></i>
+    <h3 class="text-lg font-bold text-white mb-1">Aucune note disponible</h3>
+    <p class="text-sm text-text-muted">Les résultats apparaîtront ici après la correction.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

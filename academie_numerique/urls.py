@@ -30,6 +30,7 @@ urlpatterns = [
     path('subscriptions/', include('subscriptions.urls')),
     path('cours/', include('cours.urls')),
     path('devoirs/', include('devoirs.urls')),
+    path('examens-nationaux/', include('exams.examens_nationaux_urls')),
 ]
 
 # Servir les fichiers médias et statiques en développement (RIGOUREUX)
