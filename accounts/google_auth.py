@@ -148,8 +148,9 @@ def google_callback(request):
             except Exception as e:
                 logger.warning(f"Could not set Google avatar for {email}: {e}")
 
-        # Redirect to role choice page for first-time users
-        request.session['oauth_user_id'] = str(user.id)
+        # Log the user in so they're authenticated on the role choice page
+        login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+        request.session['oauth_needs_role'] = 'true'  # flag to show role choice is pending
         messages.info(request, "Bienvenue ! Choisissez votre rôle pour continuer.")
         from django.shortcuts import redirect as dj_redirect
         return dj_redirect('oauth_choose_role')
@@ -169,8 +170,8 @@ def google_callback(request):
             except Exception:
                 pass
 
-        # Log the user in
-        login(request, user)
+        # Log the user in (specify backend since multiple are configured)
+        login(request, user, backend='django.contrib.auth.backends.ModelBackend')
         messages.success(request, f"Connecté en tant que {user.full_name} via Google.")
         return redirect(next_url)
 

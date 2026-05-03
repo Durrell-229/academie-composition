@@ -649,16 +649,16 @@ def laravel_sso_login(request):
         return redirect('login')
 
 
-@login_required
 def oauth_choose_role_view(request):
     """
     Role assignment page for new Google OAuth users.
-    Only accessible if user is already logged in (from google_callback redirect).
+    Only accessible if user just logged in via Google and needs role assignment.
     """
     # If not coming from OAuth flow, redirect to dashboard
-    if not request.session.get('oauth_user_id'):
+    if not request.session.get('oauth_needs_role'):
         return redirect('dashboard')
 
+    # User is already logged in from google_callback
     user = request.user
 
     if request.method == 'POST':
@@ -688,8 +688,8 @@ def oauth_choose_role_view(request):
         user.role = role
         user.save()
 
-        # Clear OAuth session key
-        request.session.pop('oauth_user_id', None)
+        # Clear OAuth session flag
+        request.session.pop('oauth_needs_role', None)
 
         messages.success(request, f"Rôle '{user.get_role_display()}' attribué. Bienvenue !")
         return redirect('dashboard')
