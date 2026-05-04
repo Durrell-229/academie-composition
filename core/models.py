@@ -6,6 +6,15 @@ from django.utils.translation import gettext_lazy as _
 
 from core.constants import MATIERE_CHOICES
 
+# Choices pour les niveaux d'enseignement
+NIVEAU_CHOICES = [
+    ('primaire', 'Primaire'),
+    ('secondaire', 'Secondaire'),
+    ('universitaire', 'Universitaire'),
+    ('professionnel', 'Formation Professionnelle'),
+]
+
+
 class Matiere(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     nom = models.CharField(_('nom'), max_length=200, choices=MATIERE_CHOICES)
@@ -29,7 +38,7 @@ class Matiere(models.Model):
 class Classe(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     nom = models.CharField(_('nom'), max_length=200)
-    niveau = models.CharField(_('niveau'), max_length=20)
+    niveau = models.CharField(_('niveau'), max_length=20, choices=NIVEAU_CHOICES)
     section = models.CharField(_('section / filière'), max_length=100, blank=True)
     annee_academique = models.CharField(_('année académique'), max_length=20)
     is_active = models.BooleanField(default=True)
