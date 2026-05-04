@@ -157,8 +157,11 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# Cloud Storage for production (Render) - S3-compatible
+# Cloud Storage for production (Render) - Choose ONE: S3, Cloudinary, or local
 USE_S3_STORAGE = os.environ.get('USE_S3_STORAGE', 'False').lower() == 'true'
+USE_CLOUDINARY_STORAGE = os.environ.get('USE_CLOUDINARY_STORAGE', 'False').lower() == 'true'
+
+# Option 1: AWS S3 / DigitalOcean Spaces / MinIO
 if USE_S3_STORAGE:
     DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
     AWS_STORAGE_BUCKET_NAME = os.environ.get('AWS_STORAGE_BUCKET_NAME', '')
@@ -169,6 +172,16 @@ if USE_S3_STORAGE:
     AWS_S3_OBJECT_PARAMETERS = {'CacheControl': 'max-age=86400'}
     AWS_LOCATION = 'media'
     MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/{AWS_LOCATION}/'
+
+# Option 2: Cloudinary (easier, free tier, no credit card)
+elif USE_CLOUDINARY_STORAGE:
+    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+    CLOUDINARY_STORAGE = {
+        'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME', ''),
+        'API_KEY': os.environ.get('CLOUDINARY_API_KEY', ''),
+        'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET', ''),
+    }
+    MEDIA_URL = f'https://res.cloudinary.com/{CLOUDINARY_STORAGE["CLOUD_NAME"]}/'
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

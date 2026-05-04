@@ -130,6 +130,8 @@ weasyprint==60.1
 whitenoise==6.12.0
 django-storages==1.14.6
 boto3==1.38.35
+django-cloudinary-storage==0.3.0
+cloudinary==1.44.0
 xhtml2pdf==0.2.17
 zipp==3.23.1
 zopfli==0.4.1
