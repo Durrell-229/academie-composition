@@ -176,11 +176,34 @@ if USE_S3_STORAGE:
 # Option 2: Cloudinary (easier, free tier, no credit card)
 elif USE_CLOUDINARY_STORAGE:
     DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
-    CLOUDINARY_STORAGE = {
-        'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME', ''),
-        'API_KEY': os.environ.get('CLOUDINARY_API_KEY', ''),
-        'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET', ''),
-    }
+    
+    # Support both CLOUDINARY_URL and individual credentials
+    CLOUDINARY_URL = os.environ.get('CLOUDINARY_URL', '')
+    if CLOUDINARY_URL:
+        # Parse CLOUDINARY_URL=cloudinary://API_KEY:API_SECRET@CLOUD_NAME
+        import re
+        match = re.match(r'cloudinary://(\d+):([\w]+)@([\w]+)', CLOUDINARY_URL)
+        if match:
+            CLOUDINARY_STORAGE = {
+                'CLOUD_NAME': match.group(3),
+                'API_KEY': match.group(1),
+                'API_SECRET': match.group(2),
+            }
+        else:
+            # Fallback to individual env vars
+            CLOUDINARY_STORAGE = {
+                'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME', ''),
+                'API_KEY': os.environ.get('CLOUDINARY_API_KEY', ''),
+                'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET', ''),
+            }
+    else:
+        # Use individual env vars
+        CLOUDINARY_STORAGE = {
+            'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME', ''),
+            'API_KEY': os.environ.get('CLOUDINARY_API_KEY', ''),
+            'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET', ''),
+        }
+    
     MEDIA_URL = f'https://res.cloudinary.com/{CLOUDINARY_STORAGE["CLOUD_NAME"]}/'
 
 # Default primary key field type
