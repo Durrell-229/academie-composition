@@ -7,32 +7,31 @@
 {% endblock %}
 
 {% block content %}
-<div class="max-w-3xl mx-auto space-y-6">
+<div class="max-w-3xl mx-auto space-y-6" x-data="notificationListPage({{ notifications|length }})">
 
   <div class="animate-in flex items-center justify-between">
     <div>
       <h1 class="text-2xl font-black tracking-tight text-text-primary">Mes <span class="text-primary">Notifications</span></h1>
       <p class="text-sm text-text-muted mt-1">
-        {{ notifications|length }} notification{{ notifications|length|pluralize }}
-        {% if unread_count > 0 %}
-        — <span class="text-primary font-bold">{{ unread_count }} non lue{{ unread_count|pluralize }}</span>
-        {% endif %}
+        <span x-text="totalCount"></span> notification<span x-show="totalCount != 1">s</span>
+        <template x-if="unreadCount > 0">
+          <span>— <span class="text-primary font-bold"><span x-text="unreadCount"></span> non lue<span x-show="unreadCount != 1">s</span></span></span>
+        </template>
       </p>
     </div>
     {% if notifications %}
-    <form method="post" action="{% url 'notification_list' %}">
-      {% csrf_token %}
-      <input type="hidden" name="mark_all_read" value="1">
-      <button type="submit" class="px-4 py-2 rounded-xl bg-bg-card border border-border-standard text-xs font-bold text-text-muted hover:text-text-primary hover:bg-bg-tertiary transition flex items-center gap-2">
-        <i class="fa-solid fa-check-double"></i> Tout marquer comme lu
-      </button>
-    </form>
+    <button @click="markAllAsRead()" 
+            class="px-4 py-2 rounded-xl bg-bg-card border border-border-standard text-xs font-bold text-text-muted hover:text-text-primary hover:bg-bg-tertiary transition flex items-center gap-2">
+      <i class="fa-solid fa-check-double"></i> Tout marquer comme lu
+    </button>
     {% endif %}
   </div>
 
   <div class="space-y-3 animate-in delay-1">
     {% for notif in notifications %}
-    <div class="bg-bg-card rounded-2xl border {% if not notif.is_read %}border-primary/30 bg-primary/10{% else %}border-border-standard{% endif %} p-5 flex items-start gap-4 transition hover:bg-bg-tertiary">
+    <div class="bg-bg-card rounded-2xl border {% if not notif.is_read %}border-primary/30 bg-primary/10{% else %}border-border-standard{% endif %} p-5 flex items-start gap-4 transition hover:bg-bg-tertiary"
+         x-data="{ id: {{ notif.id }}, isRead: {{ notif.is_read|yesno:'true,false' }} }"
+         :class="{'border-primary/30 bg-primary/10': !isRead}">
       <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0
         {% if notif.type == 'BULLETIN' %}bg-success/15 text-success
         {% elif notif.type == 'APPROBATION' %}bg-warning/15 text-warning
@@ -48,9 +47,7 @@
       <div class="flex-1 min-w-0">
         <div class="flex items-center gap-2">
           <p class="font-bold text-sm text-text-primary">{{ notif.title }}</p>
-          {% if not notif.is_read %}
-          <span class="w-2 h-2 rounded-full bg-primary flex-shrink-0"></span>
-          {% endif %}
+          <span x-show="!isRead" class="w-2 h-2 rounded-full bg-primary flex-shrink-0"></span>
         </div>
         <p class="text-sm text-text-secondary mt-1">{{ notif.message }}</p>
         <p class="text-[10px] text-text-muted mt-2 font-mono">{{ notif.created_at|date:"d/m/Y à H:i" }}</p>
@@ -61,6 +58,12 @@
         {% else %}bg-primary/10 text-primary{% endif %}">
         {{ notif.get_type_display }}
       </span>
+      {% if not notif.is_read %}
+      <button @click="markAsRead(id, $el.closest('[x-data]'))" 
+              class="px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-xs font-bold hover:bg-primary/20 transition flex-shrink-0">
+        <i class="fa-solid fa-check"></i> Marquer comme lu
+      </button>
+      {% endif %}
     </div>
     {% empty %}
     <div class="bg-bg-card rounded-2xl border border-border-standard py-16 text-center">
@@ -73,4 +76,101 @@
     {% endfor %}
   </div>
 </div>
+
+<script>
+function notificationListPage(initialCount) {
+    return {
+        totalCount: initialCount,
+        unreadCount: {{ unread_count }},
+        eventSource: null,
+
+        init() {
+            // Connect to SSE for real-time updates
+            this.eventSource = new EventSource("{% url 'notification_stream' %}");
+            
+            this.eventSource.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.type === 'new_notification') {
+                        this.unreadCount = data.unread_count;
+                        this.totalCount++;
+                        
+                        // Show browser notification
+                        if ('Notification' in window && Notification.permission === 'granted') {
+                            new Notification(data.notification.title, {
+                                body: data.notification.message,
+                                icon: '/static/icons/notification.png',
+                            });
+                        }
+                    }
+                } catch (error) {
+                    console.error('SSE error:', error);
+                }
+            };
+
+            this.eventSource.onerror = () => {
+                console.error('SSE connection error, reconnecting...');
+                setTimeout(() => this.init(), 5000);
+            };
+
+            // Request browser notification permission
+            if ('Notification' in window && Notification.permission === 'default') {
+                Notification.requestPermission();
+            }
+        },
+
+        async markAsRead(notificationId, element) {
+            try {
+                const resp = await fetch(`/notifications/mark-read/${notificationId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': this.getCSRFToken(),
+                        'Content-Type': 'application/json',
+                    },
+                });
+                const data = await resp.json();
+                
+                if (data.success) {
+                    this.unreadCount = data.unread_count;
+                    // Update UI
+                    const parent = element.closest('[x-data]');
+                    if (parent) {
+                        parent.__x.$data.isRead = true;
+                    }
+                    // Reload page after short delay to reflect changes
+                    setTimeout(() => window.location.reload(), 500);
+                }
+            } catch (error) {
+                console.error('Error marking notification as read:', error);
+            }
+        },
+
+        async markAllAsRead() {
+            try {
+                const resp = await fetch("{% url 'notification_list' %}", {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': this.getCSRFToken(),
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: 'mark_all_read=1',
+                });
+                
+                if (resp.ok) {
+                    this.unreadCount = 0;
+                    // Reload to update all notifications UI
+                    window.location.reload();
+                }
+            } catch (error) {
+                console.error('Error marking all as read:', error);
+            }
+        },
+
+        getCSRFToken() {
+            const cookie = document.cookie.split(';').find(c => c.trim().startsWith('csrftoken='));
+            return cookie ? cookie.split('=')[1] : '';
+        }
+    };
+}
+</script>
 {% endblock %}

@@ -603,10 +603,26 @@ def devoir_submit_epreuve_view(request, devoir_id, matiere_id):
 
 @login_required
 def eleve_programme_view(request):
-    devoirs = Devoir.objects.filter(
-        statut__in=[Devoir.Statut.PROGRAMME_PUBLIE, Devoir.Statut.EN_COURS],
-        classes__nom=request.user.classe,
-    ).distinct().order_by('date_debut')
+    """Show all published/active devoirs for the student's class."""
+    user_classe = request.user.classe
+    
+    logger.info(f"[Eleve Programme] User: {request.user.email}, classe: '{user_classe}'")
+    
+    if not user_classe:
+        # Student has no class assigned - show all published devoirs with a warning
+        logger.warning(f"[Eleve Programme] User {request.user.email} has no classe assigned")
+        devoirs = Devoir.objects.filter(
+            statut__in=[Devoir.Statut.PROGRAMME_PUBLIE, Devoir.Statut.EN_COURS],
+        ).distinct().order_by('date_debut')
+        messages.info(request, "Vous n'avez pas de classe assignée. Voici tous les devoirs publiés.")
+    else:
+        # Filter devoirs by student's class
+        devoirs = Devoir.objects.filter(
+            statut__in=[Devoir.Statut.PROGRAMME_PUBLIE, Devoir.Statut.EN_COURS],
+            classes__nom=user_classe,
+        ).distinct().order_by('date_debut')
+        
+        logger.info(f"[Eleve Programme] Found {devoirs.count()} devoirs for classe '{user_classe}'")
 
     return render(request, 'devoirs/eleve_programme.html', {'devoirs': devoirs})
 
@@ -617,7 +633,10 @@ def eleve_devoir_calendar_view(request, devoir_id):
     devoir = get_object_or_404(Devoir, pk=devoir_id)
     
     # Vérifier que l'élève est dans les classes concernées
-    if not devoir.classes.filter(nom=request.user.classe).exists():
+    user_classe = request.user.classe
+    logger.info(f"[Eleve Calendar] User: {request.user.email}, classe: '{user_classe}', devoir classes: {list(devoir.classes.values_list('nom', flat=True))}")
+    
+    if user_classe and not devoir.classes.filter(nom=user_classe).exists():
         messages.error(request, "Ce devoir n'est pas pour votre classe.")
         return redirect('eleve_programme')
     
@@ -665,10 +684,20 @@ def eleve_devoir_calendar_view(request, devoir_id):
 
 @login_required
 def eleve_compose_view(request, devoir_id):
+    """Show the composition page for a specific devoir."""
     devoir = get_object_or_404(Devoir, pk=devoir_id)
+    
+    # Verify student's class matches
+    user_classe = request.user.classe
+    logger.info(f"[Eleve Compose] User: {request.user.email}, classe: '{user_classe}', devoir classes: {list(devoir.classes.values_list('nom', flat=True))}")
+    
+    if user_classe and not devoir.classes.filter(nom=user_classe).exists():
+        messages.error(request, "Ce devoir n'est pas pour votre classe.")
+        return redirect('eleve_programme')
+    
     composition, _ = DevoirComposition.objects.get_or_create(
         devoir=devoir, eleve=request.user,
-        defaults={'classe': devoir.classes.first()}
+        defaults={'classe': devoir.classes.filter(nom=user_classe).first() or devoir.classes.first()}
     )
 
     if devoir.statut != Devoir.Statut.EN_COURS:

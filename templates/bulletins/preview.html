@@ -1,0 +1,95 @@
+{% extends 'app_base.html' %}
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold mb-6">Aperçu du Bulletin</h1>
+        
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+            <div class="grid grid-cols-2 gap-4 mb-6">
+                <div>
+                    <p class="text-sm text-gray-500">Élève</p>
+                    <p class="font-semibold">{{ bulletin.eleve.full_name }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Classe</p>
+                    <p class="font-semibold">{{ bulletin.classe }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Période</p>
+                    <p class="font-semibold">{{ bulletin.get_periode_display }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Année Scolaire</p>
+                    <p class="font-semibold">{{ bulletin.annee_scolaire }}</p>
+                </div>
+            </div>
+            
+            <div class="mb-6">
+                <h2 class="text-xl font-semibold mb-4">Notes par Matière</h2>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead class="bg-gray-50 dark:bg-gray-700">
+                            <tr>
+                                <th class="px-4 py-2 text-left">Matière</th>
+                                <th class="px-4 py-2 text-left">Note</th>
+                                <th class="px-4 py-2 text-left">Coefficient</th>
+                                <th class="px-4 py-2 text-left">Appréciation</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                            {% for ligne in bulletin.lignes.all %}
+                            <tr>
+                                <td class="px-4 py-2">{{ ligne.matiere }}</td>
+                                <td class="px-4 py-2">{{ ligne.note }}/20</td>
+                                <td class="px-4 py-2">{{ ligne.coefficient }}</td>
+                                <td class="px-4 py-2">{{ ligne.appreciation|default:"-" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4 mb-6">
+                <div class="bg-blue-50 dark:bg-blue-900 p-4 rounded">
+                    <p class="text-sm text-blue-600 dark:text-blue-300">Moyenne Générale</p>
+                    <p class="text-2xl font-bold text-blue-700 dark:text-blue-200">{{ bulletin.moyenne_generale }}/20</p>
+                </div>
+                <div class="bg-green-50 dark:bg-green-900 p-4 rounded">
+                    <p class="text-sm text-green-600 dark:text-green-300">Rang</p>
+                    <p class="text-2xl font-bold text-green-700 dark:text-green-200">{{ bulletin.rang }}/{{ bulletin.effectif_total }}</p>
+                </div>
+            </div>
+            
+            {% if bulletin.appreciation_ia %}
+            <div class="mb-6">
+                <h3 class="font-semibold mb-2">Appréciation IA</h3>
+                <p class="text-gray-700 dark:text-gray-300">{{ bulletin.appreciation_ia }}</p>
+            </div>
+            {% endif %}
+            
+            {% if bulletin.decision_conseil %}
+            <div class="mb-6">
+                <h3 class="font-semibold mb-2">Décision du Conseil</h3>
+                <p class="text-gray-700 dark:text-gray-300">{{ bulletin.decision_conseil }}</p>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="mt-6 flex gap-4">
+            <a href="{% url 'bulletins:detail' bulletin.id %}" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">
+                Retour
+            </a>
+            {% if bulletin.file_pdf %}
+            <a href="{% url 'bulletins:download_pdf' bulletin.id %}" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+                Télécharger PDF
+            </a>
+            {% else %}
+            <a href="{% url 'bulletins:generate' bulletin.id %}" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+                Générer PDF
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

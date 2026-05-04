@@ -14,7 +14,7 @@
       <div class="flex justify-between items-start">
         <div>
           <h3 class="font-bold">{{ bulletin.devoir.titre }}</h3>
-          <p class="text-sm text-text-muted">{{ bulletin.devoir.annee_scolaire }} — Classe : {{ bulletin.classe.nom }}</p>
+          <p class="text-sm text-text-muted">{{ bulletin.devoir.annee_scolaire }} — Classe : {{ bulletin.classe.nom|default:"Non assignée" }}</p>
         </div>
         <div class="text-right">
           {% if bulletin.statut == 'approuve' %}

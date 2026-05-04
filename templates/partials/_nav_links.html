@@ -24,6 +24,12 @@
                 </a>
             </li>
             <li>
+                <a href="{% url 'prof_dashboard' %}" class="text-text-secondary hover:bg-primary/50 hover:text-white group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6">
+                    <i class="fa-solid fa-file-pen text-lg"></i>
+                    Devoirs Nationaux
+                </a>
+            </li>
+            <li>
                 <a href="{% url 'qcm_start' %}" class="text-text-secondary hover:bg-primary/50 hover:text-white group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6">
                     <i class="fa-solid fa-wand-magic-sparkles text-lg"></i>
                     Générateur QCM IA
@@ -44,6 +50,18 @@
     <li class="mt-4">
         <div class="text-[10px] font-bold leading-6 text-text-secondary uppercase tracking-widest px-2 opacity-60">Espace Apprenant</div>
         <ul role="list" class="-mx-2 mt-1 space-y-1">
+            <li>
+                <a href="{% url 'eleve_programme' %}" class="text-text-secondary hover:bg-primary/50 hover:text-white group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6">
+                    <i class="fa-solid fa-calendar-days text-lg"></i>
+                    Devoirs & Programmes
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'eleve_resultats' %}" class="text-text-secondary hover:bg-primary/50 hover:text-white group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6">
+                    <i class="fa-solid fa-chart-bar text-lg"></i>
+                    Mes Résultats Devoirs
+                </a>
+            </li>
             <li>
                 <a href="{% url 'bulletins:index' %}" class="text-text-secondary hover:bg-primary/50 hover:text-white group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6">
                     <i class="fa-solid fa-chart-line text-lg"></i>
@@ -71,6 +89,14 @@
                     Supervision Membres
                 </a>
             </li>
+            {% if user.role == 'admin' %}
+            <li>
+                <a href="{% url 'devoir_list' %}" class="text-text-secondary hover:bg-primary/50 hover:text-white group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6">
+                    <i class="fa-solid fa-file-pen text-lg"></i>
+                    Gestion Devoirs Nationaux
+                </a>
+            </li>
+            {% endif %}
         </ul>
     </li>
     {% endif %}

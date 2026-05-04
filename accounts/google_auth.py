@@ -43,7 +43,7 @@ def google_login_redirect(request):
     request.session['google_oauth_state'] = state
 
     # Where to redirect after successful login
-    request.session['google_oauth_next'] = request.GET.get('next', '/accueil/')
+    request.session['google_oauth_next'] = request.GET.get('next', '/accounts/dashboard/')
 
     # Build authorization URL
     params = {
@@ -173,7 +173,8 @@ def google_callback(request):
         # Log the user in (specify backend since multiple are configured)
         login(request, user, backend='django.contrib.auth.backends.ModelBackend')
         messages.success(request, f"Connecté en tant que {user.full_name} via Google.")
-        return redirect(next_url)
+        # Always redirect to dashboard for OAuth users
+        return redirect('dashboard')
 
 
 def _set_user_avatar_from_url(user, picture_url):

@@ -179,3 +179,17 @@ def email_compose_view(request):
         return redirect('dashboard')
 
     return redirect('dashboard')
+
+
+@login_required
+def mark_notification_read(request, notification_id):
+    """Mark a single notification as read (AJAX endpoint)."""
+    from django.http import JsonResponse
+    
+    try:
+        notification = Notification.objects.get(id=notification_id, recipient=request.user)
+        notification.is_read = True
+        notification.save(update_fields=['is_read'])
+        return JsonResponse({'success': True, 'unread_count': Notification.objects.filter(recipient=request.user, is_read=False).count()})
+    except Notification.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Notification not found'}, status=404)
