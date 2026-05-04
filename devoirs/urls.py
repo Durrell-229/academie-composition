@@ -18,6 +18,7 @@ urlpatterns = [
     # Admin: validate/reject epreuves
     path('validate/', views.admin_validate_all_view, name='admin_validate_all'),
     path('epreuve/<uuid:pk>/download/', views.download_epreuve_file, name='download_epreuve'),
+    path('epreuve/<uuid:pk>/delete/', views.delete_epreuve_view, name='delete_epreuve'),
     path('matiere/<uuid:pk>/validate/', views.devoir_matiere_validate_view, name='devoir_matiere_validate'),
     path('matiere/<uuid:pk>/reject/', views.devoir_matiere_reject_view, name='devoir_matiere_reject'),
     path('<uuid:pk>/upload-epreuve/', views.admin_upload_epreuve_view, name='admin_upload_epreuve'),
@@ -25,6 +26,7 @@ urlpatterns = [
     # Admin: approve/reject bulletins
     path('bulletin/<uuid:pk>/approve/', views.devoir_approuver_bulletin_view, name='devoir_approuver_bulletin'),
     path('bulletin/<uuid:pk>/reject/', views.devoir_rejeter_bulletin_view, name='devoir_rejeter_bulletin'),
+    path('<uuid:pk>/delete/', views.delete_devoir_view, name='delete_devoir'),
 
     # Prof: submit exam
     path('prof/', views.prof_dashboard_view, name='prof_dashboard'),

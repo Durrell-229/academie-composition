@@ -125,6 +125,14 @@
               <i class="fa-solid fa-rotate"></i> Resoumettre
             </a>
             {% endif %}
+            
+            <!-- Delete button (always visible for admin) -->
+            <button 
+              onclick="confirmDeleteEpreuve('{{ ep.pk }}', '{{ ep.matiere.nom }}', '{{ ep.devoir.titre }}')"
+              class="w-full mt-2 px-4 py-2 rounded-lg bg-bg-tertiary border border-border-standard text-text-muted text-sm font-medium hover:bg-danger/10 hover:text-danger hover:border-danger/20 transition"
+            >
+              <i class="fa-solid fa-trash"></i> Supprimer
+            </button>
           </div>
         </div>
       </div>
@@ -146,4 +154,56 @@
     </div>
   {% endif %}
 </div>
+
+<!-- Delete confirmation modal -->
+<div id="delete-epreuve-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+  <div class="bg-bg-card rounded-2xl border border-border-standard p-6 max-w-md w-full">
+    <div class="text-center">
+      <div class="w-16 h-16 rounded-full bg-danger/10 border-2 border-danger/20 flex items-center justify-center mx-auto mb-4">
+        <i class="fa-solid fa-trash text-3xl text-danger"></i>
+      </div>
+      <h3 class="text-lg font-black text-text-primary mb-2">Supprimer cette épreuve ?</h3>
+      <p class="text-sm text-text-muted mb-4">
+        <strong id="delete-matiere-nom"></strong> de <strong id="delete-devoir-titre"></strong>
+      </p>
+      <div class="bg-warning/5 border border-warning/20 rounded-lg p-3 mb-4">
+        <p class="text-xs text-warning">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+          Cette action est irréversible.
+        </p>
+      </div>
+      <div class="flex gap-3">
+        <button onclick="closeDeleteModal()" class="flex-1 px-4 py-2 rounded-lg bg-bg-tertiary border border-border-standard text-text-primary text-sm font-bold hover:bg-bg-card transition">
+          Annuler
+        </button>
+        <form id="delete-epreuve-form" method="post" class="flex-1">
+          {% csrf_token %}
+          <button type="submit" class="w-full px-4 py-2 rounded-lg bg-danger text-white text-sm font-bold hover:bg-danger/90 transition">
+            <i class="fa-solid fa-trash"></i> Supprimer
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function confirmDeleteEpreuve(pk, matiereNom, devoirTitre) {
+  document.getElementById('delete-matiere-nom').textContent = matiereNom;
+  document.getElementById('delete-devoir-titre').textContent = devoirTitre;
+  document.getElementById('delete-epreuve-form').action = `/devoirs/epreuve/${pk}/delete/`;
+  document.getElementById('delete-epreuve-modal').classList.remove('hidden');
+}
+
+function closeDeleteModal() {
+  document.getElementById('delete-epreuve-modal').classList.add('hidden');
+}
+
+// Close modal on escape key
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    closeDeleteModal();
+  }
+});
+</script>
 {% endblock %}

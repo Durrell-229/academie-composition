@@ -33,16 +33,39 @@ ADMIN_PHONE = '+2290197650817'
 @login_required
 def download_epreuve_file(request, pk):
     """Télécharge/voir une épreuve ou corrigé avec vérification."""
-    from django.http import HttpResponse
+    from django.http import HttpResponse, HttpResponseForbidden
     
     dm = get_object_or_404(DevoirMatiere, pk=pk)
     file_type = request.GET.get('type', 'epreuve')
     
-    # Permissions: Admin, Conseiller, ou le prof qui a soumis
-    if request.user.role not in ['admin', 'conseiller']:
-        if dm.soumis_par != request.user:
-            messages.error(request, "Accès refusé.")
+    # CORRECTION TYPE: Strict access control - NEVER allow students to see answer keys
+    if file_type == 'corrige':
+        if request.user.role not in ['admin', 'conseiller', 'professeur']:
+            logger.warning(f"Élève {request.user.email} a tenté d'accéder au corrigé type de {dm}")
+            messages.error(request, "Accès interdit : les corrigés types sont confidentiels.")
             return redirect('dashboard')
+        # Even professors can only see their own corrigés
+        if request.user.role == 'professeur' and dm.soumis_par != request.user:
+            # Allow if admin has validated it
+            if dm.statut != DevoirMatiere.StatutEP.VALIDE:
+                messages.error(request, "Accès refusé au corrigé.")
+                return redirect('dashboard')
+    
+    # ÉPREUVE: Allow if student has access to the devoir
+    if file_type == 'epreuve':
+        if request.user.role == 'eleve':
+            # Check if devoir is in progress and for student's class
+            if dm.devoir.statut != Devoir.Statut.EN_COURS:
+                messages.error(request, "Cette épreuve n'est pas disponible.")
+                return redirect('dashboard')
+            user_classe = request.user.classe
+            if user_classe and not dm.devoir.classes.filter(nom=user_classe).exists():
+                messages.error(request, "Cette épreuve n'est pas pour votre classe.")
+                return redirect('dashboard')
+        elif request.user.role not in ['admin', 'conseiller']:
+            if dm.soumis_par != request.user:
+                messages.error(request, "Accès refusé.")
+                return redirect('dashboard')
     
     # Déterminer quel fichier servir
     if file_type == 'corrige':
@@ -576,6 +599,85 @@ def devoir_approuver_tous_view(request, pk):
             count += 1
         messages.success(request, f"{count} bulletin(s) approuvé(s).")
     return redirect('devoir_bulletins', pk=pk)
+
+
+# ═══════════════════════════════════════════
+# DELETE VIEWS (Admin only)
+# ═══════════════════════════════════════════
+
+@login_required
+def delete_epreuve_view(request, pk):
+    """Supprimer une épreuve (DevoirMatiere) - Admin uniquement."""
+    if request.user.role != 'admin':
+        messages.error(request, "Accès refusé.")
+        return redirect('dashboard')
+    
+    dm = get_object_or_404(DevoirMatiere, pk=pk)
+    devoir_pk = dm.devoir.pk
+    matiere_nom = dm.matiere.nom
+    
+    # Check if there are student copies
+    copies_count = DevoirReponseEleve.objects.filter(devoir_matiere=dm).count()
+    if copies_count > 0:
+        messages.error(
+            request,
+            f"Impossible de supprimer: {copies_count} copie(s) d'élève(s) déjà soumise(s). "
+            f"Supprimez d'abord les copies des élèves."
+        )
+        return redirect('admin_validate_all')
+    
+    # Check if bulletin exists
+    bulletins_count = BulletinDevoir.objects.filter(devoir_matiere=dm).count()
+    if bulletins_count > 0:
+        messages.error(
+            request,
+            f"Impossible de supprimer: {bulletins_count} bulletin(s) déjà généré(s)."
+        )
+        return redirect('admin_validate_all')
+    
+    if request.method == 'POST':
+        logger.info(f"Admin {request.user.email} supprime l'épreuve {matiere_nom} de {dm.devoir.titre}")
+        dm.delete()
+        messages.success(request, f"Épreuve de {matiere_nom} supprimée.")
+    
+    return redirect('admin_validate_all')
+
+
+@login_required
+def delete_devoir_view(request, pk):
+    """Supprimer un devoir complet - Admin uniquement."""
+    if request.user.role != 'admin':
+        messages.error(request, "Accès refusé.")
+        return redirect('dashboard')
+    
+    devoir = get_object_or_404(Devoir, pk=pk)
+    
+    # Check if students have composed
+    compositions_count = DevoirComposition.objects.filter(devoir=devoir).count()
+    if compositions_count > 0:
+        messages.error(
+            request,
+            f"Impossible de supprimer: {compositions_count} composition(s) d'élève(s) existe(nt). "
+            f"Supprimez d'abord les compositions."
+        )
+        return redirect('devoir_list')
+    
+    # Check if bulletins exist
+    bulletins_count = BulletinDevoir.objects.filter(devoir=devoir).count()
+    if bulletins_count > 0:
+        messages.error(
+            request,
+            f"Impossible de supprimer: {bulletins_count} bulletin(s) déjà généré(s)."
+        )
+        return redirect('devoir_list')
+    
+    if request.method == 'POST':
+        logger.info(f"Admin {request.user.email} supprime le devoir {devoir.titre}")
+        devoir_nom = devoir.titre
+        devoir.delete()
+        messages.success(request, f"Devoir '{devoir_nom}' supprimé.")
+    
+    return redirect('devoir_list')
 
 
 # ═══════════════════════════════════════════
