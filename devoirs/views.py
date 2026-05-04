@@ -279,10 +279,14 @@ def devoir_matiere_validate_view(request, pk):
     
     # NOTIFICATION: Notify students that epreuve is validated and available
     from notifications.models import Notification
+    
+    # Get class names (strings) from the devoir's classes
+    classe_names = dm.devoir.classes.values_list('nom', flat=True)
+    
     eleves = User.objects.filter(
         role=User.Role.ELEVE, 
         is_active=True,
-        classe__in=dm.devoir.classes.all()
+        classe__in=classe_names
     ).distinct()
     
     for eleve in eleves:
