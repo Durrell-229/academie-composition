@@ -220,6 +220,7 @@ class BulletinDevoir(models.Model):
     appreciation_ia = models.TextField(_('synthèse IA'), blank=True, default='')
     file_pdf = models.FileField(_('fichier PDF'), upload_to='bulletins_devoirs/%Y/%m/', blank=True, null=True)
     verification_token = models.UUIDField(_('token de vérification'), unique=True, default=uuid.uuid4)
+    prof_lu = models.BooleanField(_('lu par le professeur'), default=False, help_text='Indique si le professeur a pris connaissance du bulletin')
     created_at = models.DateTimeField(auto_now_add=True)
     approuve_at = models.DateTimeField(_('date d\'approbation'), null=True, blank=True)
 

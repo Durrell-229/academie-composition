@@ -1,0 +1,93 @@
+{% comment %}
+Modal de succès après soumission d'une copie d'examen
+Utiliser avec Alpine.js pour l'affichage
+{% endcomment %}
+
+<div x-show="showSubmissionModal" x-cloak 
+     class="fixed inset-0 z-50 flex items-center justify-center p-4"
+     x-transition:enter="transition ease-out duration-300"
+     x-transition:enter-start="opacity-0 scale-95"
+     x-transition:enter-end="opacity-100 scale-100"
+     x-transition:leave="transition ease-in duration-200"
+     x-transition:leave-start="opacity-100 scale-100"
+     x-transition:leave-end="opacity-0 scale-95">
+  
+  <!-- Backdrop -->
+  <div class="fixed inset-0 bg-black/70 backdrop-blur-sm" 
+       @click="showSubmissionModal = false"></div>
+  
+  <!-- Modal Content -->
+  <div class="relative glass rounded-2xl border border-border-standard w-full max-w-md p-8 z-10"
+       x-transition:enter="transition ease-out duration-300"
+       x-transition:enter-start="translate-y-4 opacity-0"
+       x-transition:enter-end="translate-y-0 opacity-100">
+    
+    <!-- Success Icon -->
+    <div class="w-20 h-20 mx-auto mb-6 rounded-full bg-success/10 border-2 border-success/30 flex items-center justify-center">
+      <div class="w-16 h-16 rounded-full bg-success/20 flex items-center justify-center">
+        <i class="fa-solid fa-check text-4xl text-success"></i>
+      </div>
+    </div>
+    
+    <!-- Title -->
+    <h3 class="text-xl font-black text-center mb-2">
+      Copie Soumise avec Succès !
+    </h3>
+    
+    <!-- Message -->
+    <div class="text-center space-y-3 mb-6">
+      <p class="text-sm text-text-muted">
+        Votre copie a été transmise au <strong class="text-primary">Laboratoire IA</strong> pour correction.
+      </p>
+      
+      <div class="p-4 rounded-xl bg-primary/5 border border-primary/20">
+        <p class="text-xs font-bold text-primary mb-1">
+          <i class="fa-solid fa-robot"></i> Correction IA en Cours
+        </p>
+        <p class="text-xs text-text-muted">
+          Vous serez bientôt informé de votre résultat via le système de notifications.
+        </p>
+      </div>
+      
+      {% if copie_document_id %}
+      <div class="p-3 rounded-xl bg-bg-tertiary/30 border border-border-standard">
+        <p class="text-[10px] text-text-muted uppercase tracking-wider">Identifiant de Copie</p>
+        <p class="text-xs font-mono font-bold text-primary mt-1">{{ copie_document_id }}</p>
+      </div>
+      {% endif %}
+    </div>
+    
+    <!-- Progress Indicator -->
+    <div class="mb-6">
+      <div class="flex items-center justify-between text-xs mb-2">
+        <span class="text-success font-bold">✓ Soumis</span>
+        <span class="text-primary font-bold">⟳ En Correction</span>
+        <span class="text-text-muted">○ Approuvé</span>
+        <span class="text-text-muted">○ Résultat</span>
+      </div>
+      <div class="h-2 bg-bg-tertiary/30 rounded-full overflow-hidden">
+        <div class="h-full rounded-full bg-gradient-to-r from-success to-primary animate-pulse" style="width: 35%"></div>
+      </div>
+    </div>
+    
+    <!-- Buttons -->
+    <div class="flex gap-3">
+      <button @click="showSubmissionModal = false" 
+              class="flex-1 py-3 rounded-xl glass border border-border-standard text-sm font-bold text-text-muted hover:bg-bg-tertiary/50 transition">
+        Fermer
+      </button>
+      <a href="{% url 'eleve_programme' %}" 
+         class="flex-1 py-3 rounded-xl bg-button-gradient text-white text-sm font-black shadow-lg shadow-primary/20 hover:opacity-90 transition text-center">
+        <i class="fa-solid fa-calendar"></i> Voir le Programme
+      </a>
+    </div>
+    
+    <!-- Info -->
+    <div class="mt-4 p-3 rounded-lg bg-info/5 border border-info/20">
+      <p class="text-[10px] text-info">
+        <i class="fa-solid fa-info-circle"></i> 
+        Votre copie est sécurisée et identifiée de manière unique. Aucun mélange possible.
+      </p>
+    </div>
+  </div>
+</div>

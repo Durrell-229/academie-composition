@@ -14,13 +14,13 @@
             <li>
                 <a href="{% url 'exam_create' %}" class="text-text-secondary hover:bg-primary/50 hover:text-white group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6">
                     <i class="fa-solid fa-file-circle-plus text-lg"></i>
-                    Nouvelle Épreuve
+                    Créer une Épreuve
                 </a>
             </li>
             <li>
                 <a href="{% url 'exam_list' %}" class="text-text-secondary hover:bg-primary/50 hover:text-white group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6">
                     <i class="fa-solid fa-layer-group text-lg"></i>
-                    Banque d'Examens
+                    Banque d'Épreuves
                 </a>
             </li>
             <li>
@@ -32,7 +32,7 @@
             <li>
                 <a href="{% url 'qcm_start' %}" class="text-text-secondary hover:bg-primary/50 hover:text-white group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6">
                     <i class="fa-solid fa-wand-magic-sparkles text-lg"></i>
-                    Générateur QCM IA
+                    QCM Auto (IA)
                 </a>
             </li>
             <li>
@@ -91,9 +91,27 @@
             </li>
             {% if user.role == 'admin' %}
             <li>
+                <a href="{% url 'classe_list' %}" class="text-text-secondary hover:bg-primary/50 hover:text-white group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6">
+                    <i class="fa-solid fa-chalkboard text-lg"></i>
+                    Gestion des Classes
+                </a>
+            </li>
+            <li>
                 <a href="{% url 'devoir_list' %}" class="text-text-secondary hover:bg-primary/50 hover:text-white group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6">
                     <i class="fa-solid fa-file-pen text-lg"></i>
                     Gestion Devoirs Nationaux
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'admin_validate_all' %}" class="text-text-secondary hover:bg-primary/50 hover:text-white group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6">
+                    <i class="fa-solid fa-clipboard-check text-lg"></i>
+                    Validation Épreuves
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'workflow_dashboard' %}" class="text-text-secondary hover:bg-primary/50 hover:text-white group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6">
+                    <i class="fa-solid fa-diagram-project text-lg"></i>
+                    Workflow Dashboard
                 </a>
             </li>
             {% endif %}

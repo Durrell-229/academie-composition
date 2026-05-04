@@ -40,4 +40,21 @@ urlpatterns = [
 
     # Certificate download
     path('certificat/<uuid:pk>/download/', views.certificat_download_view, name='certificat_download'),
+    
+    # Class & Serie Management
+    path('classes/', views.classe_list_view, name='classe_list'),
+    path('classes/create/', views.classe_create_view, name='classe_create'),
+    path('classes/<uuid:pk>/edit/', views.classe_edit_view, name='classe_edit'),
+    path('classes/<uuid:pk>/delete/', views.classe_delete_view, name='classe_delete'),
+    
+    # Schedule Management
+    path('<uuid:pk>/schedule/', views.schedule_builder_view, name='schedule_builder'),
+    path('<uuid:pk>/schedule/delete/<str:matiere_nom>/', views.schedule_delete_view, name='schedule_delete'),
+    
+    # Workflow Dashboard
+    path('workflow/', views.workflow_dashboard_view, name='workflow_dashboard'),
+    
+    # IA Lab
+    path('ia-lab/', views.ia_lab_dashboard_view, name='ia_lab_dashboard'),
+    path('ia-lab/verify/', views.ia_verify_copy_view, name='ia_verify_copy'),
 ]

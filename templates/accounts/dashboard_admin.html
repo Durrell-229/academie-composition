@@ -33,11 +33,9 @@
         <a href="{% url 'devoir_list' %}" class="px-5 py-2.5 rounded-xl glass border border-border-standard font-bold text-sm hover:bg-bg-tertiary/50 transition flex items-center gap-2">
           <i class="fa-solid fa-file-pen text-primary"></i> Devoirs Nationaux
         </a>
-        {% if pending_epreuves > 0 %}
-        <a href="{% url 'admin_validate_all' %}" class="px-5 py-2.5 rounded-xl bg-warning/10 text-warning font-bold text-sm hover:bg-warning/20 transition flex items-center gap-2 border border-warning/30">
-          <i class="fa-solid fa-clock"></i> Validation ({{ pending_epreuves }})
+        <a href="{% url 'admin_validate_all' %}" class="px-5 py-2.5 rounded-xl {% if pending_epreuves > 0 %}bg-warning/10 text-warning font-bold text-sm hover:bg-warning/20 transition flex items-center gap-2 border border-warning/30{% else %}glass border border-border-standard font-bold text-sm hover:bg-bg-tertiary/50 transition flex items-center gap-2{% endif %}">
+          <i class="fa-solid fa-clipboard-check"></i> Validation Épreuves {% if pending_epreuves > 0 %}({{ pending_epreuves }}){% endif %}
         </a>
-        {% endif %}
         <a href="{% url 'supervision' %}" class="px-5 py-2.5 rounded-xl glass border border-border-standard font-bold text-sm hover:bg-bg-tertiary/50 transition flex items-center gap-2">
           <i class="fa-solid fa-users-gear"></i> Supervision
         </a>
@@ -101,14 +99,14 @@
   </div>
 
   <!-- ═══ ACTIONS RAPIDES ═══ -->
-  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 animate-in delay-2">
+  <div class="grid grid-cols-2 md:grid-cols-5 gap-4 animate-in delay-2">
     <a href="{% url 'exam_create' %}" class="glass p-5 rounded-2xl border border-primary/20 hover:border-primary/50 hover:bg-primary/5 transition group flex flex-col items-center gap-3 text-center">
       <div class="w-10 h-10 rounded-xl bg-primary/10 group-hover:bg-primary/20 flex items-center justify-center text-primary transition">
         <i class="fa-solid fa-file-circle-plus"></i>
       </div>
       <div>
-        <p class="text-xs font-black text-white">Créer une épreuve</p>
-        <p class="text-[9px] text-text-muted mt-0.5">Nouvelle évaluation</p>
+        <p class="text-xs font-black text-white">Créer Épreuve</p>
+        <p class="text-[9px] text-text-muted mt-0.5">Examen traditionnel</p>
       </div>
     </a>
     <a href="{% url 'qcm_start' %}" class="glass p-5 rounded-2xl border border-accent/20 hover:border-accent/50 hover:bg-accent/5 transition group flex flex-col items-center gap-3 text-center">
@@ -116,8 +114,8 @@
         <i class="fa-solid fa-list-check"></i>
       </div>
       <div>
-        <p class="text-xs font-black text-white">Générer un QCM IA</p>
-        <p class="text-[9px] text-text-muted mt-0.5">Évaluation automatique</p>
+        <p class="text-xs font-black text-white">QCM Auto (IA)</p>
+        <p class="text-[9px] text-text-muted mt-0.5">Quiz automatique</p>
       </div>
     </a>
     <a href="{% url 'exam_list' %}" class="glass p-5 rounded-2xl border border-border-standard hover:border-border-standard hover:bg-bg-tertiary/30 transition group flex flex-col items-center gap-3 text-center">
@@ -145,6 +143,33 @@
       <div>
         <p class="text-xs font-black text-white">Devoirs Nationaux</p>
         <p class="text-[9px] text-text-muted mt-0.5">Compositions nationales</p>
+      </div>
+    </a>
+    <a href="{% url 'admin_validate_all' %}" class="glass p-5 rounded-2xl border {% if pending_epreuves > 0 %}border-warning/50 bg-warning/5{% else %}border-border-standard{% endif %} hover:border-warning/50 hover:bg-warning/5 transition group flex flex-col items-center gap-3 text-center">
+      <div class="w-10 h-10 rounded-xl {% if pending_epreuves > 0 %}bg-warning/20{% else %}bg-warning/10{% endif %} group-hover:bg-warning/20 flex items-center justify-center {% if pending_epreuves > 0 %}text-warning animate-pulse{% else %}text-warning{% endif %} transition">
+        <i class="fa-solid fa-clipboard-check"></i>
+      </div>
+      <div>
+        <p class="text-xs font-black text-white">Validation Épreuves</p>
+        <p class="text-[9px] text-text-muted mt-0.5">{% if pending_epreuves > 0 %}{{ pending_epreuves }} à approuver{% else %}Aucune en attente{% endif %}</p>
+      </div>
+    </a>
+    <a href="{% url 'classe_list' %}" class="glass p-5 rounded-2xl border border-border-standard hover:border-primary/50 hover:bg-primary/5 transition group flex flex-col items-center gap-3 text-center">
+      <div class="w-10 h-10 rounded-xl bg-primary/10 group-hover:bg-primary/20 flex items-center justify-center text-primary transition">
+        <i class="fa-solid fa-chalkboard"></i>
+      </div>
+      <div>
+        <p class="text-xs font-black text-white">Gestion des Classes</p>
+        <p class="text-[9px] text-text-muted mt-0.5">Classes et séries</p>
+      </div>
+    </a>
+    <a href="{% url 'workflow_dashboard' %}" class="glass p-5 rounded-2xl border border-border-standard hover:border-accent/50 hover:bg-accent/5 transition group flex flex-col items-center gap-3 text-center">
+      <div class="w-10 h-10 rounded-xl bg-accent/10 group-hover:bg-accent/20 flex items-center justify-center text-accent transition">
+        <i class="fa-solid fa-diagram-project"></i>
+      </div>
+      <div>
+        <p class="text-xs font-black text-white">Workflow Dashboard</p>
+        <p class="text-[9px] text-text-muted mt-0.5">Suivi complet</p>
       </div>
     </a>
   </div>

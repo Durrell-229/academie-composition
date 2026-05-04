@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+{% block title %}Gestion des Classes | Admin{% endblock %}
+{% block breadcrumb %}<span class="text-text-primary">Gestion des Classes</span>{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <!-- Header -->
+  <div class="bg-bg-card rounded-2xl border border-border-standard p-6">
+    <div class="flex justify-between items-start">
+      <div>
+        <h1 class="text-2xl font-black">Gestion des Classes</h1>
+        <p class="text-text-muted text-sm mt-1">Créez et gérez les classes, séries et filières</p>
+      </div>
+      <a href="{% url 'classe_create' %}" class="px-5 py-2.5 rounded-xl bg-button-gradient text-white font-bold text-sm hover:opacity-90 transition shadow-lg shadow-primary/20 flex items-center gap-2">
+        <i class="fa-solid fa-plus"></i> Nouvelle Classe
+      </a>
+    </div>
+    
+    <!-- Stats -->
+    <div class="grid grid-cols-3 gap-4 mt-4">
+      <div class="bg-primary/5 rounded-xl p-4 border border-primary/20">
+        <div class="text-2xl font-bold text-primary">{{ classes|length }}</div>
+        <div class="text-xs text-text-muted">Total Classes</div>
+      </div>
+      <div class="bg-success/5 rounded-xl p-4 border border-success/20">
+        <div class="text-2xl font-bold text-success">{{ classes|length }}</div>
+        <div class="text-xs text-text-muted">Actives</div>
+      </div>
+      <div class="bg-info/5 rounded-xl p-4 border border-info/20">
+        <div class="text-2xl font-bold text-info">
+          {% for c in classes %}
+            {% if c.eleve_count %}{{ c.eleve_count }}{% endif %}
+          {% endfor %}
+        </div>
+        <div class="text-xs text-text-muted">Élèves Assignés</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="flex gap-2 flex-wrap">
+    <a href="{% url 'classe_list' %}" class="px-4 py-2 rounded-lg text-sm font-bold transition {% if not niveau_filter %}bg-primary/10 text-primary{% else %}bg-bg-card border border-border-standard text-text-muted hover:bg-bg-tertiary{% endif %}">
+      Toutes
+    </a>
+    <a href="?niveau=primaire" class="px-4 py-2 rounded-lg text-sm font-bold transition {% if niveau_filter == 'primaire' %}bg-success/10 text-success{% else %}bg-bg-card border border-border-standard text-text-muted hover:bg-bg-tertiary{% endif %}">
+      Primaire
+    </a>
+    <a href="?niveau=secondaire" class="px-4 py-2 rounded-lg text-sm font-bold transition {% if niveau_filter == 'secondaire' %}bg-warning/10 text-warning{% else %}bg-bg-card border border-border-standard text-text-muted hover:bg-bg-tertiary{% endif %}">
+      Secondaire
+    </a>
+    <a href="?niveau=universitaire" class="px-4 py-2 rounded-lg text-sm font-bold transition {% if niveau_filter == 'universitaire' %}bg-accent/10 text-accent{% else %}bg-bg-card border border-border-standard text-text-muted hover:bg-bg-tertiary{% endif %}">
+      Universitaire
+    </a>
+  </div>
+
+  <!-- Classes List -->
+  {% if classes %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {% for classe in classes %}
+      <div class="bg-bg-card rounded-2xl border border-border-standard p-6 hover:border-primary/50 transition group">
+        <div class="flex justify-between items-start mb-4">
+          <div class="flex-1">
+            <h3 class="font-bold text-lg">{{ classe.nom }}</h3>
+            <p class="text-xs text-text-muted mt-1">
+              {% if classe.section %}{{ classe.section }} • {% endif %}
+              {{ classe.niveau|capfirst }} • {{ classe.annee_academique }}
+            </p>
+          </div>
+          {% if classe.is_active %}
+            <span class="px-2 py-1 rounded-full text-[10px] font-bold bg-success/10 text-success">
+              <i class="fa-solid fa-check"></i> Active
+            </span>
+          {% else %}
+            <span class="px-2 py-1 rounded-full text-[10px] font-bold bg-danger/10 text-danger">
+              <i class="fa-solid fa-xmark"></i> Inactive
+            </span>
+          {% endif %}
+        </div>
+        
+        <div class="flex items-center gap-4 text-sm mb-4">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-users text-primary"></i>
+            <span class="font-medium">{{ classe.eleve_count|default:0 }} élève(s)</span>
+          </div>
+        </div>
+
+        <div class="flex gap-2">
+          <a href="{% url 'classe_edit' classe.pk %}" class="flex-1 px-3 py-2 rounded-lg bg-primary/5 text-primary text-sm font-bold hover:bg-primary/10 transition text-center">
+            <i class="fa-solid fa-edit"></i> Modifier
+          </a>
+          {% if classe.eleve_count == 0 %}
+          <button onclick="if(confirm('Supprimer cette classe?')) window.location='{% url 'classe_delete' classe.pk %}'" class="px-3 py-2 rounded-lg bg-danger/5 text-danger text-sm font-bold hover:bg-danger/10 transition">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="bg-bg-card rounded-2xl border border-border-standard p-12 text-center">
+      <i class="fa-solid fa-inbox text-4xl text-text-muted mb-4"></i>
+      <h3 class="text-lg font-bold text-text-muted">Aucune classe trouvée</h3>
+      <p class="text-sm text-text-muted mt-2">Commencez par créer votre première classe.</p>
+      <a href="{% url 'classe_create' %}" class="inline-flex items-center gap-2 mt-4 px-5 py-2.5 rounded-xl bg-button-gradient text-white font-bold text-sm hover:opacity-90 transition">
+        <i class="fa-solid fa-plus"></i> Créer une Classe
+      </a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,194 @@
+{% extends 'base.html' %}
+{% block title %}Laboratoire IA | Correction{% endblock %}
+{% block breadcrumb %}<span class="text-text-primary">Laboratoire IA</span>{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <!-- Header -->
+  <div class="bg-bg-card rounded-2xl border border-border-standard p-6">
+    <div class="flex justify-between items-start">
+      <div>
+        <h1 class="text-2xl font-black">
+          <i class="fa-solid fa-flask text-primary"></i> Laboratoire IA
+        </h1>
+        <p class="text-text-muted text-sm mt-1">Correction intelligente des copies avec traçabilité complète</p>
+      </div>
+    </div>
+    
+    <!-- Stats -->
+    <div class="grid grid-cols-4 gap-4 mt-4">
+      <div class="bg-warning/5 rounded-xl p-4 border border-warning/20">
+        <div class="text-2xl font-bold text-warning">{{ copies_en_attente|default:0 }}</div>
+        <div class="text-xs text-text-muted">En Attente</div>
+      </div>
+      <div class="bg-blue-500/5 rounded-xl p-4 border border-blue-500/20">
+        <div class="text-2xl font-bold text-blue-500">{{ copies_en_correction|default:0 }}</div>
+        <div class="text-xs text-text-muted">En Correction</div>
+      </div>
+      <div class="bg-success/5 rounded-xl p-4 border border-success/20">
+        <div class="text-2xl font-bold text-success">{{ copies_corrigees|default:0 }}</div>
+        <div class="text-xs text-text-muted">Corrigées</div>
+      </div>
+      <div class="bg-purple-500/5 rounded-xl p-4 border border-purple-500/20">
+        <div class="text-2xl font-bold text-purple-500">{{ copies_approuvees|default:0 }}</div>
+        <div class="text-xs text-text-muted">Approuvées</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Integrity Status -->
+  <div class="bg-bg-card rounded-2xl border border-success/20 p-6">
+    <h3 class="font-black text-sm uppercase tracking-wider flex items-center gap-2 text-success">
+      <i class="fa-solid fa-shield-halved"></i> Intégrité des Copies
+    </h3>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+      <div class="p-4 rounded-xl bg-success/5">
+        <p class="text-xs text-text-muted">Identifiants Uniques</p>
+        <p class="text-lg font-black text-success mt-1"><i class="fa-solid fa-check"></i> Actif</p>
+      </div>
+      <div class="p-4 rounded-xl bg-success/5">
+        <p class="text-xs text-text-muted">Traçabilité</p>
+        <p class="text-lg font-black text-success mt-1"><i class="fa-solid fa-check"></i> Complète</p>
+      </div>
+      <div class="p-4 rounded-xl bg-success/5">
+        <p class="text-xs text-text-muted">Anti-Mélange</p>
+        <p class="text-lg font-black text-success mt-1"><i class="fa-solid fa-check"></i> Actif</p>
+      </div>
+      <div class="p-4 rounded-xl bg-success/5">
+        <p class="text-xs text-text-muted">Sécurité</p>
+        <p class="text-lg font-black text-success mt-1"><i class="fa-solid fa-check"></i> Max</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Copies en Correction -->
+  <div class="bg-bg-card rounded-2xl border border-border-standard p-6">
+    <h3 class="font-black text-sm uppercase tracking-wider flex items-center gap-2 mb-4">
+      <i class="fa-solid fa-robot text-blue-500"></i> Copies en Correction
+    </h3>
+    
+    {% if copies_en_cours %}
+    <div class="space-y-4">
+      {% for copie in copies_en_cours %}
+      <div class="p-5 rounded-xl bg-bg-tertiary/30 border border-border-standard hover:border-primary/50 transition">
+        <div class="flex justify-between items-start">
+          <div class="flex-1">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-bold">
+                {{ copie.eleve.first_name|slice:":1" }}{{ copie.eleve.last_name|slice:":1" }}
+              </div>
+              <div>
+                <h4 class="font-bold">{{ copie.eleve.full_name }}</h4>
+                <p class="text-xs text-text-muted">
+                  {{ copie.devoir_matiere.matiere.nom }} • {{ copie.devoir_matiere.devoir.titre }}
+                </p>
+              </div>
+            </div>
+            
+            <div class="mt-3 grid grid-cols-2 gap-3 text-xs">
+              <div>
+                <span class="text-text-muted">Matricule:</span>
+                <span class="ml-2 font-mono font-bold">{{ copie.eleve.matricule }}</span>
+              </div>
+              <div>
+                <span class="text-text-muted">ID Copie:</span>
+                <span class="ml-2 font-mono text-[10px]">{{ copie.copie_document_id|slice:":16" }}</span>
+              </div>
+              <div>
+                <span class="text-text-muted">Soumis le:</span>
+                <span class="ml-2">{{ copie.created_at|date:"d/m/Y H:i" }}</span>
+              </div>
+              <div>
+                <span class="text-text-muted">Statut:</span>
+                <span class="ml-2 text-blue-500 font-bold">En correction IA</span>
+              </div>
+            </div>
+            
+            <!-- Progress Bar -->
+            <div class="mt-3">
+              <div class="flex justify-between text-[10px] mb-1">
+                <span class="text-text-muted">Progression IA</span>
+                <span class="text-primary font-bold">{{ copie.progression|default:0 }}%</span>
+              </div>
+              <div class="h-2 bg-bg-secondary rounded-full overflow-hidden">
+                <div class="h-full rounded-full bg-gradient-to-r from-blue-500 to-primary transition-all" 
+                     style="width: {{ copie.progression|default:0 }}%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-12">
+      <i class="fa-solid fa-inbox text-4xl text-text-muted mb-4"></i>
+      <p class="text-sm text-text-muted">Aucune copie en cours de correction</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Recent Corrected -->
+  <div class="bg-bg-card rounded-2xl border border-border-standard p-6">
+    <h3 class="font-black text-sm uppercase tracking-wider flex items-center gap-2 mb-4">
+      <i class="fa-solid fa-check-double text-success"></i> Copies Récemment Corrigées
+    </h3>
+    
+    {% if copies_recentes %}
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {% for copie in copies_recentes %}
+      <div class="p-4 rounded-xl bg-bg-tertiary/30 border border-success/20">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-lg bg-success/10 flex items-center justify-center text-success font-bold">
+            <i class="fa-solid fa-check"></i>
+          </div>
+          <div class="flex-1">
+            <h4 class="font-bold text-sm">{{ copie.eleve.full_name }}</h4>
+            <p class="text-xs text-text-muted">{{ copie.devoir_matiere.matiere.nom }}</p>
+            {% if copie.note_ia %}
+            <p class="text-xs text-primary font-bold mt-1">
+              Note IA: {{ copie.note_ia }}/20
+            </p>
+            {% endif %}
+          </div>
+          <div class="text-right">
+            <span class="px-2 py-1 rounded-full text-[10px] font-bold bg-success/10 text-success">
+              Corrigé
+            </span>
+            <p class="text-[10px] text-text-muted mt-1">{{ copie.corrige_at|date:"d/m H:i" }}</p>
+          </div>
+        </div>
+        
+        {% if copie.appreciation_ia %}
+        <div class="mt-3 p-2 rounded-lg bg-primary/5 border border-primary/20">
+          <p class="text-[10px] text-text-muted">Appréciation IA:</p>
+          <p class="text-xs text-primary mt-1">{{ copie.appreciation_ia|truncatechars:80 }}</p>
+        </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-8 text-text-muted">
+      <p>Aucune copie corrigée récemment</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Copy Verification Tool -->
+  <div class="bg-bg-card rounded-2xl border border-border-standard p-6">
+    <h3 class="font-black text-sm uppercase tracking-wider flex items-center gap-2 mb-4">
+      <i class="fa-solid fa-magnifying-glass text-accent"></i> Vérifier une Copie
+    </h3>
+    
+    <form method="post" action="{% url 'ia_verify_copy' %}" class="flex gap-3">
+      {% csrf_token %}
+      <input type="text" name="copie_id" placeholder="Entrez l'identifiant de copie..." 
+             class="flex-1 px-4 py-3 rounded-xl bg-bg-secondary border border-border-standard focus:border-primary focus:ring-1 focus:ring-primary/30 transition outline-none text-sm">
+      <button type="submit" class="px-6 py-3 rounded-xl bg-button-gradient text-white text-sm font-black shadow-lg shadow-primary/20 hover:opacity-90 transition">
+        <i class="fa-solid fa-search"></i> Vérifier
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}

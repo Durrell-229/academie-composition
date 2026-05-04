@@ -23,6 +23,7 @@ from .models import (
 from core.models import Matiere, Classe
 from accounts.models import User
 from ai_engine.multi_ai import MultiAIService
+from .forms import ClasseForm, HoraireForm
 
 logger = logging.getLogger(__name__)
 
@@ -1262,3 +1263,282 @@ def _generate_certificat_pdf(cert):
             logger.error(f"Erreur génération PDF certificat {cert.numero_certificat}")
     except Exception as e:
         logger.error(f"Erreur génération certificat: {e}")
+# This file should be appended to devoirs/views.py
+# Copy the content below and paste it at the end of devoirs/views.py
+
+
+# CLASS & SERIE MANAGEMENT VIEWS
+
+@login_required
+def classe_list_view(request):
+    """Liste toutes les classes avec statistiques."""
+    if request.user.role not in ['admin', 'conseiller']:
+        messages.error(request, "Accès refusé.")
+        return redirect('dashboard')
+    
+    niveau_filter = request.GET.get('niveau', '')
+    classes = Classe.objects.all().order_by('niveau', 'nom')
+    
+    if niveau_filter:
+        classes = classes.filter(niveau=niveau_filter)
+    
+    for classe in classes:
+        classe.eleve_count = User.objects.filter(classe=classe.nom, role=User.Role.ELEVE, is_active=True).count()
+    
+    return render(request, 'classes/list.html', {
+        'classes': classes,
+        'niveau_filter': niveau_filter,
+        'niveaux': ['primaire', 'secondaire', 'universitaire'],
+    })
+
+
+@login_required
+def classe_create_view(request):
+    """Crée une nouvelle classe."""
+    if request.user.role not in ['admin', 'conseiller']:
+        messages.error(request, "Accès refusé.")
+        return redirect('dashboard')
+    
+    if request.method == 'POST':
+        form = ClasseForm(request.POST)
+        if form.is_valid():
+            classe = form.save()
+            messages.success(request, f"Classe '{classe.nom}' créée avec succès.")
+            return redirect('classe_list')
+    else:
+        form = ClasseForm()
+    
+    return render(request, 'classes/form.html', {'form': form, 'action': 'create'})
+
+
+@login_required
+def classe_edit_view(request, pk):
+    """Modifie une classe existante."""
+    if request.user.role not in ['admin', 'conseiller']:
+        messages.error(request, "Accès refusé.")
+        return redirect('dashboard')
+    
+    classe = get_object_or_404(Classe, pk=pk)
+    
+    if request.method == 'POST':
+        form = ClasseForm(request.POST, instance=classe)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"Classe '{classe.nom}' modifiée avec succès.")
+            return redirect('classe_list')
+    else:
+        form = ClasseForm(instance=classe)
+    
+    eleves = User.objects.filter(classe=classe.nom, role=User.Role.ELEVE, is_active=True)
+    
+    return render(request, 'classes/form.html', {
+        'form': form, 
+        'action': 'edit',
+        'classe': classe,
+        'eleves': eleves
+    })
+
+
+@login_required
+def classe_delete_view(request, pk):
+    """Supprime une classe (si aucun élève assigné)."""
+    if request.user.role != 'admin':
+        messages.error(request, "Accès refusé.")
+        return redirect('dashboard')
+    
+    classe = get_object_or_404(Classe, pk=pk)
+    eleve_count = User.objects.filter(classe=classe.nom, role=User.Role.ELEVE, is_active=True).count()
+    
+    if eleve_count > 0:
+        messages.error(request, f"Impossible de supprimer: {eleve_count} élève(s) assignés.")
+        return redirect('classe_list')
+    
+    classe_nom = classe.nom
+    classe.delete()
+    messages.success(request, f"Classe '{classe_nom}' supprimée.")
+    return redirect('classe_list')
+
+
+# SCHEDULE MANAGEMENT VIEWS
+
+@login_required
+def schedule_builder_view(request, pk):
+    """Interface pour programmer les horaires d'un devoir."""
+    if request.user.role != 'admin':
+        messages.error(request, "Accès refusé.")
+        return redirect('dashboard')
+    
+    devoir = get_object_or_404(Devoir, pk=pk)
+    matieres = devoir.matieres.all()
+    horaires = devoir.horaires or {}
+    
+    if request.method == 'POST':
+        form = HoraireForm(request.POST)
+        if form.is_valid():
+            matiere = form.cleaned_data['matiere']
+            date = form.cleaned_data['date'].isoformat()
+            heure_demarrage = form.cleaned_data['heure_demarrage'].strftime('%H:%M')
+            heure_fin = form.cleaned_data['heure_fin'].strftime('%H:%M')
+            salle = form.cleaned_data.get('salle', '')
+            
+            for mat_nom, horaire in horaires.items():
+                if horaire.get('date') == date:
+                    existing_start = horaire.get('heure_demarrage', '')
+                    existing_end = horaire.get('heure_fin', '')
+                    if not (heure_fin <= existing_start or heure_demarrage >= existing_end):
+                        messages.error(request, f"Conflit avec {mat_nom}.")
+                        return redirect('schedule_builder', pk=pk)
+            
+            horaires[matiere.nom] = {
+                'date': date,
+                'heure_demarrage': heure_demarrage,
+                'heure_fin': heure_fin,
+                'salle': salle,
+            }
+            
+            devoir.horaires = horaires
+            devoir.save()
+            messages.success(request, f"Horaire ajouté pour {matiere.nom}.")
+            return redirect('schedule_builder', pk=pk)
+    else:
+        form = HoraireForm()
+        form.fields['matiere'].queryset = matieres
+    
+    return render(request, 'devoirs/schedule_builder.html', {
+        'devoir': devoir,
+        'form': form,
+        'horaires': horaires,
+        'matieres_non_planifiees': matieres.exclude(nom__in=horaires.keys()),
+    })
+
+
+@login_required
+def schedule_delete_view(request, pk, matiere_nom):
+    """Supprime un créneau horaire."""
+    if request.user.role != 'admin':
+        messages.error(request, "Accès refusé.")
+        return redirect('dashboard')
+    
+    devoir = get_object_or_404(Devoir, pk=pk)
+    horaires = devoir.horaires or {}
+    
+    if matiere_nom in horaires:
+        del horaires[matiere_nom]
+        devoir.horaires = horaires
+        devoir.save()
+        messages.success(request, f"Horaire de {matiere_nom} supprimé.")
+    
+    return redirect('schedule_builder', pk=pk)
+
+
+# WORKFLOW DASHBOARD
+
+@login_required
+def workflow_dashboard_view(request):
+    """Vue globale du workflow des devoirs."""
+    if request.user.role not in ['admin', 'conseiller']:
+        messages.error(request, "Accès refusé.")
+        return redirect('dashboard')
+    
+    devoirs_total = Devoir.objects.count()
+    devoirs_brouillon = Devoir.objects.filter(statut=Devoir.Statut.BROUILLON).count()
+    devoirs_programmes = Devoir.objects.filter(statut=Devoir.Statut.PROGRAMME_PUBLIE).count()
+    devoirs_en_cours = Devoir.objects.filter(statut=Devoir.Statut.EN_COURS).count()
+    devoirs_termines = Devoir.objects.filter(statut=Devoir.Statut.TERMINE).count()
+    
+    epreuves_soumises = DevoirMatiere.objects.filter(statut=DevoirMatiere.StatutEP.SOUMIS).count()
+    epreuves_validees = DevoirMatiere.objects.filter(statut=DevoirMatiere.StatutEP.VALIDE).count()
+    epreuves_rejetees = DevoirMatiere.objects.filter(statut=DevoirMatiere.StatutEP.REJETE).count()
+    
+    copies_en_correction = DevoirReponseEleve.objects.filter(statut=DevoirReponseEleve.StatutReponse.EN_COURS_CORRECTION).count()
+    copies_corrigees = DevoirReponseEleve.objects.filter(statut=DevoirReponseEleve.StatutReponse.CORRIGE).count()
+    
+    bulletins_en_attente = BulletinDevoir.objects.filter(statut=BulletinDevoir.StatutBulletin.EN_ATTENTE).count()
+    bulletins_approuves = BulletinDevoir.objects.filter(statut=BulletinDevoir.StatutBulletin.APPROUVE).count()
+    
+    recent_epreuves = DevoirMatiere.objects.select_related('devoir', 'matiere', 'soumis_par').order_by('-submitted_at')[:10]
+    recent_copies = DevoirReponseEleve.objects.select_related('eleve', 'devoir_matiere__devoir', 'devoir_matiere__matiere').order_by('-created_at')[:10]
+    
+    return render(request, 'devoirs/workflow_dashboard.html', {
+        'devoirs_total': devoirs_total,
+        'devoirs_brouillon': devoirs_brouillon,
+        'devoirs_programmes': devoirs_programmes,
+        'devoirs_en_cours': devoirs_en_cours,
+        'devoirs_termines': devoirs_termines,
+        'epreuves_soumises': epreuves_soumises,
+        'epreuves_validees': epreuves_validees,
+        'epreuves_rejetees': epreuves_rejetees,
+        'copies_en_correction': copies_en_correction,
+        'copies_corrigees': copies_corrigees,
+        'bulletins_en_attente': bulletins_en_attente,
+        'bulletins_approuves': bulletins_approuves,
+        'recent_epreuves': recent_epreuves,
+        'recent_copies': recent_copies,
+    })
+
+
+# IA LAB VIEWS
+
+@login_required
+def ia_lab_dashboard_view(request):
+    """Dashboard du Laboratoire IA pour le suivi des corrections."""
+    if request.user.role not in ['admin', 'conseiller']:
+        messages.error(request, "Accès refusé.")
+        return redirect('dashboard')
+    
+    copies_en_attente = DevoirReponseEleve.objects.filter(
+        statut=DevoirReponseEleve.StatutReponse.SOUMIS
+    ).count()
+    
+    copies_en_cours_list = DevoirReponseEleve.objects.filter(
+        statut=DevoirReponseEleve.StatutReponse.EN_COURS_CORRECTION
+    ).select_related('eleve', 'devoir_matiere__devoir', 'devoir_matiere__matiere').order_by('-created_at')[:20]
+    
+    copies_corrigees = DevoirReponseEleve.objects.filter(
+        statut=DevoirReponseEleve.StatutReponse.CORRIGE
+    ).count()
+    
+    copies_approuvees = DevoirReponseEleve.objects.filter(
+        statut=DevoirReponseEleve.StatutReponse.APPROUVE
+    ).count()
+    
+    copies_recentes = DevoirReponseEleve.objects.filter(
+        statut__in=[DevoirReponseEleve.StatutReponse.CORRIGE, DevoirReponseEleve.StatutReponse.APPROUVE]
+    ).select_related('eleve', 'devoir_matiere__devoir', 'devoir_matiere__matiere').order_by('-corrige_at')[:10]
+    
+    return render(request, 'ai_engine/lab_dashboard.html', {
+        'copies_en_attente': copies_en_attente,
+        'copies_en_cours': copies_en_cours_list,
+        'copies_corrigees': copies_corrigees,
+        'copies_approuvees': copies_approuvees,
+        'copies_recentes': copies_recentes,
+    })
+
+
+@login_required
+def ia_verify_copy_view(request):
+    """Vérifie l'intégrité d'une copie par son ID."""
+    if request.user.role not in ['admin', 'conseiller']:
+        messages.error(request, "Accès refusé.")
+        return redirect('dashboard')
+    
+    if request.method == 'POST':
+        copie_id = request.POST.get('copie_id', '').strip()
+        if not copie_id:
+            messages.error(request, "Veuillez entrer un identifiant de copie.")
+            return redirect('ia_lab_dashboard')
+        
+        try:
+            copie = DevoirReponseEleve.objects.select_related(
+                'eleve', 'devoir_matiere__devoir', 'devoir_matiere__matiere'
+            ).get(copie_document_id=copie_id)
+            
+            messages.success(request, f"Copie trouvée: {copie.eleve.full_name} - {copie.devoir_matiere.matiere.nom}")
+            
+            return render(request, 'ai_engine/copy_detail.html', {
+                'copie': copie,
+            })
+        except DevoirReponseEleve.DoesNotExist:
+            messages.error(request, f"Aucune copie trouvée avec l'identifiant {copie_id}")
+    
+    return redirect('ia_lab_dashboard')

@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+{% block title %}{% if action == 'create' %}Créer{% else %}Modifier{% endif %} Classe | Admin{% endblock %}
+{% block breadcrumb %}
+<a href="{% url 'classe_list' %}" class="text-text-muted hover:text-text-primary">Classes</a>
+<span class="text-text-muted">/</span>
+<span class="text-text-primary">{% if action == 'create' %}Nouvelle{% else %}{{ classe.nom }}{% endif %}</span>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto space-y-6">
+  <!-- Header -->
+  <div class="bg-bg-card rounded-2xl border border-border-standard p-6">
+    <h1 class="text-2xl font-black">
+      {% if action == 'create' %}
+        <i class="fa-solid fa-plus-circle text-primary"></i> Créer une Nouvelle Classe
+      {% else %}
+        <i class="fa-solid fa-edit text-primary"></i> Modifier la Classe
+      {% endif %}
+    </h1>
+    <p class="text-text-muted text-sm mt-1">
+      {% if action == 'create' %}
+        Remplissez le formulaire pour ajouter une classe
+      {% else %}
+        Modifiez les informations de la classe {{ classe.nom }}
+      {% endif %}
+    </p>
+  </div>
+
+  <!-- Form -->
+  <div class="bg-bg-card rounded-2xl border border-border-standard p-6">
+    <form method="post" class="space-y-6">
+      {% csrf_token %}
+      
+      {% if form.errors %}
+      <div class="bg-danger/5 border border-danger/20 rounded-xl p-4">
+        <p class="text-sm text-danger font-bold"><i class="fa-solid fa-circle-exclamation"></i> Erreurs dans le formulaire:</p>
+        <ul class="text-sm text-danger mt-2 ml-4 list-disc">
+          {% for field, errors in form.errors.items %}
+            {% for error in errors %}
+              <li>{{ field }}: {{ error }}</li>
+            {% endfor %}
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+
+      <!-- Nom -->
+      <div>
+        <label class="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">
+          {{ form.nom.label }} *
+        </label>
+        {{ form.nom }}
+        <p class="text-xs text-text-muted mt-1">Ex: 6ème A, 3ème B, Tle C, 2nde A</p>
+      </div>
+
+      <!-- Niveau -->
+      <div>
+        <label class="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">
+          {{ form.niveau.label }} *
+        </label>
+        {{ form.niveau }}
+        <p class="text-xs text-text-muted mt-1">Niveau d'enseignement</p>
+      </div>
+
+      <!-- Section / Filière -->
+      <div>
+        <label class="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">
+          {{ form.section.label }}
+        </label>
+        {{ form.section }}
+        <p class="text-xs text-text-muted mt-1">Série: A, B, C, D, E, G1, G2, G3 (laisser vide si non applicable)</p>
+      </div>
+
+      <!-- Année Académique -->
+      <div>
+        <label class="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">
+          {{ form.annee_academique.label }} *
+        </label>
+        {{ form.annee_academique }}
+        <p class="text-xs text-text-muted mt-1">Ex: 2025-2026</p>
+      </div>
+
+      <!-- Active -->
+      <div class="flex items-center gap-3">
+        <input type="checkbox" id="id_is_active" name="is_active" {% if action == 'create' or classe.is_active %}checked{% endif %} class="w-5 h-5 rounded border-border-standard text-primary focus:ring-primary">
+        <label for="id_is_active" class="text-sm font-bold">Classe active</label>
+      </div>
+
+      <!-- Buttons -->
+      <div class="flex gap-3 pt-4 border-t border-border-standard">
+        <a href="{% url 'classe_list' %}" class="flex-1 py-3 rounded-xl glass border border-border-standard text-sm font-bold text-text-muted hover:bg-bg-tertiary/50 transition text-center">
+          Annuler
+        </a>
+        <button type="submit" class="flex-1 py-3 rounded-xl bg-button-gradient text-white text-sm font-black shadow-lg shadow-primary/20 hover:opacity-90 transition">
+          {% if action == 'create' %}
+            <i class="fa-solid fa-plus"></i> Créer la Classe
+          {% else %}
+            <i class="fa-solid fa-save"></i> Enregistrer les Modifications
+          {% endif %}
+        </button>
+      </div>
+    </form>
+  </div>
+
+  {% if action == 'edit' and eleves %}
+  <!-- Students in this class -->
+  <div class="bg-bg-card rounded-2xl border border-border-standard p-6">
+    <h3 class="font-black text-sm uppercase tracking-wider flex items-center gap-2">
+      <i class="fa-solid fa-users text-primary"></i> Élèves dans cette classe ({{ eleves|length }})
+    </h3>
+    <div class="mt-4 space-y-2 max-h-60 overflow-y-auto">
+      {% for eleve in eleves %}
+      <div class="flex items-center gap-3 p-3 rounded-lg bg-bg-tertiary/30">
+        <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">
+          {{ eleve.first_name|slice:":1" }}{{ eleve.last_name|slice:":1" }}
+        </div>
+        <div class="flex-1">
+          <p class="text-sm font-semibold">{{ eleve.full_name }}</p>
+          <p class="text-xs text-text-muted">{{ eleve.email }}</p>
+        </div>
+        <span class="text-xs font-mono text-text-muted">{{ eleve.matricule }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
