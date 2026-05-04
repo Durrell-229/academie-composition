@@ -14,9 +14,26 @@ logger = logging.getLogger(__name__)
 
 @login_required
 def exam_list_view(request):
-    exams = Exam.objects.all()
     matieres = Matiere.objects.filter(is_active=True).order_by('nom')
     classes = Classe.objects.filter(is_active=True).order_by('nom')
+    
+    # Filter exams based on user role
+    if request.user.role == 'eleve':
+        # Students only see exams for their class that are published or in progress
+        exams = Exam.objects.filter(
+            classe__nom=request.user.classe,
+            statut__in=['publie', 'en_cours']
+        ).distinct() if request.user.classe else Exam.objects.none()
+    elif request.user.role in ['professeur', 'conseiller']:
+        # Profs/conseillers see their own exams + all published
+        exams = Exam.objects.filter(
+            createur=request.user
+        ) | Exam.objects.filter(statut__in=['publie', 'en_cours'])
+        exams = exams.distinct()
+    else:
+        # Admins see all exams
+        exams = Exam.objects.all()
+    
     return render(request, 'exams/exam_list.html', {
         'exams': exams,
         'matieres': matieres,
