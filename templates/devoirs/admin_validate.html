@@ -83,10 +83,10 @@
 
             <!-- Fichiers -->
             <div class="flex gap-3 mt-4">
-              <a href="{{ ep.epreuve_file.url }}" target="_blank" class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/5 text-primary text-sm font-medium hover:bg-primary/10 transition border border-primary/20">
+              <a href="{% url 'download_epreuve' pk=ep.pk %}?type=epreuve&view=1" target="_blank" class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/5 text-primary text-sm font-medium hover:bg-primary/10 transition border border-primary/20">
                 <i class="fa-solid fa-file-pdf"></i> Voir l'épreuve
               </a>
-              <a href="{{ ep.corrige_type_file.url }}" target="_blank" class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-accent/5 text-accent text-sm font-medium hover:bg-accent/10 transition border border-accent/20">
+              <a href="{% url 'download_epreuve' pk=ep.pk %}?type=corrige&view=1" target="_blank" class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-accent/5 text-accent text-sm font-medium hover:bg-accent/10 transition border border-accent/20">
                 <i class="fa-solid fa-file-lines"></i> Voir le corrigé
               </a>
             </div>

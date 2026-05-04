@@ -30,6 +30,61 @@ logger = logging.getLogger(__name__)
 ADMIN_PHONE = '+2290197650817'
 
 
+@login_required
+def download_epreuve_file(request, pk):
+    """Télécharge/voir une épreuve ou corrigé avec vérification."""
+    from django.http import HttpResponse
+    
+    dm = get_object_or_404(DevoirMatiere, pk=pk)
+    file_type = request.GET.get('type', 'epreuve')
+    
+    # Permissions: Admin, Conseiller, ou le prof qui a soumis
+    if request.user.role not in ['admin', 'conseiller']:
+        if dm.soumis_par != request.user:
+            messages.error(request, "Accès refusé.")
+            return redirect('dashboard')
+    
+    # Déterminer quel fichier servir
+    if file_type == 'corrige':
+        file_field = dm.corrige_type_file
+        filename_prefix = 'corrige'
+    else:
+        file_field = dm.epreuve_file
+        filename_prefix = 'epreuve'
+    
+    if not file_field:
+        messages.error(request, "Fichier non disponible.")
+        return redirect('admin_validate_all')
+    
+    # Vérifier si le fichier existe physiquement
+    try:
+        if not file_field.storage.exists(file_field.name):
+            logger.warning(f"Fichier {file_type} manquant pour DevoirMatiere {pk}")
+            messages.error(request, f"Fichier {file_type} non disponible sur le serveur. Veuillez le soumettre à nouveau.")
+            return redirect('admin_validate_all')
+    except Exception as e:
+        logger.error(f"Erreur vérification fichier {file_type}: {e}")
+        messages.error(request, "Erreur lors de l'accès au fichier.")
+        return redirect('admin_validate_all')
+    
+    # Servir le fichier
+    try:
+        response = FileResponse(
+            file_field.open('rb'),
+            content_type='application/pdf',
+        )
+        # Pour l'affichage dans le navigateur (pas as_attachment)
+        if request.GET.get('view', '0') == '1':
+            response['Content-Disposition'] = f'inline; filename="{filename_prefix}_{dm.matiere.nom}_{dm.devoir.titre[:20]}.pdf"'
+        else:
+            response['Content-Disposition'] = f'attachment; filename="{filename_prefix}_{dm.matiere.nom}_{dm.devoir.titre[:20]}.pdf"'
+        return response
+    except Exception as e:
+        logger.error(f"Erreur lecture fichier {file_type}: {e}")
+        messages.error(request, "Erreur lors du téléchargement.")
+        return redirect('admin_validate_all')
+
+
 def _link_callback(uri, rel):
     """Convert media/static URLs to absolute file paths for xhtml2pdf."""
     import urllib.parse
