@@ -182,7 +182,8 @@ elif USE_CLOUDINARY_STORAGE:
     if CLOUDINARY_URL:
         # Parse CLOUDINARY_URL=cloudinary://API_KEY:API_SECRET@CLOUD_NAME
         import re
-        match = re.match(r'cloudinary://(\d+):([\w]+)@([\w]+)', CLOUDINARY_URL)
+        # Fixed regex to support all characters in API secret
+        match = re.match(r'cloudinary://(\d+):(.+)@(\w+)', CLOUDINARY_URL)
         if match:
             CLOUDINARY_STORAGE = {
                 'CLOUD_NAME': match.group(3),
