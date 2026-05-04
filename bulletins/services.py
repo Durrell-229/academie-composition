@@ -182,9 +182,11 @@ class BulletinService:
         matiere_nom = ligne.matiere if ligne else (qcm_resultat.matiere if qcm_resultat else '')
         coefficient_officiel = get_benin_coefficient(matiere_nom, serie)
         
-        # Si la ligne n'a pas de coefficient, utiliser le coefficient officiel
-        if ligne and ligne.coefficient == 1.00 and coefficient_officiel > 1:
+        # Toujours appliquer le coefficient officiel s'il est plus grand que celui défini
+        if ligne and coefficient_officiel > ligne.coefficient:
             ligne.coefficient = coefficient_officiel
+            ligne.save(update_fields=['coefficient'])
+            logger.info(f"[QCM Bulletin] Coefficient appliqué: {matiere_nom} ({serie}) = {coefficient_officiel}")
 
         context = {
             'bulletin': bulletin,
