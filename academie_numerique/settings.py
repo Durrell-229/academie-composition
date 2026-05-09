@@ -240,12 +240,17 @@ SITE_URL = os.environ.get('SITE_URL', 'https://academie-composition.onrender.com
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # ═══ IA CONFIGURATION ═══
-# Multi-provider avec fallback automatique : Groq → Gemini → Mistral → DeepSeek
+# Multi-provider avec fallback automatique : Groq → Gemini → Mistral → DeepSeek → NVIDIA
 AI_PROVIDER = os.environ.get('AI_PROVIDER', 'groq')
 GROQ_API_KEY = os.environ.get('GROQ_API_KEY', '')
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
 MISTRAL_API_KEY = os.environ.get('MISTRAL_API_KEY', '')
 DEEPSEEK_API_KEY = os.environ.get('DEEPSEEK_API_KEY', '')
+
+# NVIDIA API Configuration
+NVIDIA_API_KEY = os.environ.get('NVIDIA_API_KEY', '')
+NVIDIA_API_BASE_URL = os.environ.get('NVIDIA_API_BASE_URL', 'https://integrate.api.nvidia.com/v1')
+NVIDIA_MODEL = os.environ.get('NVIDIA_MODEL', 'nvidia/nemotron-4-340b-instruct')
 
 # Email via Resend API (free 3000/day, HTTP API, no SMTP timeout)
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'

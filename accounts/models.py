@@ -59,6 +59,13 @@ class User(AbstractBaseUser, PermissionsMixin):
         verbose_name_plural = _('utilisateurs')
         ordering = ['-date_joined']
 
+    def get_full_name(self):
+        """
+        Return the first_name plus the last_name, with a space in between.
+        """
+        full_name = f"{self.first_name} {self.last_name}"
+        return full_name.strip()
+
     def __str__(self):
         return f"{self.first_name} {self.last_name} ({self.get_role_display()})"
 
