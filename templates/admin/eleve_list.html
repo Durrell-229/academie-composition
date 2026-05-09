@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Gestion des Élèves - Administration{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-bg-primary p-6">
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-3xl font-bold text-white mb-2">
+                    <i class="fa-solid fa-graduation-cap mr-3 text-primary"></i>
+                    Gestion des Élèves
+                </h1>
+                <p class="text-text-muted">Administration des comptes élèves</p>
+            </div>
+            <a href="{% url 'admin_eleve_create' %}" 
+               class="bg-primary hover:bg-primary/80 text-white px-6 py-3 rounded-xl font-semibold flex items-center transition-colors">
+                <i class="fa-solid fa-plus mr-2"></i>
+                Nouvel Élève
+            </a>
+        </div>
+
+        <!-- Filtres -->
+        <div class="bg-bg-secondary rounded-xl p-6 mb-8">
+            <form method="get" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-text-secondary mb-2">Recherche par classe</label>
+                    <input type="text" 
+                           name="classe" 
+                           value="{{ classe_filter|default:'' }}"
+                           placeholder="Ex: Terminale, 3ème..."
+                           class="w-full px-4 py-2 bg-bg-tertiary text-white rounded-lg focus:ring-2 focus:ring-primary focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-text-secondary mb-2">Niveau</label>
+                    <select name="niveau" 
+                            class="w-full px-4 py-2 bg-bg-tertiary text-white rounded-lg focus:ring-2 focus:ring-primary focus:outline-none">
+                        <option value="">Tous les niveaux</option>
+                        {% for niveau_value, niveau_label in niveaux %}
+                        <option value="{{ niveau_value }}" {% if niveau_filter == niveau_value %}selected{% endif %}>
+                            {{ niveau_label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="flex items-end">
+                    <button type="submit" 
+                            class="bg-primary hover:bg-primary/80 text-white px-6 py-2 rounded-lg font-medium transition-colors w-full">
+                        <i class="fa-solid fa-search mr-2"></i>
+                        Filtrer
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Statistiques -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-bg-secondary rounded-xl p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-text-muted text-sm">Total Élèves</p>
+                        <p class="text-2xl font-bold text-white">{{ eleves.count }}</p>
+                    </div>
+                    <div class="bg-primary/20 p-3 rounded-lg">
+                        <i class="fa-solid fa-users text-primary text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-bg-secondary rounded-xl p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-text-muted text-sm">Actifs</p>
+                        <p class="text-2xl font-bold text-green-400">{{ eleves.count }}</p>
+                    </div>
+                    <div class="bg-green-500/20 p-3 rounded-lg">
+                        <i class="fa-solid fa-check-circle text-green-400 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-bg-secondary rounded-xl p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-text-muted text-sm">Niveau Secondaire</p>
+                        <p class="text-2xl font-bold text-blue-400">{{ eleves|filter_niveau:'secondaire'|length }}</p>
+                    </div>
+                    <div class="bg-blue-500/20 p-3 rounded-lg">
+                        <i class="fa-solid fa-school text-blue-400 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-bg-secondary rounded-xl p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-text-muted text-sm">Niveau Primaire</p>
+                        <p class="text-2xl font-bold text-yellow-400">{{ eleves|filter_niveau:'primaire'|length }}</p>
+                    </div>
+                    <div class="bg-yellow-500/20 p-3 rounded-lg">
+                        <i class="fa-solid fa-child text-yellow-400 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Liste des élèves -->
+        <div class="bg-bg-secondary rounded-xl overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-bg-tertiary">
+                        <tr>
+                            <th class="px-6 py-4 text-left text-xs font-medium text-text-muted uppercase tracking-wider">
+                                Élève
+                            </th>
+                            <th class="px-6 py-4 text-left text-xs font-medium text-text-muted uppercase tracking-wider">
+                                Contact
+                            </th>
+                            <th class="px-6 py-4 text-left text-xs font-medium text-text-muted uppercase tracking-wider">
+                                Classe
+                            </th>
+                            <th class="px-6 py-4 text-left text-xs font-medium text-text-muted uppercase tracking-wider">
+                                Niveau
+                            </th>
+                            <th class="px-6 py-4 text-left text-xs font-medium text-text-muted uppercase tracking-wider">
+                                Matricule
+                            </th>
+                            <th class="px-6 py-4 text-left text-xs font-medium text-text-muted uppercase tracking-wider">
+                                Date d'inscription
+                            </th>
+                            <th class="px-6 py-4 text-center text-xs font-medium text-text-muted uppercase tracking-wider">
+                                Actions
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-bg-tertiary">
+                        {% for eleve in eleves %}
+                        <tr class="hover:bg-bg-tertiary/50 transition-colors">
+                            <td class="px-6 py-4">
+                                <div class="flex items-center">
+                                    {% if eleve.avatar %}
+                                        <img src="{{ eleve.avatar.url }}" alt="{{ eleve.full_name }}" 
+                                             class="w-10 h-10 rounded-full object-cover mr-3">
+                                    {% else %}
+                                        <div class="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center mr-3">
+                                            <i class="fa-solid fa-user text-primary"></i>
+                                        </div>
+                                    {% endif %}
+                                    <div>
+                                        <div class="text-sm font-medium text-white">{{ eleve.full_name }}</div>
+                                        <div class="text-sm text-text-muted">{{ eleve.get_sexe_display|default:eleve.sexe }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="text-sm text-white">{{ eleve.email }}</div>
+                                {% if eleve.phone %}
+                                <div class="text-sm text-text-muted">{{ eleve.phone }}</div>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-primary/20 text-primary">
+                                    {{ eleve.classe|default:'Non défini' }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="text-sm text-white">{{ eleve.get_niveau_display }}</span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="text-sm font-mono text-text-muted">{{ eleve.matricule|default:'---' }}</span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="text-sm text-text-muted">{{ eleve.date_joined|date:"d/m/Y" }}</span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="flex items-center justify-center space-x-2">
+                                    <a href="{% url 'admin_eleve_detail' eleve.id %}" 
+                                       class="text-blue-400 hover:text-blue-300 transition-colors"
+                                       title="Voir les détails">
+                                        <i class="fa-solid fa-eye"></i>
+                                    </a>
+                                    <a href="{% url 'admin_eleve_edit' eleve.id %}" 
+                                       class="text-yellow-400 hover:text-yellow-300 transition-colors"
+                                       title="Modifier">
+                                        <i class="fa-solid fa-edit"></i>
+                                    </a>
+                                    <a href="{% url 'admin_eleve_delete' eleve.id %}" 
+                                       class="text-red-400 hover:text-red-300 transition-colors"
+                                       title="Supprimer">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="px-6 py-12 text-center">
+                                <div class="text-text-muted">
+                                    <i class="fa-solid fa-users-slash text-4xl mb-4"></i>
+                                    <p class="text-lg">Aucun élève trouvé</p>
+                                    <p class="text-sm mt-2">
+                                        {% if classe_filter or niveau_filter %}
+                                            Essayez de modifier les filtres
+                                        {% else %}
+                                            <a href="{% url 'admin_eleve_create' %}" class="text-primary hover:underline">
+                                                Créez le premier élève
+                                            </a>
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

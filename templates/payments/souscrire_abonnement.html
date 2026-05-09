@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Souscription - {{ plan.nom }}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+            min-height: 100vh;
+            color: #fff;
+            padding: 2rem;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+        
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #94a3b8;
+            text-decoration: none;
+            margin-bottom: 2rem;
+            transition: color 0.3s;
+        }
+        
+        .back-link:hover {
+            color: #fff;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        
+        .header p {
+            color: #94a3b8;
+            font-size: 1.1rem;
+        }
+        
+        /* Checkout Card */
+        .checkout-card {
+            background: linear-gradient(145deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.9));
+            border-radius: 24px;
+            padding: 2.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        /* Plan Summary */
+        .plan-summary {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            padding: 1.5rem;
+            background: rgba(59, 130, 246, 0.1);
+            border-radius: 16px;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+        
+        .plan-icon {
+            font-size: 3rem;
+            width: 80px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: {{ plan.couleur }}20;
+            border-radius: 20px;
+        }
+        
+        .plan-info h2 {
+            font-size: 1.5rem;
+            margin-bottom: 0.25rem;
+        }
+        
+        .plan-info p {
+            color: #94a3b8;
+        }
+        
+        /* Billing Toggle */
+        .billing-section {
+            margin-bottom: 2rem;
+        }
+        
+        .billing-label {
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: block;
+        }
+        
+        .billing-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        
+        .billing-option {
+            position: relative;
+            padding: 1.5rem;
+            background: rgba(30, 41, 59, 0.5);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .billing-option:hover {
+            border-color: rgba(59, 130, 246, 0.5);
+        }
+        
+        .billing-option.selected {
+            border-color: #3b82f6;
+            background: rgba(59, 130, 246, 0.1);
+        }
+        
+        .billing-option input {
+            position: absolute;
+            opacity: 0;
+        }
+        
+        .option-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        
+        .option-price {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #fff;
+        }
+        
+        .option-period {
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+        
+        .economie-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-top: 0.5rem;
+        }
+        
+        /* Promo Code */
+        .promo-section {
+            margin-bottom: 2rem;
+        }
+        
+        .promo-input-group {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .promo-input {
+            flex: 1;
+            padding: 1rem 1.25rem;
+            background: rgba(15, 23, 42, 0.5);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: #fff;
+            font-size: 1rem;
+            text-transform: uppercase;
+        }
+        
+        .promo-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+        
+        .promo-btn {
+            padding: 1rem 1.5rem;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .promo-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(59, 130, 246, 0.3);
+        }
+        
+        .promo-applied {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 12px;
+            margin-top: 1rem;
+        }
+        
+        .promo-code-text {
+            font-weight: 600;
+            color: #10b981;
+        }
+        
+        .promo-reduction {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #10b981;
+        }
+        
+        /* Phone Input */
+        .phone-section {
+            margin-bottom: 2rem;
+        }
+        
+        .phone-label {
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: block;
+        }
+        
+        .phone-input-wrapper {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .country-code {
+            padding: 1rem;
+            background: rgba(15, 23, 42, 0.5);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: #fff;
+            font-size: 1rem;
+        }
+        
+        .phone-input {
+            flex: 1;
+            padding: 1rem 1.25rem;
+            background: rgba(15, 23, 42, 0.5);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: #fff;
+            font-size: 1rem;
+        }
+        
+        .phone-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+        
+        .phone-hint {
+            color: #64748b;
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+        }
+        
+        /* Summary */
+        .summary-section {
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .summary-row:last-child {
+            border-bottom: none;
+            padding-top: 1rem;
+            margin-top: 0.5rem;
+        }
+        
+        .summary-label {
+            color: #94a3b8;
+        }
+        
+        .summary-value {
+            font-weight: 600;
+        }
+        
+        .summary-total {
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: #fff;
+        }
+        
+        /* Submit Button */
+        .submit-btn {
+            width: 100%;
+            padding: 1.25rem;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            border: none;
+            border-radius: 16px;
+            color: white;
+            font-size: 1.2rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+        }
+        
+        .submit-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 20px 40px rgba(59, 130, 246, 0.4);
+        }
+        
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            display: none;
+        }
+        
+        .submit-btn.loading .spinner {
+            display: block;
+        }
+        
+        .submit-btn.loading .btn-text {
+            display: none;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Security Badge */
+        .security-badge {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 1.5rem;
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+        
+        .security-icon {
+            color: #10b981;
+        }
+        
+        /* Payment Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        .modal-overlay.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: linear-gradient(145deg, #1e293b, #0f172a);
+            border-radius: 24px;
+            padding: 2.5rem;
+            max-width: 450px;
+            width: 90%;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .modal-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+        
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+        
+        .modal-text {
+            color: #94a3b8;
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+        }
+        
+        .modal-btn {
+            padding: 1rem 2rem;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .modal-btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        /* Success Animation */
+        .success-animation {
+            display: none;
+        }
+        
+        .success-animation.active {
+            display: block;
+        }
+        
+        .checkmark-circle {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #10b981, #059669);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            animation: scaleIn 0.5s ease;
+        }
+        
+        .checkmark {
+            font-size: 3rem;
+            color: white;
+        }
+        
+        @keyframes scaleIn {
+            from { transform: scale(0); }
+            to { transform: scale(1); }
+        }
+        
+        /* Responsive */
+        @media (max-width: 600px) {
+            body {
+                padding: 1rem;
+            }
+            
+            .checkout-card {
+                padding: 1.5rem;
+            }
+            
+            .billing-options {
+                grid-template-columns: 1fr;
+            }
+            
+            .plan-summary {
+                flex-direction: column;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <a href="/payments/abonnements/" class="back-link">
+                ← Retour aux plans
+            </a>
+            <h1>Finaliser votre souscription</h1>
+            <p>Complétez les informations ci-dessous pour activer votre abonnement</p>
+        </div>
+        
+        <div class="checkout-card">
+            <!-- Plan Summary -->
+            <div class="plan-summary">
+                <div class="plan-icon">{{ plan.icone }}</div>
+                <div class="plan-info">
+                    <h2>{{ plan.nom }}</h2>
+                    <p>{{ plan.description_courte }}</p>
+                </div>
+            </div>
+            
+            <!-- Billing Toggle -->
+            <div class="billing-section">
+                <label class="billing-label">Choisissez votre facturation</label>
+                <div class="billing-options">
+                    <label class="billing-option" onclick="selectBilling('monthly')">
+                        <input type="radio" name="billing" value="monthly" id="monthlyRadio">
+                        <div class="option-title">Mensuel</div>
+                        <div class="option-price" id="monthlyPrice">{{ plan.prix_mensuel|floatformat:0|intcomma }} FCFA</div>
+                        <div class="option-period">Facturé chaque mois</div>
+                    </label>
+                    
+                    <label class="billing-option selected" onclick="selectBilling('yearly')">
+                        <input type="radio" name="billing" value="yearly" id="yearlyRadio" checked>
+                        <div class="option-title">Annuel</div>
+                        <div class="option-price" id="yearlyPrice">{{ plan.prix_annuel_affiche|floatformat:0|intcomma }} FCFA</div>
+                        <div class="option-period">Facturé une fois par an</div>
+                        {% if plan.economie_annuelle > 0 %}
+                        <span class="economie-badge">Économisez {{ plan.economie_annuelle|floatformat:0|intcomma }} FCFA</span>
+                        {% endif %}
+                    </label>
+                </div>
+            </div>
+            
+            <!-- Promo Code -->
+            <div class="promo-section">
+                <label class="billing-label">Code promo (optionnel)</label>
+                <div class="promo-input-group">
+                    <input type="text" class="promo-input" id="promoCode" placeholder="EX: RENTREE2024" value="{{ code_promo }}">
+                    <button type="button" class="promo-btn" onclick="applyPromo()">Appliquer</button>
+                </div>
+                <div class="promo-applied" id="promoApplied" style="display: none;">
+                    <span class="promo-code-text">Code: <span id="appliedCode"></span></span>
+                    <span class="promo-reduction">-<span id="reductionAmount"></span> FCFA</span>
+                </div>
+            </div>
+            
+            <!-- Phone Input -->
+            <div class="phone-section">
+                <label class="phone-label">Numéro de téléphone pour le paiement</label>
+                <div class="phone-input-wrapper">
+                    <select class="country-code">
+                        <option value="+229">🇧🇯 +229</option>
+                        <option value="+225">🇨🇮 +225</option>
+                        <option value="+233">🇬🇭 +233</option>
+                        <option value="+234">🇳🇬 +234</option>
+                    </select>
+                    <input type="tel" class="phone-input" id="phoneNumber" placeholder="01 23 45 67 89" maxlength="10">
+                </div>
+                <p class="phone-hint">Vous recevrez une notification sur ce numéro pour confirmer le paiement</p>
+            </div>
+            
+            <!-- Summary -->
+            <div class="summary-section">
+                <div class="summary-row">
+                    <span class="summary-label">Plan {{ plan.nom }}</span>
+                    <span class="summary-value" id="basePrice">{{ plan.prix_annuel_affiche|floatformat:0|intcomma }} FCFA</span>
+                </div>
+                <div class="summary-row" id="discountRow" style="display: none;">
+                    <span class="summary-label">Réduction</span>
+                    <span class="summary-value" style="color: #10b981;" id="discountAmount">-0 FCFA</span>
+                </div>
+                <div class="summary-row">
+                    <span class="summary-label">Frais de transaction</span>
+                    <span class="summary-value">Inclus</span>
+                </div>
+                <div class="summary-row">
+                    <span class="summary-label summary-total">Total à payer</span>
+                    <span class="summary-value summary-total" id="totalPrice">{{ plan.prix_annuel_affiche|floatformat:0|intcomma }} FCFA</span>
+                </div>
+            </div>
+            
+            <!-- Submit Button -->
+            <button type="button" class="submit-btn" id="submitBtn" onclick="initiatePayment()">
+                <span class="spinner"></span>
+                <span class="btn-text">Payer maintenant</span>
+            </button>
+            
+            <div class="security-badge">
+                <span class="security-icon">🔒</span>
+                <span>Paiement sécurisé par FedaPay • Données chiffrées SSL</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Payment Modal -->
+    <div class="modal-overlay" id="paymentModal">
+        <div class="modal-content">
+            <div class="success-animation" id="successAnimation">
+                <div class="checkmark-circle">
+                    <span class="checkmark">✓</span>
+                </div>
+                <h3 class="modal-title">Paiement réussi !</h3>
+                <p class="modal-text">
+                    Votre abonnement {{ plan.nom }} est maintenant actif. 
+                    Vous allez recevoir un email de confirmation.
+                </p>
+                <button class="modal-btn" onclick="window.location.href='/payments/mes-abonnements/'">
+                    Voir mon abonnement
+                </button>
+            </div>
+            
+            <div id="processingContent">
+                <div class="modal-icon">⏳</div>
+                <h3 class="modal-title">Traitement du paiement...</h3>
+                <p class="modal-text">
+                    Veuillez patienter pendant que nous traitons votre paiement.
+                    Ne fermez pas cette page.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Variables
+        let selectedBilling = 'yearly';
+        let basePrice = {{ plan.prix_annuel_affiche }};
+        let currentTotal = basePrice;
+        let appliedPromo = null;
+        
+        // Billing selection
+        function selectBilling(type) {
+            selectedBilling = type;
+            document.querySelectorAll('.billing-option').forEach(opt => opt.classList.remove('selected'));
+            event.currentTarget.classList.add('selected');
+            
+            // Update prices
+            if (type === 'monthly') {
+                basePrice = {{ plan.prix_mensuel }};
+            } else {
+                basePrice = {{ plan.prix_annuel_affiche }};
+            }
+            
+            updateTotal();
+        }
+        
+        // Apply promo code
+        function applyPromo() {
+            const code = document.getElementById('promoCode').value.trim();
+            if (!code) return;
+            
+            // Simulate promo validation (in real app, make API call)
+            {% if promotion %}
+            if (code.toUpperCase() === '{{ promotion.code_promo }}') {
+                appliedPromo = {
+                    code: code,
+                    reduction: {{ promotion.valeur_reduction }},
+                    type: '{{ promotion.type_reduction }}'
+                };
+                
+                let reductionAmount = 0;
+                if (appliedPromo.type === 'pourcentage') {
+                    reductionAmount = basePrice * (appliedPromo.reduction / 100);
+                } else if (appliedPromo.type === 'montant') {
+                    reductionAmount = appliedPromo.reduction;
+                }
+                
+                document.getElementById('appliedCode').textContent = code;
+                document.getElementById('reductionAmount').textContent = Math.round(reductionAmount).toLocaleString();
+                document.getElementById('promoApplied').style.display = 'flex';
+                
+                updateTotal();
+            } else {
+                alert('Code promo invalide ou expiré');
+            }
+            {% else %}
+            alert('Code promo invalide ou expiré');
+            {% endif %}
+        }
+        
+        // Update total
+        function updateTotal() {
+            let total = basePrice;
+            let reduction = 0;
+            
+            if (appliedPromo) {
+                if (appliedPromo.type === 'pourcentage') {
+                    reduction = basePrice * (appliedPromo.reduction / 100);
+                } else if (appliedPromo.type === 'montant') {
+                    reduction = appliedPromo.reduction;
+                }
+                total -= reduction;
+            }
+            
+            currentTotal = Math.max(0, total);
+            
+            document.getElementById('basePrice').textContent = basePrice.toLocaleString() + ' FCFA';
+            document.getElementById('totalPrice').textContent = Math.round(currentTotal).toLocaleString() + ' FCFA';
+            
+            if (reduction > 0) {
+                document.getElementById('discountRow').style.display = 'flex';
+                document.getElementById('discountAmount').textContent = '-' + Math.round(reduction).toLocaleString() + ' FCFA';
+            } else {
+                document.getElementById('discountRow').style.display = 'none';
+            }
+        }
+        
+        // Initiate payment
+        async function initiatePayment() {
+            const phone = document.getElementById('phoneNumber').value.trim();
+            if (!phone || phone.length < 8) {
+                alert('Veuillez entrer un numéro de téléphone valide');
+                return;
+            }
+            
+            const btn = document.getElementById('submitBtn');
+            btn.classList.add('loading');
+            btn.disabled = true;
+            
+            // Show modal
+            document.getElementById('paymentModal').classList.add('active');
+            
+            try {
+                const response = await fetch('/payments/api/initier-paiement/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({
+                        plan_id: '{{ plan.id }}',
+                        type: selectedBilling,
+                        code_promo: appliedPromo ? appliedPromo.code : '',
+                        telephone: phone
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Poll for payment status
+                    pollPaymentStatus(data.paiement_id);
+                } else {
+                    alert('Erreur: ' + data.error);
+                    btn.classList.remove('loading');
+                    btn.disabled = false;
+                    document.getElementById('paymentModal').classList.remove('active');
+                }
+            } catch (error) {
+                alert('Erreur lors de l\'initiation du paiement');
+                btn.classList.remove('loading');
+                btn.disabled = false;
+                document.getElementById('paymentModal').classList.remove('active');
+            }
+        }
+        
+        // Poll payment status
+        async function pollPaymentStatus(paiementId) {
+            const maxAttempts = 60; // 5 minutes
+            let attempts = 0;
+            
+            const checkStatus = async () => {
+                try {
+                    const response = await fetch(`/payments/api/verifier-paiement/${paiementId}/`);
+                    const data = await response.json();
+                    
+                    if (data.status === 'completed' || data.status === 'succes') {
+                        // Show success
+                        document.getElementById('processingContent').style.display = 'none';
+                        document.getElementById('successAnimation').classList.add('active');
+                        return;
+                    } else if (data.status === 'echec' || data.status === 'annule') {
+                        alert('Le paiement a échoué. Veuillez réessayer.');
+                        window.location.href = '/payments/paiement/echec/';
+                        return;
+                    }
+                    
+                    attempts++;
+                    if (attempts < maxAttempts) {
+                        setTimeout(checkStatus, 5000); // Check every 5 seconds
+                    } else {
+                        alert('Le paiement prend plus de temps que prévu. Vérifiez votre email pour le statut.');
+                    }
+                } catch (error) {
+                    console.error('Error polling:', error);
+                }
+            };
+            
+            checkStatus();
+        }
+        
+        // Get CSRF cookie
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        
+        // Initialize
+        {% if promotion %}
+        applyPromo();
+        {% endif %}
+    </script>
+</body>
+</html>

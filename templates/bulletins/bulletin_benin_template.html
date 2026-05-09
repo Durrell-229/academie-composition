@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bulletin Scolaire - {{ eleve.get_full_name }}</title>
+    <style>
+        @page {
+            size: A4 portrait;
+            margin: 15mm;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Times New Roman', Georgia, serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .bulletin-container {
+            max-width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            background: white;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            padding: 20px;
+            position: relative;
+        }
+        
+        /* En-tête officiel */
+        .header-officiel {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 3px solid #1e3a8a;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .drapeau-benin {
+            width: 80px;
+            height: 60px;
+            background: linear-gradient(to right, 
+                #008751 0%, #008751 40%, 
+                #fcd116 40%, #fcd116 60%, 
+                #e8112d 60%, #e8112d 100%);
+            position: relative;
+            border: 2px solid #333;
+        }
+        
+        .drapeau-benin::before {
+            content: "★";
+            position: absolute;
+            left: 28%;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #fcd116;
+            font-size: 20px;
+        }
+        
+        .titre-republique {
+            text-align: center;
+            flex: 1;
+            padding: 0 20px;
+        }
+        
+        .titre-republique h2 {
+            font-size: 14px;
+            font-weight: bold;
+            text-transform: uppercase;
+            color: #1e3a8a;
+            margin-bottom: 5px;
+        }
+        
+        .titre-republique h3 {
+            font-size: 12px;
+            color: #e8112d;
+            font-weight: bold;
+        }
+        
+        .titre-republique p {
+            font-size: 10px;
+            color: #666;
+            font-style: italic;
+        }
+        
+        /* Logo et titre école */
+        .header-ecole {
+            text-align: center;
+            margin: 20px 0;
+            padding: 15px;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            border: 2px solid #1e3a8a;
+            border-radius: 5px;
+        }
+        
+        .logo-ecole {
+            width: 60px;
+            height: 60px;
+            background: #1e3a8a;
+            border-radius: 50%;
+            margin: 0 auto 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 24px;
+        }
+        
+        .nom-ecole {
+            font-size: 18px;
+            font-weight: bold;
+            color: #1e3a8a;
+            text-transform: uppercase;
+        }
+        
+        .type-etablissement {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        /* Titre du bulletin */
+        .titre-bulletin {
+            text-align: center;
+            margin: 25px 0;
+            padding: 15px;
+            background: #1e3a8a;
+            color: white;
+            border-radius: 5px;
+        }
+        
+        .titre-bulletin h1 {
+            font-size: 22px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-bottom: 5px;
+        }
+        
+        .titre-bulletin .periode {
+            font-size: 14px;
+            font-weight: normal;
+        }
+        
+        /* Informations élève */
+        .section-info {
+            margin: 20px 0;
+            border: 2px solid #1e3a8a;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        
+        .section-titre {
+            background: #1e3a8a;
+            color: white;
+            padding: 8px 15px;
+            font-weight: bold;
+            font-size: 14px;
+            text-transform: uppercase;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0;
+        }
+        
+        .info-item {
+            display: flex;
+            padding: 8px 15px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .info-item.full-width {
+            grid-column: 1 / -1;
+        }
+        
+        .info-label {
+            font-weight: bold;
+            color: #1e3a8a;
+            min-width: 150px;
+            font-size: 12px;
+        }
+        
+        .info-value {
+            flex: 1;
+            font-size: 12px;
+        }
+        
+        .photo-eleve {
+            width: 100px;
+            height: 120px;
+            border: 2px solid #1e3a8a;
+            background: #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: auto;
+        }
+        
+        .photo-eleve img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        /* Tableau des notes */
+        .table-notes {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 11px;
+        }
+        
+        .table-notes th {
+            background: #1e3a8a;
+            color: white;
+            padding: 8px;
+            text-align: left;
+            border: 1px solid #1e3a8a;
+            font-weight: bold;
+        }
+        
+        .table-notes th.center {
+            text-align: center;
+        }
+        
+        .table-notes td {
+            padding: 6px 8px;
+            border: 1px solid #cbd5e1;
+        }
+        
+        .table-notes tr:nth-child(even) {
+            background: #f8fafc;
+        }
+        
+        .table-notes tr:hover {
+            background: #e2e8f0;
+        }
+        
+        .note-cell {
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        .note-rouge {
+            color: #dc2626;
+        }
+        
+        .note-vert {
+            color: #16a34a;
+        }
+        
+        .coef-cell {
+            text-align: center;
+        }
+        
+        .total-cell {
+            text-align: center;
+            font-weight: bold;
+            background: #e2e8f0;
+        }
+        
+        /* Rang et moyenne */
+        .resultats-finaux {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+            padding: 15px;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            border: 2px solid #1e3a8a;
+            border-radius: 5px;
+        }
+        
+        .resultat-box {
+            text-align: center;
+            padding: 10px;
+            background: white;
+            border-radius: 5px;
+            border: 1px solid #cbd5e1;
+        }
+        
+        .resultat-label {
+            font-size: 10px;
+            color: #64748b;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+        
+        .resultat-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #1e3a8a;
+        }
+        
+        .resultat-value.mention {
+            color: #e8112d;
+        }
+        
+        /* Compétences et comportement */
+        .comportement-section {
+            margin: 20px 0;
+            border: 2px solid #1e3a8a;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        
+        .competences-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            padding: 15px;
+        }
+        
+        .competence-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 0;
+            border-bottom: 1px dotted #cbd5e1;
+        }
+        
+        .competence-label {
+            font-size: 11px;
+            color: #475569;
+        }
+        
+        .competence-value {
+            display: flex;
+            gap: 3px;
+        }
+        
+        .etoile {
+            color: #fcd116;
+            font-size: 14px;
+        }
+        
+        .etoile-vide {
+            color: #cbd5e1;
+            font-size: 14px;
+        }
+        
+        /* Absences */
+        .absences-section {
+            margin: 20px 0;
+            padding: 15px;
+            background: #fef3c7;
+            border: 2px solid #f59e0b;
+            border-radius: 5px;
+        }
+        
+        .absences-titre {
+            font-weight: bold;
+            color: #92400e;
+            margin-bottom: 10px;
+        }
+        
+        .absences-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+        
+        .absence-item {
+            text-align: center;
+        }
+        
+        .absence-label {
+            font-size: 10px;
+            color: #64748b;
+        }
+        
+        .absence-value {
+            font-size: 16px;
+            font-weight: bold;
+            color: #92400e;
+        }
+        
+        /* Décision du conseil */
+        .decision-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 3px solid;
+            border-radius: 5px;
+            text-align: center;
+        }
+        
+        .decision-admis {
+            border-color: #16a34a;
+            background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+        }
+        
+        .decision-refuse {
+            border-color: #dc2626;
+            background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%);
+        }
+        
+        .decision-titre {
+            font-size: 18px;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+        
+        .decision-admis .decision-titre {
+            color: #16a34a;
+        }
+        
+        .decision-refuse .decision-titre {
+            color: #dc2626;
+        }
+        
+        /* Signatures */
+        .signatures-section {
+            margin-top: 30px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+        }
+        
+        .signature-box {
+            text-align: center;
+        }
+        
+        .signature-ligne {
+            height: 40px;
+            border-bottom: 1px solid #333;
+            margin-bottom: 5px;
+        }
+        
+        .signature-titre {
+            font-size: 11px;
+            font-weight: bold;
+            color: #1e3a8a;
+        }
+        
+        .signature-nom {
+            font-size: 10px;
+            color: #666;
+            margin-top: 3px;
+        }
+        
+        /* Footer */
+        .bulletin-footer {
+            margin-top: 30px;
+            padding-top: 15px;
+            border-top: 1px solid #cbd5e1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 10px;
+            color: #64748b;
+        }
+        
+        .qr-section {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .qr-code {
+            width: 60px;
+            height: 60px;
+            background: white;
+            border: 1px solid #cbd5e1;
+            padding: 3px;
+        }
+        
+        .qr-code img {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .verification-code {
+            font-family: monospace;
+            font-size: 9px;
+            color: #64748b;
+        }
+        
+        /* Cachet */
+        .cachet-section {
+            position: absolute;
+            bottom: 100px;
+            right: 50px;
+            width: 120px;
+            height: 120px;
+            border: 3px solid #e8112d;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #e8112d;
+            font-size: 10px;
+            text-align: center;
+            opacity: 0.7;
+            transform: rotate(-15deg);
+        }
+        
+        .cachet-texte {
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            
+            .bulletin-container {
+                box-shadow: none;
+                max-width: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bulletin-container">
+        <!-- En-tête officiel avec drapeau -->
+        <div class="header-officiel">
+            <div class="drapeau-benin"></div>
+            
+            <div class="titre-republique">
+                <h2>République du Bénin</h2>
+                <h3>Ministère de l'Enseignement Secondaire</h3>
+                <p>Fraternité - Justice - Travail</p>
+            </div>
+            
+            <div class="drapeau-benin"></div>
+        </div>
+        
+        <!-- En-tête école -->
+        <div class="header-ecole">
+            <div class="logo-ecole">{{ etablissement.nom|slice:":2"|upper }}</div>
+            <div class="nom-ecole">{{ etablissement.nom }}</div>
+            <div class="type-etablissement">{{ etablissement.get_type_etablissement_display }} - {{ etablissement.ville }}</div>
+            {% if etablissement.numero_agrement %}
+                <small>N° Agrément : {{ etablissement.numero_agrement }}</small>
+            {% endif %}
+        </div>
+        
+        <!-- Titre du bulletin -->
+        <div class="titre-bulletin">
+            <h1>Bulletin de Notes</h1>
+            <div class="periode">{{ bulletin.periode|default:"Premier Trimestre" }} - Année Scolaire {{ bulletin.annee_scolaire|default:"2024-2025" }}</div>
+        </div>
+        
+        <!-- Informations de l'élève -->
+        <div class="section-info">
+            <div class="section-titre">📋 Informations de l'élève</div>
+            <div style="display: flex; padding: 15px;">
+                <div style="flex: 1;">
+                    <div class="info-item full-width">
+                        <span class="info-label">Nom et Prénom :</span>
+                        <span class="info-value" style="font-size: 14px; font-weight: bold; color: #1e3a8a;">{{ eleve.get_full_name|upper }}</span>
+                    </div>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">Né(e) le :</span>
+                            <span class="info-value">{{ eleve.date_naissance|date:"d/m/Y"|default:"---" }} à {{ eleve.lieu_naissance|default:"---" }}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Matricule :</span>
+                            <span class="info-value">{{ inscription.numero_inscription|default:eleve.matricule|default:"---" }}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Classe :</span>
+                            <span class="info-value" style="font-weight: bold;">{{ classe.nom }}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Effectif :</span>
+                            <span class="info-value">{{ classe.effectif_actuel }} élèves</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Professeur Principal :</span>
+                            <span class="info-value">{{ classe.professeur_principal.get_full_name|default:"---" }}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Redoublant :</span>
+                            <span class="info-value">{% if inscription.est_redoublant %}OUI{% else %}NON{% endif %}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="photo-eleve">
+                    {% if eleve.avatar %}
+                        <img src="{{ eleve.avatar.url }}" alt="Photo de {{ eleve.get_full_name }}">
+                    {% else %}
+                        <span style="color: #999; font-size: 10px;">Photo</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tableau des notes -->
+        <div class="section-info">
+            <div class="section-titre">📊 Résultats scolaires</div>
+            <table class="table-notes">
+                <thead>
+                    <tr>
+                        <th style="width: 25%;">Matière</th>
+                        <th class="center" style="width: 8%;">Coef</th>
+                        <th class="center" style="width: 8%;">Moy. /20</th>
+                        <th class="center" style="width: 10%;">Total</th>
+                        <th style="width: 20%;">Appréciation</th>
+                        <th style="width: 15%;">Enseignant</th>
+                        <th class="center" style="width: 14%;">Signature</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for note in notes %}
+                    <tr>
+                        <td><strong>{{ note.matiere.nom }}</strong></td>
+                        <td class="coef-cell">{{ note.coefficient|default:"1" }}</td>
+                        <td class="note-cell {% if note.note < 10 %}note-rouge{% else %}note-vert{% endif %}">
+                            {{ note.note|floatformat:2 }}
+                        </td>
+                        <td class="total-cell">{{ note.total|floatformat:2 }}</td>
+                        <td>{{ note.appreciation|default:"---" }}</td>
+                        <td>{{ note.professeur.get_full_name|default:"---" }}</td>
+                        <td class="center"></td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 20px; color: #666;">
+                            Aucune note disponible pour cette période
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot style="background: #1e3a8a; color: white; font-weight: bold;">
+                    <tr>
+                        <td>TOTAUX</td>
+                        <td class="center">{{ total_coefficients }}</td>
+                        <td></td>
+                        <td class="center">{{ total_points|floatformat:2 }}</td>
+                        <td colspan="3"></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        
+        <!-- Moyenne et rang -->
+        <div class="resultats-finaux">
+            <div class="resultat-box">
+                <div class="resultat-label">Moyenne Générale</div>
+                <div class="resultat-value {% if bulletin.moyenne_generale < 10 %}note-rouge{% endif %}">
+                    {{ bulletin.moyenne_generale|floatformat:2 }}<small>/20</small>
+                </div>
+            </div>
+            <div class="resultat-box">
+                <div class="resultat-label">Rang</div>
+                <div class="resultat-value">
+                    {{ bulletin.rang }}<small>/{{ bulletin.effectif_classe }}</small>
+                </div>
+            </div>
+            <div class="resultat-box">
+                <div class="resultat-label">Moyenne de classe</div>
+                <div class="resultat-value">
+                    {{ bulletin.moyenne_classe|floatformat:2 }}<small>/20</small>
+                </div>
+            </div>
+            <div class="resultat-box">
+                <div class="resultat-label">Mention</div>
+                <div class="resultat-value mention">
+                    {{ bulletin.get_statut_display|default:"---" }}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Absences -->
+        <div class="absences-section">
+            <div class="absences-titre">📅 Assiduité</div>
+            <div class="absences-grid">
+                <div class="absence-item">
+                    <div class="absence-label">Absences justifiées</div>
+                    <div class="absence-value">{{ bulletin.absences_justifiees|default:"0" }}</div>
+                </div>
+                <div class="absence-item">
+                    <div class="absence-label">Absences non justifiées</div>
+                    <div class="absence-value" style="color: #dc2626;">{{ bulletin.absences_non_justifiees|default:"0" }}</div>
+                </div>
+                <div class="absence-item">
+                    <div class="absence-label">Retards</div>
+                    <div class="absence-value">{{ bulletin.nombre_retards|default:"0" }}</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Compétences et comportement -->
+        <div class="comportement-section">
+            <div class="section-titre">🎯 Compétences transversales et comportement</div>
+            <div class="competences-grid">
+                <div>
+                    <div class="competence-item">
+                        <span class="competence-label">Participation en classe</span>
+                        <span class="competence-value">
+                            <span class="etoile">★★★★★</span>
+                        </span>
+                    </div>
+                    <div class="competence-item">
+                        <span class="competence-label">Autonomie / Initiative</span>
+                        <span class="competence-value">
+                            <span class="etoile">★★★★</span><span class="etoile-vide">★</span>
+                        </span>
+                    </div>
+                    <div class="competence-item">
+                        <span class="competence-label">Assiduité / Ponctualité</span>
+                        <span class="competence-value">
+                            <span class="etoile">★★★★★</span>
+                        </span>
+                    </div>
+                </div>
+                <div>
+                    <div class="competence-item">
+                        <span class="competence-label">Travail personnel</span>
+                        <span class="competence-value">
+                            <span class="etoile">★★★★</span><span class="etoile-vide">★</span>
+                        </span>
+                    </div>
+                    <div class="competence-item">
+                        <span class="competence-label">Esprit d'équipe</span>
+                        <span class="competence-value">
+                            <span class="etoile">★★★★★</span>
+                        </span>
+                    </div>
+                    <div class="competence-item">
+                        <span class="competence-label">Respect des règles</span>
+                        <span class="competence-value">
+                            <span class="etoile">★★★★★</span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Décision du conseil -->
+        {% if bulletin.est_valide %}
+        <div class="decision-section {% if bulletin.moyenne_generale >= 10 %}decision-admis{% else %}decision-refuse{% endif %}">
+            <div class="decision-titre">
+                {% if bulletin.moyenne_generale >= 10 %}
+                    ✅ ADMIS(E) - Passage en classe supérieure autorisé
+                {% else %}
+                    ❌ REFUSÉ(E) - Doit refaire la classe
+                {% endif %}
+            </div>
+            <p style="font-size: 12px; color: #666;">
+                Décision du Conseil de Classe du {{ bulletin.date_emission|date:"d/m/Y"|default:"---" }}
+            </p>
+            {% if bulletin.appreciation_conseil %}
+                <p style="font-size: 11px; margin-top: 10px; font-style: italic;">
+                    "{{ bulletin.appreciation_conseil }}"
+                </p>
+            {% endif %}
+        </div>
+        {% endif %}
+        
+        <!-- Signatures -->
+        <div class="signatures-section">
+            <div class="signature-box">
+                <div class="signature-ligne"></div>
+                <div class="signature-titre">Le Professeur Principal</div>
+                {% if classe.professeur_principal %}
+                    <div class="signature-nom">{{ classe.professeur_principal.get_full_name }}</div>
+                {% endif %}
+            </div>
+            <div class="signature-box">
+                <div class="signature-ligne"></div>
+                <div class="signature-titre">Le Directeur</div>
+                {% if etablissement.directeur %}
+                    <div class="signature-nom">{{ etablissement.directeur }}</div>
+                {% endif %}
+            </div>
+            <div class="signature-box">
+                <div class="signature-ligne"></div>
+                <div class="signature-titre">Le Parent / Tuteur</div>
+                <div class="signature-nom" style="font-size: 9px;">Lu et approuvé</div>
+            </div>
+        </div>
+        
+        <!-- Footer avec QR code -->
+        <div class="bulletin-footer">
+            <div>
+                <strong>Bulletin généré le :</strong> {{ bulletin.date_emission|date:"d/m/Y H:i"|default:now|date:"d/m/Y H:i" }}
+                | <strong>Code :</strong> {{ bulletin.numero_bulletin|default:"---" }}
+            </div>
+            <div class="qr-section">
+                {% if bulletin.qr_code %}
+                    <div class="qr-code">
+                        <img src="{{ bulletin.qr_code.url }}" alt="QR Code">
+                    </div>
+                {% endif %}
+                <div class="verification-code">
+                    Vérification :<br>{{ bulletin.code_verification|default:"---" }}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Cachet -->
+        <div class="cachet-section">
+            <div class="cachet-texte">{{ etablissement.nom|slice:":15" }}</div>
+            <div style="font-size: 8px; margin-top: 5px;">{{ etablissement.ville }}</div>
+            <div style="font-size: 8px;">{{ bulletin.date_emission|date:"d/m/Y"|default:"---" }}</div>
+        </div>
+    </div>
+</body>
+</html>

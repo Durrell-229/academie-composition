@@ -2,21 +2,54 @@
 {% block title %}Dashboard Élève — {{ user.first_name }} | Académie Numérique{% endblock %}
 {% block breadcrumb %}<span class="text-text-primary font-semibold">Tableau de bord</span>{% endblock %}
 
+{% block extra_head %}
+{% load static %}
+<link rel="stylesheet" href="{% static 'css/dashboard-realtime.css' %}">
+<script src="{% static 'js/dashboard-realtime.js' %}"></script>
+{% endblock %}
+
 {% block content %}
+<body data-user-id="{{ user.id }}" data-user-role="{{ user.role }}">
 <div class="space-y-6">
+  
+  <!-- Indicateur de connexion temps réel -->
+  <div id="connection-status" class="fixed top-4 right-4 z-50 w-3 h-3 rounded-full status-connected" title="Connecté en temps réel"></div>
+  
+  <!-- Overlay de chargement -->
+  <div id="loading-overlay" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+    <div class="text-white">
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
+      <p class="mt-2">Chargement des données temps réel...</p>
+    </div>
+  </div>
 
   <!-- ═══ HERO BANNER ═══ -->
   <div class="animate-in relative overflow-hidden rounded-2xl p-6 md:p-8 bg-bg-card border border-border-standard">
     <div class="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-accent/5 pointer-events-none"></div>
     <div class="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
     <div class="relative flex flex-col md:flex-row md:items-center justify-between gap-5">
-      <div>
-        <p class="text-xs font-bold uppercase tracking-[0.25em] text-text-muted mb-2 flex items-center gap-2">
-          <span class="live-dot"></span> Session Active
-        </p>
-        <h1 class="text-2xl md:text-3xl font-black tracking-tight mb-1">
-          Bonjour, <span class="gradient-text">{{ user.first_name }}</span> 👋
-        </h1>
+      <div class="flex items-center gap-4">
+        <!-- Photo de profil -->
+        <div class="relative w-16 h-16 rounded-full overflow-hidden border-2 border-primary/20 flex-shrink-0">
+          {% if user.avatar %}
+            <img src="{{ user.avatar.url }}" alt="Photo de profil" class="w-full h-full object-cover">
+          {% else %}
+            <div class="w-full h-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
+              <span class="text-2xl font-black text-primary">{{ user.first_name|slice:":1" }}{{ user.last_name|slice:":1" }}</span>
+            </div>
+          {% endif %}
+          <div class="absolute bottom-0 right-0 w-5 h-5 bg-success rounded-full border-2 border-bg-card flex items-center justify-center">
+            <span class="w-2 h-2 bg-white rounded-full"></span>
+          </div>
+        </div>
+        
+        <div>
+          <p class="text-xs font-bold uppercase tracking-[0.25em] text-text-muted mb-2 flex items-center gap-2">
+            <span class="live-dot"></span> Session Active
+          </p>
+          <h1 class="text-2xl md:text-3xl font-black tracking-tight mb-1">
+            Bonjour, <span class="gradient-text">{{ user.first_name }}</span> 👋
+          </h1>
         <p class="text-sm text-text-secondary">
           Classe <strong class="text-text-primary">{{ user.classe|default:"Non définie" }}</strong> •
           Matricule <strong class="text-text-primary font-mono">{{ user.matricule|default:"N/A" }}</strong>
@@ -25,20 +58,20 @@
           {% endif %}
         </p>
       </div>
-      <div class="flex flex-wrap gap-3">
-        <div class="glass-sm px-4 py-3 rounded-xl text-center min-w-[90px]">
+      <div class="flex flex-wrap gap-2 sm:gap-3">
+        <div class="glass-sm px-3 sm:px-4 py-3 rounded-xl text-center min-w-[70px] sm:min-w-[90px]">
           <p class="text-[9px] font-black uppercase tracking-widest text-text-muted mb-0.5">Moyenne</p>
-          <p class="text-xl font-black {% if moyenne >= 14 %}note-excellent{% elif moyenne >= 10 %}note-moyen{% else %}note-insuffisant{% endif %}">
+          <p class="text-xl font-black {% if moyenne >= 14 %}note-excellent{% elif moyenne >= 10 %}note-moyen{% else %}note-insuffisant{% endif %}" data-stat="moyenne">
             {{ moyenne }}<span class="text-xs text-text-muted">/20</span>
           </p>
         </div>
         <div class="glass-sm px-4 py-3 rounded-xl text-center min-w-[80px]">
           <p class="text-[9px] font-black uppercase tracking-widest text-text-muted mb-0.5">Série 🔥</p>
-          <p class="text-xl font-black text-warning">{{ streak.current_streak }}<span class="text-xs text-text-muted">j</span></p>
+          <p class="text-xl font-black text-warning" data-stat="streak">{{ streak.current_streak }}<span class="text-xs text-text-muted">j</span></p>
         </div>
         <div class="glass-sm px-4 py-3 rounded-xl text-center min-w-[80px]">
           <p class="text-[9px] font-black uppercase tracking-widest text-text-muted mb-0.5">XP Total</p>
-          <p class="text-xl font-black text-primary">{{ total_xp|default:"0" }}</p>
+          <p class="text-xl font-black text-primary" data-xp="total">{{ total_xp|default:"0" }}</p>
         </div>
       </div>
     </div>
@@ -96,99 +129,333 @@
   {% endif %}
 
   <!-- ═══ STATS RAPIDES ═══ -->
-  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 animate-in delay-1">
-    <div class="stat-card glass p-5 rounded-2xl border border-border-standard">
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 animate-in delay-1">
+    <div class="stat-card glass p-4 sm:p-5 rounded-2xl border border-border-standard">
       <div class="flex items-center justify-between mb-4">
         <div class="w-9 h-9 bg-primary/10 rounded-xl flex items-center justify-center text-primary text-sm">
           <i class="fa-solid fa-clipboard-list"></i>
         </div>
         {% if active_exams %}<span class="px-2 py-0.5 rounded-full bg-danger/10 text-danger text-[9px] font-black animate-pulse">LIVE</span>{% endif %}
       </div>
-      <p class="text-2xl font-black">{{ assigned_exams.count }}</p>
+      <p class="text-xl sm:text-2xl font-black" data-stat="assigned_exams">{{ assigned_exams.count }}</p>
       <p class="text-[10px] font-bold text-text-muted mt-1 uppercase tracking-widest">Épreuves assignées</p>
     </div>
 
-    <div class="stat-card glass p-5 rounded-2xl border border-border-standard">
+    <div class="stat-card glass p-4 sm:p-5 rounded-2xl border border-border-standard">
       <div class="w-9 h-9 bg-accent/10 rounded-xl flex items-center justify-center text-accent text-sm mb-4">
         <i class="fa-solid fa-pen-to-square"></i>
       </div>
-      <p class="text-2xl font-black">{{ sessions.count }}</p>
+      <p class="text-xl sm:text-2xl font-black" data-stat="sessions">{{ sessions.count }}</p>
       <p class="text-[10px] font-bold text-text-muted mt-1 uppercase tracking-widest">Compositions</p>
     </div>
 
-    <div class="stat-card glass p-5 rounded-2xl border border-border-standard">
+    <div class="stat-card glass p-4 sm:p-5 rounded-2xl border border-border-standard">
       <div class="w-9 h-9 bg-success/10 rounded-xl flex items-center justify-center text-success text-sm mb-4">
         <i class="fa-solid fa-check-double"></i>
       </div>
-      <p class="text-2xl font-black">{{ total_exams }}</p>
+      <p class="text-xl sm:text-2xl font-black" data-stat="total_exams">{{ total_exams }}</p>
       <p class="text-[10px] font-bold text-text-muted mt-1 uppercase tracking-widest">Résultats</p>
     </div>
 
-    <div class="stat-card glass p-5 rounded-2xl border border-border-standard">
+    <div class="stat-card glass p-4 sm:p-5 rounded-2xl border border-border-standard">
       <div class="w-9 h-9 bg-warning/10 rounded-xl flex items-center justify-center text-warning text-sm mb-4">
         <i class="fa-solid fa-clock"></i>
       </div>
-      <p class="text-2xl font-black">{{ total_hours }}<span class="text-sm font-medium text-text-muted">h</span></p>
+      <p class="text-xl sm:text-2xl font-black" data-stat="total_hours">{{ total_hours }}<span class="text-sm font-medium text-text-muted">h</span></p>
       <p class="text-[10px] font-bold text-text-muted mt-1 uppercase tracking-widest">Temps d'étude</p>
     </div>
   </div>
 
   <!-- ═══ ACTIONS RAPIDES ÉLÈVE ═══ -->
-  <div class="grid grid-cols-2 md:grid-cols-5 gap-4 animate-in delay-2">
-    <a href="{% url 'exam_list' %}" class="glass p-4 rounded-2xl border border-primary/20 hover:border-primary/50 hover:bg-primary/5 transition group flex items-center gap-3">
-      <div class="w-9 h-9 rounded-xl bg-primary/10 group-hover:bg-primary/20 flex items-center justify-center text-primary flex-shrink-0 transition">
-        <i class="fa-solid fa-clipboard-list text-sm"></i>
+  <div class="space-y-8 animate-in delay-2">
+    <!-- Actions principales - Design Premium -->
+    <div class="relative">
+      <!-- Background décoratif -->
+      <div class="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-accent/5 rounded-3xl blur-3xl"></div>
+      
+      <!-- Grille des actions -->
+      <div class="relative grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6">
+        <!-- Carte Épreuves -->
+        <a href="{% url 'exam_list' %}" class="group relative bg-gradient-to-br from-slate-900/80 to-slate-800/60 backdrop-blur-2xl border border-slate-700/30 rounded-2xl sm:rounded-3xl p-6 sm:p-8 hover:from-slate-900/90 hover:to-slate-800/70 hover:border-slate-600/50 hover:shadow-2xl hover:shadow-primary/20 hover:-translate-y-1 transition-all duration-500 ease-out overflow-hidden">
+          <!-- Ornement supérieur -->
+          <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary via-purple-500 to-accent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+          
+          <!-- Contenu principal -->
+          <div class="relative z-10">
+            <!-- Icône avec animation -->
+            <div class="flex items-center justify-between mb-6">
+              <div class="relative">
+                <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/30 to-primary/10 group-hover:from-primary/40 group-hover:to-primary/20 flex items-center justify-center text-primary shadow-2xl shadow-primary/30 transition-all duration-500 group-hover:rotate-6">
+                  <i class="fa-solid fa-clipboard-list text-xl"></i>
+                </div>
+                <!-- Cercle décoratif -->
+                <div class="absolute -inset-2 rounded-full border-2 border-primary/20 opacity-0 group-hover:opacity-100 scale-150 transition-all duration-700"></div>
+              </div>
+              
+              <!-- Badge d'état -->
+              <div class="bg-primary/20 border border-primary/40 rounded-full px-3 py-1 text-xs font-semibold text-primary backdrop-blur-sm">
+                Actif
+              </div>
+            </div>
+            
+            <!-- Texte -->
+            <div>
+              <h3 class="text-xl font-bold text-white mb-2 group-hover:text-primary/90 transition-colors duration-300">Mes épreuves</h3>
+              <p class="text-slate-400 text-sm leading-relaxed">Accédez à toutes vos épreuves et composez-les en ligne</p>
+            </div>
+            
+            <!-- Indicateur visuel -->
+            <div class="mt-6 flex items-center gap-2 text-slate-500 text-xs">
+              <i class="fa-solid fa-arrow-right group-hover:translate-x-1 transition-transform duration-300"></i>
+              <span class="group-hover:text-primary/70 transition-colors duration-300">Explorer maintenant</span>
+            </div>
+          </div>
+          
+          <!-- Effet de brillance au survol -->
+          <div class="absolute inset-0 bg-gradient-to-t from-transparent via-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+        </a>
+
+        <!-- Carte QCM -->
+        <a href="{% url 'qcm_start' %}" class="group relative bg-gradient-to-br from-slate-900/80 to-slate-800/60 backdrop-blur-2xl border border-slate-700/30 rounded-3xl p-8 hover:from-slate-900/90 hover:to-slate-800/70 hover:border-slate-600/50 hover:shadow-2xl hover:shadow-accent/20 hover:-translate-y-1 transition-all duration-500 ease-out overflow-hidden">
+          <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-accent via-pink-500 to-purple-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+          
+          <div class="relative z-10">
+            <div class="flex items-center justify-between mb-6">
+              <div class="relative">
+                <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-accent/30 to-accent/10 group-hover:from-accent/40 group-hover:to-accent/20 flex items-center justify-center text-accent shadow-2xl shadow-accent/30 transition-all duration-500 group-hover:rotate-6">
+                  <i class="fa-solid fa-list-check text-xl"></i>
+                </div>
+                <div class="absolute -inset-2 rounded-full border-2 border-accent/20 opacity-0 group-hover:opacity-100 scale-150 transition-all duration-700"></div>
+              </div>
+              
+              <div class="bg-accent/20 border border-accent/40 rounded-full px-3 py-1 text-xs font-semibold text-accent backdrop-blur-sm">
+                IA
+              </div>
+            </div>
+            
+            <div>
+              <h3 class="text-xl font-bold text-white mb-2 group-hover:text-accent/90 transition-colors duration-300">QCM par IA</h3>
+              <p class="text-slate-400 text-sm leading-relaxed">Entraînez-vous avec nos QCM intelligents et adaptatifs</p>
+            </div>
+            
+            <div class="mt-6 flex items-center gap-2 text-slate-500 text-xs">
+              <i class="fa-solid fa-arrow-right group-hover:translate-x-1 transition-transform duration-300"></i>
+              <span class="group-hover:text-accent/70 transition-colors duration-300">Commencer l'entraînement</span>
+            </div>
+          </div>
+          
+          <div class="absolute inset-0 bg-gradient-to-t from-transparent via-accent/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+        </a>
       </div>
-      <div>
-        <p class="text-xs font-black text-white">Mes épreuves</p>
-        <p class="text-[9px] text-text-muted">Voir & composer</p>
+      
+      <!-- Deuxième rangée -->
+      <div class="relative grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6 mt-4 lg:mt-6">
+        <!-- Carte Résultats -->
+        <a href="{% url 'ia_corrections_list' %}" class="group relative bg-gradient-to-br from-slate-900/80 to-slate-800/60 backdrop-blur-2xl border border-slate-700/30 rounded-3xl p-8 hover:from-slate-900/90 hover:to-slate-800/70 hover:border-slate-600/50 hover:shadow-2xl hover:shadow-success/20 hover:-translate-y-1 transition-all duration-500 ease-out overflow-hidden">
+          <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-success via-emerald-500 to-teal-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+          
+          <div class="relative z-10">
+            <div class="flex items-center justify-between mb-6">
+              <div class="relative">
+                <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-success/30 to-success/10 group-hover:from-success/40 group-hover:to-success/20 flex items-center justify-center text-success shadow-2xl shadow-success/30 transition-all duration-500 group-hover:rotate-6">
+                  <i class="fa-solid fa-chart-bar text-xl"></i>
+                </div>
+                <div class="absolute -inset-2 rounded-full border-2 border-success/20 opacity-0 group-hover:opacity-100 scale-150 transition-all duration-700"></div>
+              </div>
+              
+              <div class="bg-success/20 border border-success/40 rounded-full px-3 py-1 text-xs font-semibold text-success backdrop-blur-sm">
+                Stats
+              </div>
+            </div>
+            
+            <div>
+              <h3 class="text-xl font-bold text-white mb-2 group-hover:text-success/90 transition-colors duration-300">Résultats</h3>
+              <p class="text-slate-400 text-sm leading-relaxed">Consultez vos notes, bulletins et progres académique</p>
+            </div>
+            
+            <div class="mt-6 flex items-center gap-2 text-slate-500 text-xs">
+              <i class="fa-solid fa-arrow-right group-hover:translate-x-1 transition-transform duration-300"></i>
+              <span class="group-hover:text-success/70 transition-colors duration-300">Voir mes résultats</span>
+            </div>
+          </div>
+          
+          <div class="absolute inset-0 bg-gradient-to-t from-transparent via-success/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+        </a>
+
+        <!-- Carte Certificats -->
+        <a href="{% url 'my_certificates' %}" class="group relative bg-gradient-to-br from-slate-900/80 to-slate-800/60 backdrop-blur-2xl border border-slate-700/30 rounded-3xl p-8 hover:from-slate-900/90 hover:to-slate-800/70 hover:border-slate-600/50 hover:shadow-2xl hover:shadow-warning/20 hover:-translate-y-1 transition-all duration-500 ease-out overflow-hidden">
+          <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-warning via-amber-500 to-orange-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+          
+          <div class="relative z-10">
+            <div class="flex items-center justify-between mb-6">
+              <div class="relative">
+                <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-warning/30 to-warning/10 group-hover:from-warning/40 group-hover:to-warning/20 flex items-center justify-center text-warning shadow-2xl shadow-warning/30 transition-all duration-500 group-hover:rotate-6">
+                  <i class="fa-solid fa-award text-xl"></i>
+                </div>
+                <div class="absolute -inset-2 rounded-full border-2 border-warning/20 opacity-0 group-hover:opacity-100 scale-150 transition-all duration-700"></div>
+              </div>
+              
+              <div class="bg-warning/20 border border-warning/40 rounded-full px-3 py-1 text-xs font-semibold text-warning backdrop-blur-sm">
+                Diplômes
+              </div>
+            </div>
+            
+            <div>
+              <h3 class="text-xl font-bold text-white mb-2 group-hover:text-warning/90 transition-colors duration-300">Certificats</h3>
+              <p class="text-slate-400 text-sm leading-relaxed">Téléchargez vos certificats et diplômes obtenus</p>
+            </div>
+            
+            <div class="mt-6 flex items-center gap-2 text-slate-500 text-xs">
+              <i class="fa-solid fa-arrow-right group-hover:translate-x-1 transition-transform duration-300"></i>
+              <span class="group-hover:text-warning/70 transition-colors duration-300">Mes certificats</span>
+            </div>
+          </div>
+          
+          <div class="absolute inset-0 bg-gradient-to-t from-transparent via-warning/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+        </a>
       </div>
-    </a>
-    <a href="{% url 'qcm_start' %}" class="glass p-4 rounded-2xl border border-accent/20 hover:border-accent/50 hover:bg-accent/5 transition group flex items-center gap-3">
-      <div class="w-9 h-9 rounded-xl bg-accent/10 group-hover:bg-accent/20 flex items-center justify-center text-accent flex-shrink-0 transition">
-        <i class="fa-solid fa-list-check text-sm"></i>
+    </div>
+    
+    <!-- Configuration et profil - Design Premium -->
+    <div class="relative">
+      <!-- Background décoratif pour la section -->
+      <div class="absolute inset-0 bg-gradient-to-br from-slate-900/20 via-transparent to-slate-800/10 rounded-3xl blur-3xl"></div>
+      
+      <div class="relative grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Carte Classe - Premium -->
+        <div class="group relative bg-gradient-to-br from-slate-900/90 to-slate-800/70 backdrop-blur-2xl border border-slate-700/40 rounded-3xl p-8 hover:from-slate-900/95 hover:to-slate-800/80 hover:border-slate-600/60 hover:shadow-2xl hover:shadow-primary/25 hover:-translate-y-2 transition-all duration-700 ease-out overflow-hidden">
+          <!-- Ligne supérieure animée -->
+          <div class="absolute top-0 left-8 right-8 h-0.5 bg-gradient-to-r from-transparent via-primary to-transparent opacity-0 group-hover:opacity-100 transition-all duration-700"></div>
+          
+          <div class="relative z-10">
+            <!-- Header avec icône -->
+            <div class="flex items-center justify-between mb-8">
+              <div class="relative">
+                <div class="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary/40 to-primary/15 group-hover:from-primary/50 group-hover:to-primary/25 flex items-center justify-center text-primary shadow-2xl shadow-primary/40 transition-all duration-700 group-hover:rotate-12 group-hover:scale-110">
+                  <i class="fa-solid fa-graduation-cap text-2xl"></i>
+                </div>
+                <!-- Anneaux décoratifs -->
+                <div class="absolute -inset-3 rounded-full border border-primary/30 opacity-0 group-hover:opacity-100 scale-125 transition-all duration-1000"></div>
+                <div class="absolute -inset-6 rounded-full border border-primary/20 opacity-0 group-hover:opacity-75 scale-150 transition-all duration-1200"></div>
+              </div>
+              
+              <!-- Badge statut -->
+              <div class="bg-gradient-to-r from-primary/30 to-primary/10 border border-primary/50 rounded-full px-4 py-2 text-xs font-bold text-primary backdrop-blur-md shadow-lg">
+                {% if user.classe %}Configuré{% else %}À configurer{% endif %}
+              </div>
+            </div>
+            
+            <!-- Contenu principal -->
+            <div>
+              <h3 class="text-2xl font-bold text-white mb-4 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">Ma Classe</h3>
+              
+              {% if user.classe %}
+                <!-- Affichage de la classe -->
+                <div class="relative group/classe-display">
+                  <div class="bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/40 rounded-2xl p-6 mb-6 shadow-inner backdrop-blur-sm">
+                    <div class="flex items-center gap-3">
+                      <i class="fa-solid fa-school text-primary text-lg"></i>
+                      <p class="text-xl font-bold text-primary">{{ user.classe }}</p>
+                    </div>
+                  </div>
+                  
+                  <!-- Action -->
+                  <a href="{% url 'profile_edit' %}" class="group/change-class inline-flex items-center gap-3 bg-gradient-to-r from-primary to-accent text-white font-semibold px-6 py-3 rounded-xl hover:shadow-xl hover:shadow-primary/50 transition-all duration-300">
+                    <i class="fa-solid fa-edit group-hover:rotate-12 transition-transform duration-300"></i>
+                    <span>Changer de classe</span>
+                    <i class="fa-solid fa-arrow-right group-hover:translate-x-2 transition-transform duration-300"></i>
+                  </a>
+                </div>
+              {% else %}
+                <!-- Message d'alerte -->
+                <div class="relative group/classe-alert">
+                  <div class="bg-gradient-to-br from-warning/20 to-warning/5 border border-warning/40 rounded-2xl p-6 mb-6 shadow-inner backdrop-blur-sm">
+                    <div class="flex items-center gap-3">
+                      <i class="fa-solid fa-exclamation-triangle text-warning text-lg animate-pulse"></i>
+                      <p class="text-xl font-bold text-warning">Classe non définie</p>
+                    </div>
+                  </div>
+                  
+                  <!-- Action prioritaire -->
+                  <a href="{% url 'profile_edit' %}" class="group/select-class inline-flex items-center gap-3 bg-gradient-to-r from-warning to-orange-500 text-white font-semibold px-6 py-3 rounded-xl hover:shadow-xl hover:shadow-warning/50 transition-all duration-300">
+                    <i class="fa-solid fa-graduation-cap group-hover:rotate-12 transition-transform duration-300"></i>
+                    <span>Choisir ma classe</span>
+                    <i class="fa-solid fa-arrow-right group-hover:translate-x-2 transition-transform duration-300"></i>
+                  </a>
+                </div>
+              {% endif %}
+            </div>
+          </div>
+          
+          <!-- Effet de brillance -->
+          <div class="absolute inset-0 bg-gradient-to-t from-transparent via-white/3 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
+        </div>
+
+        <!-- Carte Profil - Premium -->
+        <a href="{% url 'profile_edit' %}" class="group relative bg-gradient-to-br from-slate-900/90 to-slate-800/70 backdrop-blur-2xl border border-slate-700/40 rounded-3xl p-8 hover:from-slate-900/95 hover:to-slate-800/80 hover:border-slate-600/60 hover:shadow-2xl hover:shadow-white/20 hover:-translate-y-2 transition-all duration-700 ease-out overflow-hidden">
+          <div class="absolute top-0 left-8 right-8 h-0.5 bg-gradient-to-r from-transparent via-white to-transparent opacity-0 group-hover:opacity-100 transition-all duration-700"></div>
+          
+          <div class="relative z-10">
+            <div class="flex items-center justify-between mb-8">
+              <div class="relative">
+                <div class="w-20 h-20 rounded-2xl bg-gradient-to-br from-white/20 to-white/5 group-hover:from-white/30 group-hover:to-white/10 flex items-center justify-center text-white shadow-2xl shadow-white/40 transition-all duration-700 group-hover:rotate-12 group-hover:scale-110">
+                  <i class="fa-solid fa-user-pen text-2xl"></i>
+                </div>
+                <div class="absolute -inset-3 rounded-full border border-white/30 opacity-0 group-hover:opacity-100 scale-125 transition-all duration-1000"></div>
+              </div>
+              
+              <div class="bg-gradient-to-r from-white/20 to-white/10 border border-white/40 rounded-full px-4 py-2 text-xs font-bold text-white backdrop-blur-md shadow-lg">
+                Personnel
+              </div>
+            </div>
+            
+            <div>
+              <h3 class="text-2xl font-bold text-white mb-4">Mon Profil</h3>
+              <p class="text-slate-400 text-sm leading-relaxed mb-6">Gérez vos informations personnelles, photo et préférences</p>
+              
+              <div class="flex items-center gap-3 text-slate-500 text-sm">
+                <i class="fa-solid fa-arrow-right group-hover:translate-x-2 transition-transform duration-300"></i>
+                <span class="group-hover:text-white/70 transition-colors duration-300">Modifier mon profil</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="absolute inset-0 bg-gradient-to-t from-transparent via-white/2 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
+        </a>
+
+        <!-- Carte Programme - Premium -->
+        <a href="{% url 'eleve_programme' %}" class="group relative bg-gradient-to-br from-slate-900/90 to-slate-800/70 backdrop-blur-2xl border border-slate-700/40 rounded-3xl p-8 hover:from-slate-900/95 hover:to-slate-800/80 hover:border-slate-600/60 hover:shadow-2xl hover:shadow-warning/25 hover:-translate-y-2 transition-all duration-700 ease-out overflow-hidden">
+          <div class="absolute top-0 left-8 right-8 h-0.5 bg-gradient-to-r from-transparent via-warning to-transparent opacity-0 group-hover:opacity-100 transition-all duration-700"></div>
+          
+          <div class="relative z-10">
+            <div class="flex items-center justify-between mb-8">
+              <div class="relative">
+                <div class="w-20 h-20 rounded-2xl bg-gradient-to-br from-warning/40 to-warning/15 group-hover:from-warning/50 group-hover:to-warning/25 flex items-center justify-center text-warning shadow-2xl shadow-warning/40 transition-all duration-700 group-hover:rotate-12 group-hover:scale-110">
+                  <i class="fa-solid fa-landmark text-2xl"></i>
+                </div>
+                <div class="absolute -inset-3 rounded-full border border-warning/30 opacity-0 group-hover:opacity-100 scale-125 transition-all duration-1000"></div>
+              </div>
+              
+              <div class="bg-gradient-to-r from-warning/20 to-warning/10 border border-warning/40 rounded-full px-4 py-2 text-xs font-bold text-warning backdrop-blur-md shadow-lg">
+                Académique
+              </div>
+            </div>
+            
+            <div>
+              <h3 class="text-2xl font-bold text-white mb-4">Programme</h3>
+              <p class="text-slate-400 text-sm leading-relaxed mb-6">Consultez votre cursus, matières et progression</p>
+              
+              <div class="flex items-center gap-3 text-slate-500 text-sm">
+                <i class="fa-solid fa-arrow-right group-hover:translate-x-2 transition-transform duration-300"></i>
+                <span class="group-hover:text-white/70 transition-colors duration-300">Voir mon programme</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="absolute inset-0 bg-gradient-to-t from-transparent via-warning/2 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
+        </a>
       </div>
-      <div>
-        <p class="text-xs font-black text-white">QCM par IA</p>
-        <p class="text-[9px] text-text-muted">S'entraîner</p>
-      </div>
-    </a>
-    <a href="{% url 'ia_corrections_list' %}" class="glass p-4 rounded-2xl border border-success/20 hover:border-success/50 hover:bg-success/5 transition group flex items-center gap-3">
-      <div class="w-9 h-9 rounded-xl bg-success/10 group-hover:bg-success/20 flex items-center justify-center text-success flex-shrink-0 transition">
-        <i class="fa-solid fa-chart-bar text-sm"></i>
-      </div>
-      <div>
-        <p class="text-xs font-black text-white">Résultats</p>
-        <p class="text-[9px] text-text-muted">Notes & bulletins</p>
-      </div>
-    </a>
-    <a href="{% url 'my_certificates' %}" class="glass p-4 rounded-2xl border border-warning/20 hover:border-warning/50 hover:bg-warning/5 transition group flex items-center gap-3">
-      <div class="w-9 h-9 rounded-xl bg-warning/10 group-hover:bg-warning/20 flex items-center justify-center text-warning flex-shrink-0 transition">
-        <i class="fa-solid fa-award text-sm"></i>
-      </div>
-      <div>
-        <p class="text-xs font-black text-white">Certificats</p>
-        <p class="text-[9px] text-text-muted">Mes diplômes</p>
-      </div>
-    </a>
-    <a href="{% url 'profile_edit' %}" class="glass p-4 rounded-2xl border border-border-standard hover:border-border-standard hover:bg-bg-tertiary/30 transition group flex items-center gap-3">
-      <div class="w-9 h-9 rounded-xl bg-white/5 group-hover:bg-bg-tertiary/50 flex items-center justify-center text-text-muted flex-shrink-0 transition">
-        <i class="fa-solid fa-user-pen text-sm"></i>
-      </div>
-      <div>
-        <p class="text-xs font-black text-white">Mon profil</p>
-        <p class="text-[9px] text-text-muted">Photo & infos</p>
-      </div>
-    </a>
-    <a href="{% url 'eleve_programme' %}" class="glass p-4 rounded-2xl border border-warning/20 hover:border-warning/50 hover:bg-warning/5 transition group flex items-center gap-3">
-      <div class="w-9 h-9 rounded-xl bg-warning/10 group-hover:bg-warning/20 flex items-center justify-center text-warning flex-shrink-0 transition">
-        <i class="fa-solid fa-landmark text-sm"></i>
-      </div>
-      <div>
-        <p class="text-xs font-black text-white">Devoirs Nationaux</p>
-        <p class="text-[9px] text-text-muted">Programmation & résultats</p>
-      </div>
-    </a>
+    </div>
   </div>
 
   <!-- ═══ GRILLE PRINCIPALE ═══ -->

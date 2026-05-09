@@ -20,6 +20,7 @@ urlpatterns = [
     path('compositions/', include('compositions.urls')),
     path('notifications/', include('notifications.urls')),
     path('correction/', include('correction.urls')),
+    path('corrections/', include('corrections.urls')),
     path('bulletins/', include('bulletins.urls')),
     path('certificates/', include('certifications.urls')),
     path('qcm/', include('qcm.urls')),
@@ -31,6 +32,7 @@ urlpatterns = [
     path('cours/', include('cours.urls')),
     path('devoirs/', include('devoirs.urls')),
     path('examens-nationaux/', include('exams.examens_nationaux_urls')),
+    path('realtime/', include('realtime.urls')),
 ]
 
 # Servir les fichiers médias et statiques en développement (RIGOUREUX)

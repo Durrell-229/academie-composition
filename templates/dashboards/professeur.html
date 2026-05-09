@@ -1,0 +1,176 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard Professeur - Académie Numérique{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+    <!-- Header -->
+    <div class="bg-gradient-to-r from-emerald-600 to-teal-700 p-8 rounded-2xl text-white">
+        <div class="flex items-center gap-6">
+            <div class="relative">
+                {% if user.avatar %}
+                <img src="{{ user.avatar.url }}" class="w-20 h-20 rounded-2xl shadow-2xl object-cover border-4 border-white">
+                {% else %}
+                <img src="https://ui-avatars.com/api/?name={{ user.first_name }}+{{ user.last_name }}&background=10B981&color=fff" class="w-20 h-20 rounded-2xl shadow-2xl border-4 border-white">
+                {% endif %}
+            </div>
+            <div>
+                <h1 class="text-3xl font-black">Bonjour, Prof. {{ user.last_name }} 👋</h1>
+                <p class="text-emerald-100">{{ notifications_non_lues|default:0 }} notification(s) - {{ copies_a_corriger|default:0 }} copie(s) à corriger</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Rapides -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="bg-white p-6 rounded-2xl shadow-lg border-l-4 border-emerald-500">
+            <p class="text-gray-500 text-sm font-bold uppercase tracking-widest mb-2">Examens Créés</p>
+            <h3 class="text-3xl font-black text-gray-800">{{ examens_crees|default:0 }}</h3>
+            <p class="text-xs text-gray-400">{{ examens_publies|default:0 }} publiés</p>
+        </div>
+        
+        <div class="bg-white p-6 rounded-2xl shadow-lg border-l-4 border-orange-500">
+            <p class="text-gray-500 text-sm font-bold uppercase tracking-widest mb-2">Copies à Corriger</p>
+            <h3 class="text-3xl font-black text-gray-800">{{ copies_a_corriger|default:0 }}</h3>
+            <p class="text-xs text-gray-400">En attente de correction</p>
+        </div>
+        
+        <div class="bg-white p-6 rounded-2xl shadow-lg border-l-4 border-blue-500">
+            <p class="text-gray-500 text-sm font-bold uppercase tracking-widest mb-2">Moyenne Classe</p>
+            <h3 class="text-3xl font-black text-gray-800">{{ moyenne_classe|default:0|floatformat:2 }}</h3>
+            <p class="text-xs text-gray-400">Sur toutes les copies</p>
+        </div>
+        
+        <div class="bg-white p-6 rounded-2xl shadow-lg border-l-4 border-purple-500">
+            <p class="text-gray-500 text-sm font-bold uppercase tracking-widest mb-2">Élèves</p>
+            <h3 class="text-3xl font-black text-gray-800">{{ total_eleves|default:0 }}</h3>
+            <p class="text-xs text-gray-400">Élèves assignés</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Distribution des notes -->
+        <div class="lg:col-span-2 bg-white p-8 rounded-2xl shadow-lg">
+            <h3 class="text-xl font-bold text-gray-800 mb-6">Distribution des Notes</h3>
+            <canvas id="distributionChart" height="250"></canvas>
+        </div>
+
+        <!-- Copies récentes à corriger -->
+        <div class="bg-white p-8 rounded-2xl shadow-lg">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-gray-800">Copies Récentes</h3>
+                <span class="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-xs font-bold">{{ copies_a_corriger }} à corriger</span>
+            </div>
+            <div class="space-y-3 max-h-96 overflow-y-auto">
+                {% for copie in copies_recentes %}
+                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition">
+                    <div>
+                        <p class="font-semibold text-gray-800">{{ copie.eleve.first_name }} {{ copie.eleve.last_name }}</p>
+                        <p class="text-sm text-gray-500">{{ copie.exam.titre }}</p>
+                        <p class="text-xs text-gray-400">Soumis: {{ copie.date_fin|date:"d/m H:i" }}</p>
+                    </div>
+                    <a href="{% url 'compositions:corriger' copie.id %}" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-sm font-bold hover:bg-emerald-700 transition">Corriger</a>
+                </div>
+                {% empty %}
+                <p class="text-gray-500 text-center py-8">Aucune copie en attente</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Derniers examens créés -->
+    <div class="bg-white p-8 rounded-2xl shadow-lg">
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="text-xl font-bold text-gray-800">Derniers Examens</h3>
+            <a href="{% url 'exams:exam_create' %}" class="bg-emerald-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-emerald-700 transition">+ Créer un examen</a>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left">
+                <thead>
+                    <tr class="text-gray-500 text-sm uppercase tracking-widest border-b border-gray-200">
+                        <th class="pb-4 font-medium">Titre</th>
+                        <th class="pb-4 font-medium">Matière</th>
+                        <th class="pb-4 font-medium">Classe</th>
+                        <th class="pb-4 font-medium">Date</th>
+                        <th class="pb-4 font-medium">Statut</th>
+                        <th class="pb-4 font-medium">Copies</th>
+                        <th class="pb-4 font-medium">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for exam in derniers_examens %}
+                    <tr class="border-b border-gray-100 hover:bg-gray-50 transition">
+                        <td class="py-4 font-semibold text-gray-800">{{ exam.titre }}</td>
+                        <td class="py-4"><span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold">{{ exam.matiere.nom }}</span></td>
+                        <td class="py-4 text-gray-600">{{ exam.classe.nom }}</td>
+                        <td class="py-4 text-gray-600">{{ exam.date_debut|date:"d/m/Y" }}</td>
+                        <td class="py-4">
+                            <span class="px-3 py-1 rounded-full text-xs font-bold {% if exam.statut == 'publie' %}bg-green-100 text-green-700{% elif exam.statut == 'en_cours' %}bg-yellow-100 text-yellow-700{% else %}bg-gray-100 text-gray-600{% endif %}">
+                                {{ exam.get_statut_display }}
+                            </span>
+                        </td>
+                        <td class="py-4 text-gray-600">{{ exam.compositionsessions_set.count }}</td>
+                        <td class="py-4">
+                            <a href="{% url 'exams:exam_detail' exam.id %}" class="text-emerald-600 font-semibold hover:text-emerald-800 transition">Voir</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="py-8 text-center text-gray-500">Aucun examen créé</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Statistiques par matière -->
+    {% if stats_par_matiere %}
+    <div class="bg-white p-8 rounded-2xl shadow-lg">
+        <h3 class="text-xl font-bold text-gray-800 mb-6">Statistiques par Matière</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for stat in stats_par_matiere %}
+            <div class="p-4 bg-gray-50 rounded-xl">
+                <p class="font-bold text-gray-800">{{ stat.matiere__nom }}</p>
+                <div class="flex justify-between mt-2">
+                    <span class="text-sm text-gray-500">{{ stat.total }} examens</span>
+                    <span class="text-sm font-bold {% if stat.moyenne >= 10 %}text-green-600{% else %}text-red-600{% endif %}">Moy: {{ stat.moyenne|floatformat:1 }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const ctx = document.getElementById('distributionChart');
+    if (ctx) {
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['0-5', '5-10', '10-15', '15-20'],
+                datasets: [{
+                    data: [
+                        {{ distribution_notes.moins_5|default:0 }},
+                        {{ distribution_notes.moins_10|default:0 }},
+                        {{ distribution_notes.moins_15|default:0 }},
+                        {{ distribution_notes.plus_15|default:0 }}
+                    ],
+                    backgroundColor: ['#EF4444', '#F59E0B', '#3B82F6', '#10B981'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom' }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

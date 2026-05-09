@@ -2,6 +2,10 @@
 
 {% block title %}{{ exam.titre }} | Détails | Académie IA{% endblock %}
 
+{% block extra_head %}
+<!-- DEBUG: user.role = {{ user.role }}, is_authenticated = {{ user.is_authenticated }} -->
+{% endblock %}
+
 {% block content %}
 <div class="max-w-5xl mx-auto py-10 animate-in fade-in slide-in-from-bottom-6 duration-700">
     <!-- Breadcrumb -->
@@ -105,6 +109,88 @@
                     {% endif %}
                 </div>
             </div>
+
+            <!-- Card Validation Admin -->
+            {% if user.role == 'admin' %}
+            <div class="bg-gradient-to-br from-orange-500/10 to-red-500/10 p-1 rounded-[2.5rem] border border-orange-500/30">
+                <div class="bg-bg-primary rounded-[2.4rem] p-8">
+                    <div class="flex items-center gap-3 mb-6">
+                        <div class="w-10 h-10 bg-orange-500/20 rounded-full flex items-center justify-center text-orange-400">
+                            <i class="fa-solid fa-gavel"></i>
+                        </div>
+                        <h4 class="text-sm font-black uppercase tracking-widest text-orange-400">Validation Admin</h4>
+                    </div>
+                    
+                    <!-- Statut Actuel -->
+                    <div class="mb-6 p-4 bg-bg-tertiary/50 rounded-xl">
+                        <p class="text-xs text-text-muted mb-1">Statut actuel</p>
+                        <div class="flex items-center gap-2">
+                            {% if exam.approval_status == 'pending' %}
+                                <span class="w-2 h-2 rounded-full bg-warning animate-pulse"></span>
+                                <span class="text-sm font-bold text-warning">En attente de validation</span>
+                            {% elif exam.approval_status == 'approved' %}
+                                <span class="w-2 h-2 rounded-full bg-success"></span>
+                                <span class="text-sm font-bold text-success">Approuvé</span>
+                            {% elif exam.approval_status == 'rejected' %}
+                                <span class="w-2 h-2 rounded-full bg-danger"></span>
+                                <span class="text-sm font-bold text-danger">Rejeté</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Boutons d'action -->
+                    {% if exam.approval_status == 'pending' %}
+                    <div class="space-y-3">
+                        <form method="post" action="{% url 'exam_approve' exam.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="w-full bg-success hover:bg-success/80 py-4 rounded-xl font-bold text-sm text-white flex items-center justify-center gap-2 transition-all">
+                                <i class="fa-solid fa-check"></i>
+                                Approuver l'épreuve
+                            </button>
+                        </form>
+                        
+                        <form method="post" action="{% url 'exam_reject' exam.id %}">
+                            {% csrf_token %}
+                            <div class="space-y-2">
+                                <textarea name="commentaire" placeholder="Raison du rejet (optionnel)..." class="w-full bg-bg-tertiary/50 border border-border-standard rounded-xl p-3 text-sm text-white placeholder:text-text-muted resize-none" rows="2"></textarea>
+                                <button type="submit" class="w-full bg-danger hover:bg-danger/80 py-4 rounded-xl font-bold text-sm text-white flex items-center justify-center gap-2 transition-all">
+                                    <i class="fa-solid fa-xmark"></i>
+                                    Rejeter l'épreuve
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    {% elif exam.approval_status == 'approved' %}
+                        <div class="p-4 bg-success/10 border border-success/30 rounded-xl">
+                            <p class="text-sm text-success">
+                                <i class="fa-solid fa-check-circle mr-2"></i>
+                                Validé par {{ exam.approved_by.get_full_name|default:"Admin" }}
+                            </p>
+                        </div>
+                        
+                        {% if exam.statut == 'brouillon' %}
+                        <form method="post" action="{% url 'exam_publish' exam.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="w-full mt-4 bg-primary hover:bg-primary/80 py-4 rounded-xl font-bold text-sm text-white flex items-center justify-center gap-2 transition-all">
+                                <i class="fa-solid fa-globe"></i>
+                                Publier l'épreuve
+                            </button>
+                        </form>
+                        {% endif %}
+                    {% elif exam.approval_status == 'rejected' %}
+                        <div class="p-4 bg-danger/10 border border-danger/30 rounded-xl">
+                            <p class="text-sm text-danger">
+                                <i class="fa-solid fa-circle-xmark mr-2"></i>
+                                Épreuve rejetée
+                            </p>
+                            {% if exam.rejection_comment %}
+                                <p class="text-xs text-text-muted mt-2">Raison: {{ exam.rejection_comment }}</p>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
 
             <!-- Card Sécurité -->
             <div class="glass p-8 rounded-[2.5rem] border border-border-standard">

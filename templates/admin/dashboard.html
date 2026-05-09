@@ -37,7 +37,7 @@
                         <p class="font-semibold text-white">{{ exam.titre }}</p>
                         <p class="text-xs text-text-muted">Par: {{ exam.createur.full_name }}</p>
                     </div>
-                    <form method="post" action="{% url 'admin_approve_exam' exam.id %}">
+                    <form method="post" action="{% url 'exam_approve' exam.id %}">
                         {% csrf_token %}
                         <button class="bg-success hover:bg-success/80 px-4 py-2 rounded-lg font-bold text-sm text-white">Approuver</button>
                     </form>
@@ -48,19 +48,49 @@
             </div>
         </div>
 
-        <!-- Notifications & Quick Actions -->
+        <!-- Quick Actions -->
         <div class="bg-bg-secondary border border-border-standard p-6 rounded-3xl">
             <h2 class="text-xl font-bold mb-6 flex items-center">
-                <i class="fa-solid fa-bell mr-3 text-warning"></i> Alertes Système
+                <i class="fa-solid fa-bolt mr-3 text-warning"></i> Actions Rapides
             </h2>
-            <div class="space-y-4">
+            <div class="grid grid-cols-2 gap-4 mb-6">
+                <a href="{% url 'admin_eleve_list' %}" 
+                   class="bg-primary hover:bg-primary/80 text-white p-4 rounded-2xl text-center transition-colors">
+                    <i class="fa-solid fa-graduation-cap text-2xl mb-2"></i>
+                    <p class="font-semibold">Gestion Élèves</p>
+                    <p class="text-xs opacity-80 mt-1">CRUD complet</p>
+                </a>
+                <a href="{% url 'exam_list' %}" 
+                   class="bg-blue-500 hover:bg-blue-600 text-white p-4 rounded-2xl text-center transition-colors">
+                    <i class="fa-solid fa-file-alt text-2xl mb-2"></i>
+                    <p class="font-semibold">Examens</p>
+                    <p class="text-xs opacity-80 mt-1">Gérer les épreuves</p>
+                </a>
+                <a href="#" 
+                   class="bg-green-500 hover:bg-green-600 text-white p-4 rounded-2xl text-center transition-colors">
+                    <i class="fa-solid fa-chalkboard-teacher text-2xl mb-2"></i>
+                    <p class="font-semibold">Professeurs</p>
+                    <p class="text-xs opacity-80 mt-1">Bientôt disponible</p>
+                </a>
+                <a href="#" 
+                   class="bg-purple-500 hover:bg-purple-600 text-white p-4 rounded-2xl text-center transition-colors">
+                    <i class="fa-solid fa-chart-line text-2xl mb-2"></i>
+                    <p class="font-semibold">Statistiques</p>
+                    <p class="text-xs opacity-80 mt-1">Bientôt disponible</p>
+                </a>
+            </div>
+            
+            <h3 class="text-lg font-semibold text-white mb-4 flex items-center">
+                <i class="fa-solid fa-bell mr-2 text-warning"></i> Alertes Système
+            </h3>
+            <div class="space-y-3">
                 {% for note in notifications %}
-                <div class="bg-bg-secondary/50 p-4 rounded-2xl">
+                <div class="bg-bg-secondary/50 p-3 rounded-xl">
                     <p class="font-bold text-white text-sm">{{ note.title }}</p>
                     <p class="text-xs text-text-muted mt-1">{{ note.message }}</p>
                 </div>
                 {% empty %}
-                <p class="text-text-muted italic text-center py-8">Aucune notification.</p>
+                <p class="text-text-muted italic text-center py-4">Aucune notification.</p>
                 {% endfor %}
             </div>
         </div>

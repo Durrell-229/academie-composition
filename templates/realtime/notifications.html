@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-8">Notifications Temps Réel</h1>
+    
+    <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-semibold">Notifications</h2>
+            <button onclick="markAllAsRead()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                Tout marquer comme lu
+            </button>
+        </div>
+        
+        <div id="notifications-list" class="space-y-4">
+            <p class="text-gray-600">En attente de connexion WebSocket...</p>
+        </div>
+    </div>
+</div>
+
+<script>
+let notificationSocket = null;
+let notifications = [];
+
+function connectNotifications() {
+    const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    const wsUrl = `${protocol}://${window.location.host}/ws/notifications/`;
+    
+    notificationSocket = new WebSocket(wsUrl);
+    
+    notificationSocket.onopen = function(e) {
+        console.log('Connecté aux notifications');
+        updateNotificationList();
+    };
+    
+    notificationSocket.onmessage = function(e) {
+        const data = JSON.parse(e.data);
+        if (data.type === 'notification') {
+            notifications.unshift(data.notification);
+            updateNotificationList();
+            showNotificationAlert(data.notification);
+        }
+    };
+    
+    notificationSocket.onclose = function(e) {
+        console.log('Déconnecté des notifications');
+    };
+}
+
+function updateNotificationList() {
+    const listDiv = document.getElementById('notifications-list');
+    
+    if (notifications.length === 0) {
+        listDiv.innerHTML = '<p class="text-gray-600">Aucune notification</p>';
+        return;
+    }
+    
+    listDiv.innerHTML = notifications.map(notif => `
+        <div class="p-4 bg-gray-50 rounded-lg border-l-4 ${notif.read ? 'border-gray-300' : 'border-blue-500'}">
+            <div class="flex justify-between items-start">
+                <div>
+                    <h3 class="font-semibold">${notif.title || 'Notification'}</h3>
+                    <p class="text-gray-600">${notif.message}</p>
+                    <p class="text-sm text-gray-400 mt-2">${notif.timestamp || 'Maintenant'}</p>
+                </div>
+                ${!notif.read ? '<span class="bg-blue-500 text-white text-xs px-2 py-1 rounded">Nouveau</span>' : ''}
+            </div>
+        </div>
+    `).join('');
+}
+
+function showNotificationAlert(notification) {
+    // Afficher une alerte navigateur si autorisé
+    if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification(notification.title || 'Nouvelle notification', {
+            body: notification.message,
+            icon: '/static/icons/notification.png'
+        });
+    }
+}
+
+function markAllAsRead() {
+    const unreadIds = notifications.filter(n => !n.read).map(n => n.id);
+    
+    if (notificationSocket && unreadIds.length > 0) {
+        notificationSocket.send(JSON.stringify({
+            type: 'mark_read',
+            notification_ids: unreadIds
+        }));
+        
+        notifications.forEach(n => n.read = true);
+        updateNotificationList();
+    }
+}
+
+// Demander la permission pour les notifications
+if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+}
+
+// Connecter au chargement
+window.addEventListener('load', connectNotifications);
+</script>
+{% endblock %}

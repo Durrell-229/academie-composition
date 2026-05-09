@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paiement - {{ plan.nom }} | Académie Numérique</title>
+    
+    <!-- FedaPay Checkout.js -->
+    <script src="https://cdn.fedapay.com/checkout.js?v=1.1.7"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+            min-height: 100vh;
+            color: #fff;
+            padding: 2rem;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #94a3b8;
+            text-decoration: none;
+            margin-bottom: 1.5rem;
+            transition: color 0.3s;
+        }
+        
+        .back-link:hover {
+            color: #fff;
+        }
+        
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        
+        .header p {
+            color: #94a3b8;
+        }
+        
+        /* Main Layout */
+        .checkout-wrapper {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            align-items: start;
+        }
+        
+        /* Order Summary Card */
+        .summary-card {
+            background: linear-gradient(145deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.9));
+            border-radius: 24px;
+            padding: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        .plan-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .plan-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, {{ plan.couleur }}, {{ plan.couleur }}80);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+        }
+        
+        .plan-info h2 {
+            font-size: 1.5rem;
+            margin-bottom: 0.25rem;
+        }
+        
+        .plan-info p {
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+        
+        .features-list {
+            list-style: none;
+            margin: 1.5rem 0;
+        }
+        
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.5rem 0;
+            font-size: 0.95rem;
+            color: #e2e8f0;
+        }
+        
+        .feature-check {
+            width: 20px;
+            height: 20px;
+            background: linear-gradient(135deg, #10b981, #059669);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            flex-shrink: 0;
+        }
+        
+        .price-summary {
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-top: 1.5rem;
+        }
+        
+        .price-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .price-row:last-child {
+            border-bottom: none;
+            padding-top: 1rem;
+            margin-top: 0.5rem;
+        }
+        
+        .price-label {
+            color: #94a3b8;
+        }
+        
+        .price-value {
+            font-weight: 600;
+        }
+        
+        .price-total {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #fff;
+        }
+        
+        /* FedaPay Container */
+        .payment-card {
+            background: linear-gradient(145deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.9));
+            border-radius: 24px;
+            padding: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        .payment-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .payment-title img {
+            height: 30px;
+        }
+        
+        #fedapay-container {
+            width: 100%;
+            min-height: 450px;
+            background: #fff;
+            border-radius: 16px;
+            overflow: hidden;
+        }
+        
+        /* Security Badge */
+        .security-badge {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 12px;
+            color: #10b981;
+            font-size: 0.9rem;
+        }
+        
+        .security-icon {
+            font-size: 1.2rem;
+        }
+        
+        /* Loading State */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.95);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            flex-direction: column;
+        }
+        
+        .loading-overlay.active {
+            display: flex;
+        }
+        
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(59, 130, 246, 0.3);
+            border-top-color: #3b82f6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 1.5rem;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .loading-text {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+        
+        .loading-subtext {
+            color: #94a3b8;
+            margin-top: 0.5rem;
+        }
+        
+        /* Success State */
+        .success-animation {
+            display: none;
+            text-align: center;
+        }
+        
+        .success-animation.active {
+            display: block;
+        }
+        
+        .checkmark-circle {
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, #10b981, #059669);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            animation: scaleIn 0.5s ease;
+        }
+        
+        .checkmark {
+            font-size: 50px;
+            color: white;
+        }
+        
+        @keyframes scaleIn {
+            from { transform: scale(0); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        
+        .success-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        
+        .success-text {
+            color: #94a3b8;
+            margin-bottom: 2rem;
+        }
+        
+        .success-btn {
+            display: inline-block;
+            padding: 1rem 2rem;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white;
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .success-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(59, 130, 246, 0.4);
+        }
+        
+        /* Error State */
+        .error-state {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+        }
+        
+        .error-state.active {
+            display: block;
+        }
+        
+        .error-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+        
+        .error-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #ef4444;
+            margin-bottom: 0.5rem;
+        }
+        
+        .error-text {
+            color: #94a3b8;
+            margin-bottom: 1.5rem;
+        }
+        
+        .retry-btn {
+            padding: 0.75rem 1.5rem;
+            background: transparent;
+            border: 2px solid #ef4444;
+            color: #ef4444;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .retry-btn:hover {
+            background: #ef4444;
+            color: white;
+        }
+        
+        /* Responsive */
+        @media (max-width: 900px) {
+            .checkout-wrapper {
+                grid-template-columns: 1fr;
+            }
+            
+            body {
+                padding: 1rem;
+            }
+        }
+        
+        @media (max-width: 500px) {
+            #fedapay-container {
+                min-height: 500px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <a href="/payments/abonnements/" class="back-link">
+                ← Retour aux plans
+            </a>
+            <h1>Finaliser votre paiement</h1>
+            <p>Payez en toute sécurité avec FedaPay</p>
+        </div>
+        
+        <!-- Checkout Wrapper -->
+        <div class="checkout-wrapper">
+            <!-- Order Summary -->
+            <div class="summary-card">
+                <div class="plan-header">
+                    <div class="plan-icon">{{ plan.icone }}</div>
+                    <div class="plan-info">
+                        <h2>{{ plan.nom }}</h2>
+                        <p>{{ plan.get_type_plan_display }}</p>
+                    </div>
+                </div>
+                
+                <ul class="features-list">
+                    {% for feature in plan.features %}
+                    <li class="feature-item">
+                        <span class="feature-check">✓</span>
+                        <span>{{ feature }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+                
+                <div class="price-summary">
+                    <div class="price-row">
+                        <span class="price-label">Abonnement</span>
+                        <span class="price-value">{{ plan.nom }}</span>
+                    </div>
+                    <div class="price-row">
+                        <span class="price-label">Durée</span>
+                        <span class="price-value">{{ plan.duree_jours }} jours</span>
+                    </div>
+                    {% if promotion %}
+                    <div class="price-row">
+                        <span class="price-label">Réduction ({{ promotion.code_promo }})</span>
+                        <span class="price-value" style="color: #10b981;">
+                            {% if promotion.type_reduction == 'pourcentage' %}
+                                -{{ promotion.valeur_reduction }}%
+                            {% else %}
+                                -{{ promotion.valeur_reduction|floatformat:0 }} FCFA
+                            {% endif %}
+                        </span>
+                    </div>
+                    {% endif %}
+                    <div class="price-row">
+                        <span class="price-label">Total à payer</span>
+                        <span class="price-value price-total">{{ montant|floatformat:0|intcomma }} FCFA</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- FedaPay Payment -->
+            <div class="payment-card">
+                <div class="payment-title">
+                    <span>💳</span>
+                    Paiement sécurisé
+                </div>
+                
+                <div id="fedapay-container">
+                    <!-- FedaPay Checkout s'intègre ici -->
+                </div>
+                
+                <div class="security-badge">
+                    <span class="security-icon">🔒</span>
+                    <span>Paiement sécurisé par FedaPay • Vos données sont chiffrées</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <div class="loading-text">Traitement du paiement...</div>
+        <div class="loading-subtext">Veuillez ne pas fermer cette page</div>
+    </div>
+    
+    <!-- Success Overlay -->
+    <div class="loading-overlay" id="successOverlay">
+        <div class="success-animation" id="successAnimation">
+            <div class="checkmark-circle">
+                <span class="checkmark">✓</span>
+            </div>
+            <h2 class="success-title">Paiement réussi !</h2>
+            <p class="success-text">
+                Votre abonnement {{ plan.nom }} est maintenant actif.<br>
+                Un reçu vous a été envoyé par email.
+            </p>
+            <a href="/payments/mes-abonnements/" class="success-btn">
+                Voir mon abonnement →
+            </a>
+        </div>
+    </div>
+    
+    <!-- Error Overlay -->
+    <div class="loading-overlay" id="errorOverlay">
+        <div class="error-state" id="errorState">
+            <div class="error-icon">❌</div>
+            <h2 class="error-title">Paiement échoué</h2>
+            <p class="error-text" id="errorText">
+                Une erreur est survenue lors du paiement.<br>
+                Veuillez réessayer ou contacter le support.
+            </p>
+            <button class="retry-btn" onclick="location.reload()">
+                🔄 Réessayer
+            </button>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        // Configuration FedaPay Checkout
+        document.addEventListener('DOMContentLoaded', function() {
+            const publicKey = '{{ config_fedapay.cle_api_publique }}';
+            const isSandbox = '{{ config_fedapay.environnement }}' === 'sandbox';
+            
+            // Initialiser FedaPay Checkout
+            FedaPay.init({
+                // Clé publique FedaPay
+                public_key: publicKey,
+                
+                // Configuration de la transaction
+                transaction: {
+                    amount: {{ montant }},
+                    description: 'Abonnement {{ plan.nom }} - Académie Numérique',
+                    // Callback URL pour le retour après paiement
+                    callback_url: '{{ callback_url }}'
+                },
+                
+                // Informations client
+                customer: {
+                    email: '{{ eleve.email }}',
+                    firstname: '{{ eleve.first_name }}',
+                    lastname: '{{ eleve.last_name }}',
+                    phone_number: {
+                        number: '{{ telephone }}',
+                        country: 'BJ'  // Bénin
+                    }
+                },
+                
+                // Conteneur d'intégration
+                container: '#fedapay-container',
+                
+                // Options d'affichage
+                ui: {
+                    theme: 'light',
+                    language: 'fr',
+                    logo: '{{ config_fedapay.logo_url|default:"" }}'
+                },
+                
+                // Événements
+                onInit: function() {
+                    console.log('✅ FedaPay Checkout initialisé');
+                },
+                
+                onError: function(error) {
+                    console.error('❌ Erreur FedaPay:', error);
+                    showError(error.message || 'Erreur de paiement');
+                },
+                
+                // Callback après paiement réussi
+                onComplete: function(transaction) {
+                    console.log('✅ Paiement complété:', transaction);
+                    handlePaymentSuccess(transaction);
+                },
+                
+                // Callback si l'utilisateur ferme la fenêtre
+                onClose: function() {
+                    console.log('Fenêtre FedaPay fermée');
+                }
+            });
+        });
+        
+        // Gérer le succès du paiement
+        function handlePaymentSuccess(transaction) {
+            // Afficher l'overlay de chargement
+            document.getElementById('loadingOverlay').classList.add('active');
+            
+            // Envoyer la confirmation au serveur
+            fetch('/payments/api/confirmer-paiement/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({
+                    transaction_id: transaction.id,
+                    reference: transaction.reference,
+                    plan_id: '{{ plan.id }}',
+                    montant: {{ montant }},
+                    abonnement_id: '{{ abonnement.id }}'
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Cacher le loading, afficher le succès
+                    document.getElementById('loadingOverlay').classList.remove('active');
+                    document.getElementById('successOverlay').classList.add('active');
+                    document.getElementById('successAnimation').classList.add('active');
+                    
+                    // Redirection automatique après 5 secondes
+                    setTimeout(function() {
+                        window.location.href = '/payments/mes-abonnements/';
+                    }, 5000);
+                } else {
+                    showError(data.error || 'Erreur lors de la confirmation');
+                }
+            })
+            .catch(error => {
+                console.error('Erreur confirmation:', error);
+                showError('Erreur de connexion au serveur');
+            });
+        }
+        
+        // Afficher une erreur
+        function showError(message) {
+            document.getElementById('loadingOverlay').classList.remove('active');
+            document.getElementById('errorOverlay').classList.add('active');
+            document.getElementById('errorState').classList.add('active');
+            document.getElementById('errorText').textContent = message;
+        }
+        
+        // Récupérer le cookie CSRF
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    </script>
+</body>
+</html>

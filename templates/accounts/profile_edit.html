@@ -71,6 +71,20 @@
             class="w-full bg-bg-tertiary/30 border border-border-standard rounded-xl px-4 py-3 text-text-muted text-sm cursor-not-allowed outline-none">
         </div>
 
+        {% if user.role == 'eleve' %}
+        <div>
+          <label class="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-1.5">Classe *</label>
+          <select name="classe" required
+            class="w-full bg-bg-tertiary border border-border-standard rounded-xl px-4 py-3 text-white text-sm focus:border-primary transition outline-none">
+            <option value="">-- Choisissez votre classe --</option>
+            {% for classe in classes %}
+              <option value="{{ classe.nom }}" {% if user.classe == classe.nom %}selected{% endif %}>{{ classe.nom }}</option>
+            {% endfor %}
+          </select>
+          <p class="text-xs text-text-muted mt-1">Important : Choisissez votre classe pour voir les examens disponibles.</p>
+        </div>
+        {% endif %}
+
         <div class="md:col-span-2">
           <label class="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-1.5">Biographie / Présentation</label>
           <textarea name="bio" rows="4"

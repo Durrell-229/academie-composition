@@ -7,7 +7,16 @@
 {% endblock %}
 
 {% block content %}
-<div class="max-w-2xl mx-auto" x-data="{ loading: false }">
+<div class="max-w-2xl mx-auto" x-data="{ 
+    loading: false,
+    selectedNiveau: '',
+    classesParNiveau: {
+        'primaire': ['CP', 'CE1', 'CE2', 'CM1', 'CM2'],
+        'college': ['6ème', '5ème', '4ème', '3ème'],
+        'lycee': ['2nde A', '2nde C', '2nde D', '1ère A1', '1ère A2', '1ère B', '1ère C', '1ère D', 'Terminale A1', 'Terminale A2', 'Terminale B', 'Terminale C', 'Terminale D', 'Terminale E', 'Terminale G1', 'Terminale G2', 'Terminale G3'],
+        'universite': ['Licence 1', 'Licence 2', 'Licence 3', 'Master 1', 'Master 2', 'Doctorat 1', 'Doctorat 2', 'Doctorat 3', 'BTS 1', 'BTS 2', 'DUT 1', 'DUT 2']
+    }
+}">
 
   <!-- HEADER -->
   <div class="animate-in relative overflow-hidden rounded-2xl p-6 md:p-8 bg-bg-card border border-border-standard mb-6">
@@ -55,21 +64,25 @@
             </div>
 
             <div>
+                <label class="block text-sm font-bold text-text-secondary mb-1.5">Niveau d'enseignement</label>
+                <select x-model="selectedNiveau" @change="$refs.classeSelect.value = ''"
+                    class="w-full bg-bg-card border border-border-standard rounded-xl px-4 py-3 text-text-primary text-base focus:border-border-focus focus:ring-1 focus:ring-border-focus outline-none transition">
+                    <option value="">Choisir un niveau</option>
+                    <option value="primaire">🏫 Primaire</option>
+                    <option value="college">📚 Collège</option>
+                    <option value="lycee">🎓 Lycée</option>
+                    <option value="universite">🏛️ Université</option>
+                </select>
+            </div>
+
+            <div>
                 <label class="block text-sm font-bold text-text-secondary mb-1.5">Classe *</label>
-                <select name="classe" required class="w-full bg-bg-card border border-border-standard rounded-xl px-4 py-3 text-text-primary text-base focus:border-border-focus focus:ring-1 focus:ring-border-focus outline-none transition">
-                    <option value="">Choisir une classe</option>
-                    <option value="6ème">6ème</option>
-                    <option value="5ème">5ème</option>
-                    <option value="4ème">4ème</option>
-                    <option value="3ème">3ème</option>
-                    <option value="Seconde">Seconde</option>
-                    <option value="Première">Première</option>
-                    <option value="Terminale">Terminale</option>
-                    <option value="Licence 1">Licence 1</option>
-                    <option value="Licence 2">Licence 2</option>
-                    <option value="Licence 3">Licence 3</option>
-                    <option value="Master 1">Master 1</option>
-                    <option value="Master 2">Master 2</option>
+                <select name="classe" required x-ref="classeSelect"
+                    class="w-full bg-bg-card border border-border-standard rounded-xl px-4 py-3 text-text-primary text-base focus:border-border-focus focus:ring-1 focus:ring-border-focus outline-none transition">
+                    <option value="">Choisir d'abord le niveau</option>
+                    <template x-for="classe in classesParNiveau[selectedNiveau] || []" :key="classe">
+                        <option :value="classe" x-text="classe"></option>
+                    </template>
                 </select>
             </div>
 
@@ -98,53 +111,21 @@
                 <input type="text" name="theme" required
                     placeholder="Ex: Limites de fonctions, Probabilités, La Révolution Française, Les acides et bases, Les dérivées..."
                     class="w-full bg-bg-card border border-warning/40 rounded-xl px-4 py-3 text-text-primary text-base focus:border-warning focus:ring-1 focus:ring-warning/30 outline-none transition placeholder-text-muted">
-                <p class="text-[10px] text-warning mt-1.5 font-bold">
-                    <i class="fa-solid fa-circle-info mr-1"></i>
-                    OBLIGATOIRE — Précisez le chapitre exact à évaluer pour des questions cohérentes.
-                </p>
             </div>
         </div>
     </div>
-    <!-- What to expect -->
-    <div class="bg-bg-card rounded-2xl border border-border-standard p-5">
-      <h3 class="font-black text-xs uppercase tracking-wider text-text-muted mb-3 flex items-center gap-2">
-        <i class="fa-solid fa-bolt text-warning"></i> Ce que vous allez obtenir
-      </h3>
-      <div class="grid grid-cols-3 gap-3 text-center">
-        <div class="p-3 rounded-xl bg-primary/10 border border-primary/20">
-          <i class="fa-solid fa-brain text-primary text-lg mb-1 block"></i>
-          <p class="text-[10px] font-bold text-text-muted">QCM généré par IA</p>
-        </div>
-        <div class="p-3 rounded-xl bg-success/10 border border-success/20">
-          <i class="fa-solid fa-check-double text-success text-lg mb-1 block"></i>
-          <p class="text-[10px] font-bold text-text-muted">Correction instantanée</p>
-        </div>
-        <div class="p-3 rounded-xl bg-accent/10 border border-accent/20">
-          <i class="fa-solid fa-book-open text-accent text-lg mb-1 block"></i>
-          <p class="text-[10px] font-bold text-text-muted">Remédiation pédagogique</p>
-        </div>
-      </div>
-    </div>
 
-    <div class="flex justify-end gap-3">
-      <a href="{% url 'dashboard' %}" class="px-6 py-3 rounded-xl bg-bg-tertiary border border-border-standard text-sm font-bold text-text-muted hover:text-text-primary transition">
-        Annuler
-      </a>
-      <button type="submit" class="px-8 py-3 rounded-xl bg-primary text-white text-sm font-black shadow-lg hover:bg-primary/80 transition flex items-center gap-2"
-        :disabled="loading">
-        <template x-if="!loading">
-          <span class="flex items-center gap-2"><i class="fa-solid fa-bolt"></i> Générer le QCM</span>
-        </template>
-        <template x-if="loading">
-          <span class="flex items-center gap-2">
-            <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-            </svg>
-            L'IA génère votre QCM...
-          </span>
-        </template>
-      </button>
+    <!-- Bouton -->
+    <div class="flex justify-center">
+        <button type="submit" :disabled="loading || !selectedNiveau" 
+            class="relative bg-button-gradient hover:scale-[1.02] disabled:scale-100 disabled:from-gray-400 disabled:to-gray-500 text-white px-8 py-3 rounded-xl font-black text-sm uppercase tracking-wider shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all flex items-center gap-2">
+            <span :class="loading ? 'opacity-0' : 'opacity-100'" class="transition-opacity">
+                <i class="fa-solid fa-magic"></i> Générer le QCM
+            </span>
+            <span :class="loading ? 'opacity-100' : 'opacity-0'" class="absolute inset-0 flex items-center justify-center transition-opacity">
+                <i class="fa-solid fa-spinner fa-spin"></i> Génération en cours...
+            </span>
+        </button>
     </div>
   </form>
 </div>

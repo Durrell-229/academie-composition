@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Certificat - {{ certificat.eleve.get_full_name }}</title>
+    <style>
+        @page {
+            size: A4 landscape;
+            margin: 0;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Times New Roman', Georgia, serif;
+            background: linear-gradient(135deg, #1e3a8a 0%, #0f1f4a 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .certificat-container {
+            width: 100%;
+            max-width: 1000px;
+            background: white;
+            border-radius: 0;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* Bande décorative en haut à gauche */
+        .bande-superieure {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 40%;
+            height: 80px;
+            background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #60a5fa 100%);
+            clip-path: polygon(0 0, 100% 0, 85% 100%, 0 100%);
+        }
+        
+        /* Bande décorative en bas à droite */
+        .bande-inferieure {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 35%;
+            height: 100px;
+            background: linear-gradient(135deg, #60a5fa 0%, #2563eb 50%, #1e3a8a 100%);
+            clip-path: polygon(15% 0, 100% 0, 100% 100%, 0 100%);
+        }
+        
+        /* Motifs géométriques */
+        .motif-circuit {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            width: 120px;
+            height: 80px;
+            opacity: 0.1;
+        }
+        
+        .motif-circuit svg {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .motif-circuit-gauche {
+            position: absolute;
+            bottom: 120px;
+            left: 20px;
+            width: 100px;
+            height: 100px;
+            opacity: 0.08;
+        }
+        
+        /* Logo institution */
+        .logo-institution {
+            position: absolute;
+            top: 25px;
+            left: 30px;
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid rgba(255, 255, 255, 0.4);
+        }
+        
+        .logo-institution svg {
+            width: 30px;
+            height: 30px;
+            fill: white;
+        }
+        
+        /* Contenu principal */
+        .contenu {
+            padding: 100px 80px 120px 80px;
+            text-align: center;
+            position: relative;
+            z-index: 10;
+        }
+        
+        /* Titre principal */
+        .titre-principal {
+            font-size: 42px;
+            font-weight: bold;
+            color: #1e3a8a;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .sous-titre {
+            font-size: 20px;
+            color: #2563eb;
+            font-weight: 600;
+            margin-bottom: 50px;
+        }
+        
+        /* Section photo et info */
+        .section-beneficiaire {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+        
+        .photo-container {
+            width: 150px;
+            height: 180px;
+            border: 3px solid #1e3a8a;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #f8fafc;
+            flex-shrink: 0;
+        }
+        
+        .photo-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .photo-placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #e2e8f0;
+            color: #64748b;
+            font-size: 12px;
+        }
+        
+        /* Texte d'attribution */
+        .texte-attribution {
+            flex: 1;
+            max-width: 500px;
+            text-align: left;
+        }
+        
+        .certifie-que {
+            font-size: 16px;
+            color: #475569;
+            margin-bottom: 20px;
+            font-style: italic;
+        }
+        
+        .nom-beneficiaire {
+            font-size: 32px;
+            font-weight: bold;
+            color: #1e3a8a;
+            border-bottom: 2px solid #2563eb;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .info-complementaire {
+            font-size: 14px;
+            color: #64748b;
+            line-height: 1.8;
+            margin-bottom: 20px;
+        }
+        
+        .programme-texte {
+            font-size: 15px;
+            color: #334155;
+            font-style: italic;
+            margin-bottom: 20px;
+        }
+        
+        /* Mention ADMIS / REFUSÉ */
+        .mention-statut {
+            display: inline-block;
+            padding: 12px 40px;
+            font-size: 24px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+        
+        .mention-admis {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+        }
+        
+        .mention-refuse {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+        }
+        
+        .mention-attente {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+        }
+        
+        /* Résultats */
+        .resultats-container {
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 25px 0;
+        }
+        
+        .resultats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            text-align: center;
+        }
+        
+        .resultat-item {
+            padding: 10px;
+        }
+        
+        .resultat-label {
+            font-size: 12px;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+        
+        .resultat-valeur {
+            font-size: 20px;
+            font-weight: bold;
+            color: #1e3a8a;
+        }
+        
+        /* Section date et lieu */
+        .date-lieu-section {
+            display: flex;
+            justify-content: center;
+            gap: 80px;
+            margin: 30px 0;
+            font-size: 15px;
+            color: #475569;
+        }
+        
+        .date-lieu-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .date-lieu-label {
+            font-weight: 600;
+            color: #1e3a8a;
+        }
+        
+        /* Signatures */
+        .signatures-container {
+            display: flex;
+            justify-content: center;
+            gap: 150px;
+            margin-top: 50px;
+        }
+        
+        .signature-item {
+            text-align: center;
+        }
+        
+        .signature-ligne {
+            width: 200px;
+            height: 1px;
+            background: #1e3a8a;
+            margin-bottom: 10px;
+        }
+        
+        .signature-titre {
+            font-size: 14px;
+            color: #475569;
+            font-weight: 600;
+        }
+        
+        /* QR Code et vérification */
+        .verification-section {
+            position: absolute;
+            bottom: 110px;
+            right: 40px;
+            text-align: center;
+        }
+        
+        .qr-code {
+            width: 80px;
+            height: 80px;
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 4px;
+            padding: 5px;
+            margin-bottom: 8px;
+        }
+        
+        .qr-code img {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .code-verification {
+            font-size: 10px;
+            color: #64748b;
+            font-family: monospace;
+        }
+        
+        /* Logo en bas à droite */
+        .logo-footer {
+            position: absolute;
+            bottom: 15px;
+            right: 30px;
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #1e3a8a, #2563eb);
+            border-radius: 4px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            padding: 8px;
+        }
+        
+        .logo-footer svg {
+            width: 30px;
+            height: 30px;
+            fill: white;
+            margin-bottom: 4px;
+        }
+        
+        .logo-footer-text {
+            font-size: 8px;
+            font-weight: bold;
+            text-align: center;
+            line-height: 1.2;
+            text-transform: uppercase;
+        }
+        
+        /* Numéro de certificat */
+        .numero-certificat {
+            position: absolute;
+            bottom: 110px;
+            left: 40px;
+            font-size: 11px;
+            color: #64748b;
+            font-family: monospace;
+        }
+        
+        .numero-label {
+            font-weight: bold;
+            color: #1e3a8a;
+        }
+        
+        /* Watermark */
+        .watermark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-30deg);
+            font-size: 100px;
+            color: rgba(30, 58, 138, 0.03);
+            font-weight: bold;
+            text-transform: uppercase;
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            
+            .certificat-container {
+                box-shadow: none;
+                width: 100%;
+                max-width: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="certificat-container">
+        <!-- Bandes décoratives -->
+        <div class="bande-superieure"></div>
+        <div class="bande-inferieure"></div>
+        
+        <!-- Motifs géométriques -->
+        <div class="motif-circuit">
+            <svg viewBox="0 0 100 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="80" cy="20" r="15" stroke="#1e3a8a" stroke-width="2"/>
+                <path d="M0 40 L30 40 L30 20 L50 20" stroke="#1e3a8a" stroke-width="2" fill="none"/>
+                <circle cx="55" cy="20" r="3" fill="#1e3a8a"/>
+                <path d="M60 20 L100 20" stroke="#1e3a8a" stroke-width="2"/>
+                <path d="M20 40 L20 60 L40 60" stroke="#1e3a8a" stroke-width="2" fill="none"/>
+                <circle cx="45" cy="60" r="3" fill="#1e3a8a"/>
+                <path d="M70 40 L70 55 L85 55" stroke="#1e3a8a" stroke-width="2" fill="none"/>
+                <circle cx="90" cy="55" r="3" fill="#1e3a8a"/>
+            </svg>
+        </div>
+        
+        <div class="motif-circuit-gauche">
+            <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="50" cy="50" r="40" stroke="#1e3a8a" stroke-width="1" stroke-dasharray="5,5"/>
+                <circle cx="50" cy="50" r="25" stroke="#1e3a8a" stroke-width="1"/>
+                <circle cx="50" cy="50" r="10" fill="#1e3a8a"/>
+                <line x1="10" y1="50" x2="30" y2="50" stroke="#1e3a8a" stroke-width="1"/>
+                <line x1="70" y1="50" x2="90" y2="50" stroke="#1e3a8a" stroke-width="1"/>
+                <line x1="50" y1="10" x2="50" y2="30" stroke="#1e3a8a" stroke-width="1"/>
+                <line x1="50" y1="70" x2="50" y2="90" stroke="#1e3a8a" stroke-width="1"/>
+            </svg>
+        </div>
+        
+        <!-- Watermark -->
+        <div class="watermark">{{ etablissement.nom }}</div>
+        
+        <!-- Logo institution -->
+        <div class="logo-institution">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 3L1 9L12 15L21 10.09V17H23V9L12 3ZM5 13.18V17.18L12 21L19 17.18V13.18L12 17L5 13.18Z"/>
+                <path d="M12 2L2 7L12 12L22 7L12 2Z" opacity="0.5"/>
+            </svg>
+        </div>
+        
+        <!-- Contenu principal -->
+        <div class="contenu">
+            <h1 class="titre-principal">Certificat de Réussite</h1>
+            <p class="sous-titre">{{ etablissement.nom }}</p>
+            
+            <!-- Section bénéficiaire avec photo -->
+            <div class="section-beneficiaire">
+                <div class="photo-container">
+                    {% if eleve.avatar %}
+                        <img src="{{ eleve.avatar.url }}" alt="Photo de {{ eleve.get_full_name }}">
+                    {% else %}
+                        <div class="photo-placeholder">Photo</div>
+                    {% endif %}
+                </div>
+                
+                <div class="texte-attribution">
+                    <p class="certifie-que">Ce certificat est décerné à</p>
+                    <h2 class="nom-beneficiaire">{{ eleve.get_full_name|upper }}</h2>
+                    
+                    <div class="info-complementaire">
+                        <p><strong>Né(e) le :</strong> {{ eleve.date_naissance|date:"d/m/Y"|default:"---" }}</p>
+                        <p><strong>À :</strong> {{ eleve.lieu_naissance|default:"---" }}</p>
+                        <p><strong>Classe :</strong> {{ classe.nom }}</p>
+                        <p><strong>Année scolaire :</strong> {{ certificat.annee_scolaire }}</p>
+                    </div>
+                    
+                    <p class="programme-texte">
+                        pour avoir complété avec succès le programme<br>
+                        <strong>{{ type_certificat.nom }}</strong>
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Mention statut -->
+            {% if certificat.statut == 'admis' %}
+                <div class="mention-statut mention-admis">
+                    {{ type_certificat.mention_reussite }}
+                </div>
+            {% elif certificat.statut == 'refuse' %}
+                <div class="mention-statut mention-refuse">
+                    {{ type_certificat.mention_echec }}
+                </div>
+            {% else %}
+                <div class="mention-statut mention-attente">
+                    EN ATTENTE
+                </div>
+            {% endif %}
+            
+            <!-- Résultats -->
+            {% if certificat.moyenne_generale %}
+            <div class="resultats-container">
+                <div class="resultats-grid">
+                    <div class="resultat-item">
+                        <div class="resultat-label">Moyenne Générale</div>
+                        <div class="resultat-valeur">{{ certificat.moyenne_generale }}/{{ certificat.note_maximale }}</div>
+                    </div>
+                    <div class="resultat-item">
+                        <div class="resultat-label">Session</div>
+                        <div class="resultat-valeur">{{ certificat.session }}</div>
+                    </div>
+                    <div class="resultat-item">
+                        <div class="resultat-label">Numéro d'inscription</div>
+                        <div class="resultat-valeur" style="font-size: 14px;">{{ inscription.numero_inscription|default:"---" }}</div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Date et lieu -->
+            <div class="date-lieu-section">
+                <div class="date-lieu-item">
+                    <span class="date-lieu-label">Date :</span>
+                    <span>{{ certificat.date_delivrance|date:"d/m/Y"|default:"---" }}</span>
+                </div>
+                <div class="date-lieu-item">
+                    <span class="date-lieu-label">Lieu :</span>
+                    <span>{{ certificat.lieu_delivrance }}</span>
+                </div>
+            </div>
+            
+            <!-- Signatures -->
+            <div class="signatures-container">
+                <div class="signature-item">
+                    <div class="signature-ligne"></div>
+                    <p class="signature-titre">{{ type_certificat.titre_signataire_1 }}</p>
+                    {% if certificat.signataire_1 %}
+                        <p style="font-size: 12px; color: #64748b; margin-top: 5px;">{{ certificat.signataire_1.get_full_name }}</p>
+                    {% endif %}
+                </div>
+                <div class="signature-item">
+                    <div class="signature-ligne"></div>
+                    <p class="signature-titre">{{ type_certificat.titre_signataire_2 }}</p>
+                    {% if certificat.signataire_2 %}
+                        <p style="font-size: 12px; color: #64748b; margin-top: 5px;">{{ certificat.signataire_2.get_full_name }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- QR Code et vérification -->
+        <div class="verification-section">
+            {% if certificat.qr_code %}
+                <div class="qr-code">
+                    <img src="{{ certificat.qr_code.url }}" alt="QR Code">
+                </div>
+            {% endif %}
+            <p class="code-verification">Code: {{ certificat.code_verification }}</p>
+        </div>
+        
+        <!-- Numéro de certificat -->
+        <div class="numero-certificat">
+            <span class="numero-label">N° Certificat :</span> {{ certificat.numero_certificat }}
+        </div>
+        
+        <!-- Logo footer -->
+        <div class="logo-footer">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 3L1 9L12 15L21 10.09V17H23V9L12 3ZM5 13.18V17.18L12 21L19 17.18V13.18L12 17L5 13.18Z"/>
+            </svg>
+            <span class="logo-footer-text">Académie Numérique</span>
+        </div>
+    </div>
+</body>
+</html>

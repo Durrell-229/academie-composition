@@ -20,10 +20,11 @@ def exam_list_view(request):
     # Filter exams based on user role
     if request.user.role == 'eleve':
         # Students only see exams for their class that are published or in progress
+        # Chercher dans les classes où le nom correspond exactement à la classe de l'élève
         exams = Exam.objects.filter(
-            classe__nom=request.user.classe,
+            classe__nom__iexact=request.user.classe.strip(),
             statut__in=['publie', 'en_cours']
-        ).distinct() if request.user.classe else Exam.objects.none()
+        ).distinct() if request.user.classe and request.user.classe.strip() else Exam.objects.none()
     elif request.user.role in ['professeur', 'conseiller']:
         # Profs/conseillers see their own exams + all published
         exams = Exam.objects.filter(
@@ -38,6 +39,7 @@ def exam_list_view(request):
         'exams': exams,
         'matieres': matieres,
         'classes': classes,
+        'user': request.user,
     })
 
 @login_required
@@ -105,13 +107,18 @@ def exam_create_view(request):
     return render(request, 'exams/exam_form.html', {
         'matieres': matieres,
         'classes': classes,
+        'user': request.user,
     })
 
 @login_required
 def exam_detail_view(request, exam_id):
     exam = get_object_or_404(Exam, id=exam_id)
     files = ExamFile.objects.filter(exam=exam)
-    return render(request, 'exams/exam_detail.html', {'exam': exam, 'files': files})
+    return render(request, 'exams/exam_detail.html', {
+        'exam': exam,
+        'files': files,
+        'user': request.user,
+    })
 
 
 @login_required
@@ -170,3 +177,111 @@ def download_exam_file(request, file_id):
         logger.error(f"Erreur lecture fichier examen: {e}")
         messages.error(request, "Erreur lors du téléchargement.")
         return redirect('dashboard')
+
+
+# ═══════════════════════════════════════════════════════════════
+# VUES DE VALIDATION ADMIN
+# ═══════════════════════════════════════════════════════════════
+
+@login_required
+def exam_approve_view(request, exam_id):
+    """Approuver une épreuve (Admin uniquement)"""
+    if request.user.role != 'admin':
+        messages.error(request, "Accès refusé. Seuls les administrateurs peuvent approuver les épreuves.")
+        return redirect('exam_detail', exam_id=exam_id)
+    
+    exam = get_object_or_404(Exam, id=exam_id)
+    
+    if request.method == 'POST':
+        exam.approval_status = 'approved'
+        exam.approved_by = request.user
+        exam.save()
+        
+        # Notification au créateur
+        from notifications.models import Notification
+        Notification.objects.create(
+            recipient=exam.createur,
+            title=f"✅ Votre épreuve '{exam.titre}' a été approuvée",
+            message=f"L'administrateur {request.user.full_name} a validé votre épreuve. Vous pouvez maintenant la publier.",
+            type='SUCCESS',
+        )
+        
+        messages.success(request, f"L'épreuve '{exam.titre}' a été approuvée avec succès.")
+        logger.info(f"Examen {exam_id} approuvé par {request.user.email}")
+    
+    return redirect('exam_detail', exam_id=exam_id)
+
+
+@login_required
+def exam_reject_view(request, exam_id):
+    """Rejeter une épreuve (Admin uniquement)"""
+    if request.user.role != 'admin':
+        messages.error(request, "Accès refusé. Seuls les administrateurs peuvent rejeter les épreuves.")
+        return redirect('exam_detail', exam_id=exam_id)
+    
+    exam = get_object_or_404(Exam, id=exam_id)
+    
+    if request.method == 'POST':
+        commentaire = request.POST.get('commentaire', '')
+        exam.approval_status = 'rejected'
+        exam.rejection_comment = commentaire
+        exam.save()
+        
+        # Notification au créateur
+        from notifications.models import Notification
+        Notification.objects.create(
+            recipient=exam.createur,
+            title=f"❌ Votre épreuve '{exam.titre}' a été rejetée",
+            message=f"L'administrateur {request.user.get_full_name()} a rejeté votre épreuve." + 
+                    (f" Raison: {commentaire}" if commentaire else ""),
+            type='WARNING',
+        )
+        
+        messages.warning(request, f"L'épreuve '{exam.titre}' a été rejetée.")
+        logger.info(f"Examen {exam_id} rejeté par {request.user.email}. Raison: {commentaire}")
+    
+    return redirect('exam_detail', exam_id=exam_id)
+
+
+@login_required
+def exam_publish_view(request, exam_id):
+    """Publier une épreuve approuvée (Admin ou créateur)"""
+    exam = get_object_or_404(Exam, id=exam_id)
+    
+    # Vérifier les permissions
+    if request.user.role != 'admin' and exam.createur != request.user:
+        messages.error(request, "Accès refusé. Vous ne pouvez pas publier cette épreuve.")
+        return redirect('exam_detail', exam_id=exam_id)
+    
+    # Vérifier que l'épreuve est approuvée
+    if exam.approval_status != 'approved':
+        messages.error(request, "Cette épreuve doit être approuvée par un administrateur avant d'être publiée.")
+        return redirect('exam_detail', exam_id=exam_id)
+    
+    if request.method == 'POST':
+        exam.statut = 'publie'
+        exam.save()
+        
+        # Notifier les élèves concernés
+        if exam.classe:
+            from accounts.models import User
+            from notifications.models import Notification
+            
+            eleves = User.objects.filter(
+                role='eleve',
+                is_active=True,
+                classe=exam.classe.nom
+            )
+            
+            for eleve in eleves:
+                Notification.objects.create(
+                    recipient=eleve,
+                    title=f"📚 Nouvelle épreuve disponible : {exam.titre}",
+                    message=f"Une nouvelle épreuve de {exam.matiere.nom} est disponible. Durée: {exam.duree_minutes} minutes.",
+                    type='INFO',
+                )
+        
+        messages.success(request, f"L'épreuve '{exam.titre}' a été publiée avec succès.")
+        logger.info(f"Examen {exam_id} publié par {request.user.email}")
+    
+    return redirect('exam_detail', exam_id=exam_id)

@@ -37,6 +37,7 @@ class Exam(models.Model):
     statut = models.CharField(_('statut'), max_length=20, choices=Statut.choices, default=Statut.BROUILLON)
     approval_status = models.CharField(_('statut approbation'), max_length=20, choices=[('pending', 'En attente'), ('approved', 'Approuvé'), ('rejected', 'Rejeté')], default='pending')
     approved_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='exams_approved')
+    rejection_comment = models.TextField(_('raison du rejet'), blank=True)
     est_public = models.BooleanField(_('public'), default=False)
     instructions = models.TextField(_('instructions'), blank=True)
     anti_cheat_active = models.BooleanField(_('anti-triche actif'), default=True)

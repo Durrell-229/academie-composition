@@ -13,7 +13,7 @@ from .laravel_auth import LaravelAuthBackend
 class ProfileUpdateForm(forms.ModelForm):
     class Meta:
         model = User
-        fields = ['first_name', 'last_name', 'phone', 'bio', 'avatar']
+        fields = ['first_name', 'last_name', 'phone', 'bio', 'avatar', 'classe']
         widgets = {
             'avatar': forms.FileInput(attrs={'accept': 'image/*'}),
         }
@@ -41,7 +41,8 @@ def dashboard_view(request):
     role = user.role
 
     from exams.models import Exam, ExamAssignment
-    from compositions.models import CompositionSession, Resultat
+    from compositions.models import CompositionSession
+    from correction.models import CorrectionCopie
 
     now = timezone.now()
     context = {'user': user}
@@ -72,37 +73,37 @@ def dashboard_view(request):
             eleve=user
         ).select_related('exam', 'exam__matiere')
 
-        results = Resultat.objects.filter(
-            session__eleve=user
+        results = CorrectionCopie.objects.filter(
+            student=user,
+            status='approved'
         ).select_related(
-            'session', 'session__exam', 'session__exam__matiere'
+            'exam', 'exam__matiere'
         ).order_by('-created_at')
 
         # Stats
-        moyenne = results.aggregate(Avg('note'))['note__avg'] or 0
+        moyenne = results.aggregate(Avg('grade'))['grade__avg'] or 0
         total_minutes = sessions.aggregate(
             Sum('exam__duree_minutes')
         )['exam__duree_minutes__sum'] or 0
 
         # Progression sur les 3 derniers vs 3 précédents
-        recent_3 = list(results.values_list('note', flat=True)[:3])
-        prev_3 = list(results.values_list('note', flat=True)[3:6])
+        recent_3 = list(results.values_list('grade', flat=True)[:3])
+        prev_3 = list(results.values_list('grade', flat=True)[3:6])
         recent_avg = sum(float(n) for n in recent_3) / len(recent_3) if recent_3 else 0
         prev_avg = sum(float(n) for n in prev_3) / len(prev_3) if prev_3 else 0
         progression = round(recent_avg - prev_avg, 1) if prev_3 else 0
 
         # Badges
         try:
-            from gamification.models import UserBadge, StreakRecord, XPAction
+            from gamification.models import UserBadge, GlobalLeaderboard, XPAction
             badges = UserBadge.objects.filter(user=user).select_related('badge')[:6]
-            streak, _ = StreakRecord.objects.get_or_create(user=user)
-            streak.update_streak()
-            total_xp = XPAction.objects.filter(user=user).aggregate(
-                Sum('points_gagnes')
-            )['points_gagnes__sum'] or 0
+            streak = GlobalLeaderboard.objects.filter(user=user).order_by('-updated_at').first()
+            if not streak:
+                streak = type('Streak', (), {'current_streak': 0, 'longest_streak': 0, 'points_xp': 0})()
+            total_xp = streak.points_xp if hasattr(streak, 'points_xp') else 0
         except Exception:
             badges = []
-            streak = type('Streak', (), {'current_streak': 0, 'longest_streak': 0})()
+            streak = type('Streak', (), {'current_streak': 0, 'longest_streak': 0, 'points_xp': 0})()
             total_xp = 0
 
         pending_sessions = sessions.filter(statut='soumis')
@@ -219,30 +220,31 @@ def dashboard_view(request):
         pending_corrections = related_sessions.filter(statut='soumis').count()
         corrected_count = related_sessions.filter(statut='corrige').count()
 
-        my_results = Resultat.objects.filter(
-            session__exam__createur=user
-        ).select_related('session', 'session__eleve', 'session__exam')
+        my_results = CorrectionCopie.objects.filter(
+            exam__createur=user,
+            status='approved'
+        ).select_related('student', 'exam')
 
-        avg_class_score = my_results.aggregate(Avg('note'))['note__avg'] or 0
-        corrections_ia = my_results.filter(corrige_par_ia=True).count()
+        avg_class_score = my_results.aggregate(Avg('grade'))['grade__avg'] or 0
+        corrections_ia = my_results.count()  # Simplifié
 
         recent_submissions = related_sessions.filter(
             statut='soumis'
         ).order_by('-submitted_at')[:10]
 
-        top_students = my_results.order_by('-note')[:5]
-        weak_students = my_results.filter(note__lt=10).order_by('note')[:5]
+        top_students = my_results.order_by('-grade')[:5]
+        weak_students = my_results.filter(grade__lt=10).order_by('grade')[:5]
         unique_students = related_sessions.values('eleve').distinct().count()
 
         # Distribution notes pour graphique
         def count_range(qs, lo, hi):
-            return qs.filter(note__gte=lo, note__lt=hi).count()
+            return qs.filter(grade__gte=lo, grade__lt=hi).count()
 
         passable_count = count_range(my_results, 10, 12)
         assez_bien_count = count_range(my_results, 12, 14)
         bien_count = count_range(my_results, 14, 16)
         tres_bien_count = count_range(my_results, 16, 18)
-        excellent_count = my_results.filter(note__gte=18).count()
+        excellent_count = my_results.filter(grade__gte=18).count()
 
         context.update({
             'exams': my_exams.order_by('-created_at')[:20],
@@ -276,18 +278,18 @@ def dashboard_view(request):
         total_eleves = User.objects.filter(role='eleve').count()
         total_exams = Exam.objects.count()
         total_sessions = CompositionSession.objects.count()
-        total_results = Resultat.objects.count()
+        total_results = CorrectionCopie.objects.filter(status='approved').count()
 
         pending_approvals = Exam.objects.filter(
             approval_status='pending'
         ).select_related('createur', 'matiere', 'classe').order_by('-created_at')
 
-        avg_global = Resultat.objects.aggregate(Avg('note'))['note__avg'] or 0
-        ia_corrections = Resultat.objects.filter(corrige_par_ia=True).count()
+        avg_global = CorrectionCopie.objects.filter(status='approved').aggregate(Avg('grade'))['grade__avg'] or 0
+        ia_corrections = CorrectionCopie.objects.filter(status='approved').count()  # Simplifié
 
         prof_activity = User.objects.filter(role='professeur').annotate(
             nb_exams=Count('exams_crees', distinct=True),
-            nb_corrections=Count('exams_crees__sessions__resultat', distinct=True)
+            nb_corrections=Count('exams_crees__submissions', distinct=True)
         ).order_by('-nb_exams')[:8]
 
         live_sessions = CompositionSession.objects.filter(
@@ -320,15 +322,15 @@ def dashboard_view(request):
         total_conseillers = User.objects.filter(role='conseiller').count()
         total_exams = Exam.objects.count()
         total_sessions = CompositionSession.objects.count()
-        total_results = Resultat.objects.count()
+        total_results = CorrectionCopie.objects.filter(status='approved').count()
 
         pending_approvals = Exam.objects.filter(
             approval_status='pending'
         ).select_related('createur', 'matiere').order_by('-created_at')
 
-        avg_global = Resultat.objects.aggregate(Avg('note'))['note__avg'] or 0
-        ia_corrections = Resultat.objects.filter(corrige_par_ia=True).count()
-        human_corrections = Resultat.objects.filter(corrige_par_humain=True).count()
+        avg_global = CorrectionCopie.objects.filter(status='approved').aggregate(Avg('grade'))['grade__avg'] or 0
+        ia_corrections = CorrectionCopie.objects.filter(status='approved').count()  # Simplifié
+        human_corrections = CorrectionCopie.objects.filter(status='approved').count()  # Simplifié
 
         live_sessions = CompositionSession.objects.filter(
             statut='en_cours'
@@ -340,8 +342,10 @@ def dashboard_view(request):
         week_ago = now - timedelta(days=7)
         new_users_week = User.objects.filter(date_joined__gte=week_ago).count()
 
-        recent_results = Resultat.objects.select_related(
-            'session', 'session__eleve', 'session__exam'
+        recent_results = CorrectionCopie.objects.filter(
+            status='approved'
+        ).select_related(
+            'student', 'exam'
         ).order_by('-created_at')[:15]
 
         try:
@@ -356,11 +360,11 @@ def dashboard_view(request):
             from exams.models import Matiere
             subject_stats = []
             for matiere in Matiere.objects.all()[:8]:
-                mat_results = Resultat.objects.filter(session__exam__matiere=matiere)
+                mat_results = CorrectionCopie.objects.filter(exam__matiere=matiere, status='approved')
                 if mat_results.exists():
-                    avg = mat_results.aggregate(Avg('note'))['note__avg'] or 0
+                    avg = mat_results.aggregate(Avg('grade'))['grade__avg'] or 0
                     total = mat_results.count()
-                    passed = mat_results.filter(note__gte=10).count()
+                    passed = mat_results.filter(grade__gte=10).count()
                     success_rate = round((passed / total * 100), 1) if total > 0 else 0
                     subject_stats.append({
                         'nom': matiere.nom,
@@ -383,9 +387,9 @@ def dashboard_view(request):
             ).count()
             session_trend = round(((sessions_this_month - sessions_last_month) / max(sessions_last_month, 1) * 100), 1)
 
-            results_this_month = Resultat.objects.filter(created_at__gte=this_month).count()
-            results_last_month = Resultat.objects.filter(
-                created_at__gte=last_month_start, created_at__lt=this_month
+            results_this_month = CorrectionCopie.objects.filter(created_at__gte=this_month, status='approved').count()
+            results_last_month = CorrectionCopie.objects.filter(
+                created_at__gte=last_month_start, created_at__lt=this_month, status='approved'
             ).count()
             result_trend = round(((results_this_month - results_last_month) / max(results_last_month, 1) * 100), 1)
         except Exception:
@@ -634,7 +638,13 @@ def profile_edit_view(request):
     else:
         form = ProfileUpdateForm(instance=request.user)
 
-    return render(request, 'accounts/profile_edit.html', {'form': form})
+    # Ajouter les classes pour les élèves
+    context = {'form': form}
+    if request.user.role == 'eleve':
+        from core.models import Classe
+        context['classes'] = Classe.objects.filter(is_active=True).order_by('nom')
+
+    return render(request, 'accounts/profile_edit.html', context)
 
 
 def laravel_sso_login(request):
@@ -726,4 +736,245 @@ def oauth_choose_role_view(request):
         return redirect('dashboard')
 
     return render(request, 'auth/oauth_choose_role.html', {'user': user})
+
+
+# ===== GESTION DES ÉLÈVES PAR LES ADMINS =====
+
+@login_required
+def admin_eleve_list_view(request):
+    """Liste de tous les élèves pour les administrateurs"""
+    if request.user.role != 'admin':
+        messages.error(request, "Accès réservé aux administrateurs.")
+        return redirect('dashboard')
+    
+    # Filtrer les élèves
+    eleves = User.objects.filter(role='eleve').order_by('-date_joined')
+    
+    # Filtrage par classe
+    classe_filter = request.GET.get('classe')
+    if classe_filter:
+        eleves = eleves.filter(classe__icontains=classe_filter)
+    
+    # Filtrage par niveau
+    niveau_filter = request.GET.get('niveau')
+    if niveau_filter:
+        eleves = eleves.filter(niveau=niveau_filter)
+    
+    # Récupérer toutes les classes et niveaux pour les filtres
+    from core.models import Classe
+    classes = Classe.objects.filter(is_active=True).order_by('nom')
+    niveaux = User.Niveau.choices
+    
+    return render(request, 'admin/eleve_list.html', {
+        'eleves': eleves,
+        'classes': classes,
+        'niveaux': niveaux,
+        'classe_filter': classe_filter,
+        'niveau_filter': niveau_filter,
+        'user': request.user,
+    })
+
+@login_required
+def admin_eleve_create_view(request):
+    """Créer un nouvel élève (admin seulement)"""
+    if request.user.role != 'admin':
+        messages.error(request, "Accès réservé aux administrateurs.")
+        return redirect('dashboard')
+    
+    from core.models import Classe
+    classes = Classe.objects.filter(is_active=True).order_by('nom')
+    
+    if request.method == 'POST':
+        try:
+            # Récupérer les données du formulaire
+            email = request.POST.get('email', '').strip()
+            password = request.POST.get('password', '')
+            first_name = request.POST.get('first_name', '').strip()
+            last_name = request.POST.get('last_name', '').strip()
+            phone = request.POST.get('phone', '')
+            country = request.POST.get('country', 'Bénin')
+            niveau = request.POST.get('niveau', '')
+            classe = request.POST.get('classe', '')
+            serie = request.POST.get('serie', '')
+            sexe = request.POST.get('sexe', '')
+            matricule = request.POST.get('matricule', '')
+            
+            # Combiner classe + série pour l'affichage
+            if classe and serie:
+                classe_display = f"{classe} {serie}" if serie not in classe else classe
+            else:
+                classe_display = classe
+            
+            # Validation
+            if not email or not password or not first_name or not last_name:
+                messages.error(request, "Les champs email, mot de passe, prénom et nom sont requis.")
+            elif User.objects.filter(email=email).exists():
+                messages.error(request, "Cet email est déjà utilisé.")
+            elif User.objects.filter(matricule=matricule).exists() if matricule else False:
+                messages.error(request, "Ce matricule est déjà utilisé.")
+            else:
+                # Créer l'élève
+                user = User.objects.create_user(
+                    email=email,
+                    password=password,
+                    first_name=first_name,
+                    last_name=last_name,
+                    role='eleve',
+                    phone=phone,
+                    country=country,
+                    niveau=niveau,
+                    classe=classe_display,
+                    sexe=sexe,
+                    matricule=matricule if matricule else None,
+                )
+                
+                # Créer le profil associé
+                from .models import Profile
+                Profile.objects.create(user=user)
+                
+                messages.success(request, f"L'élève {first_name} {last_name} a été créé avec succès.")
+                return redirect('admin_eleve_list')
+                
+        except Exception as e:
+            messages.error(request, f"Erreur lors de la création : {str(e)}")
+    
+    return render(request, 'admin/eleve_form.html', {
+        'classes': classes,
+        'niveaux': User.Niveau.choices,
+        'user': request.user,
+        'action': 'create',
+    })
+
+@login_required
+def admin_eleve_edit_view(request, user_id):
+    """Modifier un élève existant (admin seulement)"""
+    if request.user.role != 'admin':
+        messages.error(request, "Accès réservé aux administrateurs.")
+        return redirect('dashboard')
+    
+    try:
+        eleve = User.objects.get(id=user_id, role='eleve')
+    except User.DoesNotExist:
+        messages.error(request, "Élève non trouvé.")
+        return redirect('admin_eleve_list')
+    
+    from core.models import Classe
+    classes = Classe.objects.filter(is_active=True).order_by('nom')
+    
+    if request.method == 'POST':
+        try:
+            # Récupérer les données du formulaire
+            email = request.POST.get('email', '').strip()
+            first_name = request.POST.get('first_name', '').strip()
+            last_name = request.POST.get('last_name', '').strip()
+            phone = request.POST.get('phone', '')
+            country = request.POST.get('country', 'Bénin')
+            niveau = request.POST.get('niveau', '')
+            classe = request.POST.get('classe', '')
+            serie = request.POST.get('serie', '')
+            sexe = request.POST.get('sexe', '')
+            matricule = request.POST.get('matricule', '')
+            
+            # Combiner classe + série pour l'affichage
+            if classe and serie:
+                classe_display = f"{classe} {serie}" if serie not in classe else classe
+            else:
+                classe_display = classe
+            
+            # Validation
+            if not email or not first_name or not last_name:
+                messages.error(request, "Les champs email, prénom et nom sont requis.")
+            elif User.objects.filter(email=email).exclude(id=eleve.id).exists():
+                messages.error(request, "Cet email est déjà utilisé.")
+            elif User.objects.filter(matricule=matricule).exclude(id=eleve.id).exists() if matricule else False:
+                messages.error(request, "Ce matricule est déjà utilisé.")
+            else:
+                # Mettre à jour l'élève
+                eleve.email = email
+                eleve.first_name = first_name
+                eleve.last_name = last_name
+                eleve.phone = phone
+                eleve.country = country
+                eleve.niveau = niveau
+                eleve.classe = classe_display
+                eleve.sexe = sexe
+                eleve.matricule = matricule if matricule else None
+                eleve.save()
+                
+                messages.success(request, f"L'élève {first_name} {last_name} a été mis à jour avec succès.")
+                return redirect('admin_eleve_list')
+                
+        except Exception as e:
+            messages.error(request, f"Erreur lors de la mise à jour : {str(e)}")
+    
+    return render(request, 'admin/eleve_form.html', {
+        'eleve': eleve,
+        'classes': classes,
+        'niveaux': User.Niveau.choices,
+        'user': request.user,
+        'action': 'edit',
+    })
+
+@login_required
+def admin_eleve_delete_view(request, user_id):
+    """Supprimer un élève (admin seulement)"""
+    if request.user.role != 'admin':
+        messages.error(request, "Accès réservé aux administrateurs.")
+        return redirect('dashboard')
+    
+    try:
+        eleve = User.objects.get(id=user_id, role='eleve')
+    except User.DoesNotExist:
+        messages.error(request, "Élève non trouvé.")
+        return redirect('admin_eleve_list')
+    
+    if request.method == 'POST':
+        try:
+            nom_complet = f"{eleve.first_name} {eleve.last_name}"
+            eleve.delete()
+            messages.success(request, f"L'élève {nom_complet} a été supprimé avec succès.")
+            return redirect('admin_eleve_list')
+        except Exception as e:
+            messages.error(request, f"Erreur lors de la suppression : {str(e)}")
+    
+    return render(request, 'admin/eleve_delete_confirm.html', {
+        'eleve': eleve,
+        'user': request.user,
+    })
+
+@login_required
+def admin_eleve_detail_view(request, user_id):
+    """Voir les détails d'un élève (admin seulement)"""
+    if request.user.role != 'admin':
+        messages.error(request, "Accès réservé aux administrateurs.")
+        return redirect('dashboard')
+    
+    try:
+        eleve = User.objects.get(id=user_id, role='eleve')
+        
+        # Récupérer les informations supplémentaires
+        from .models import Profile
+        try:
+            profile = eleve.profile
+        except Profile.DoesNotExist:
+            profile = None
+        
+        # Statistiques de l'élève
+        from exams.models import Exam
+        from compositions.models import Composition
+        
+        exams_count = Exam.objects.filter(classe__nom=eleve.classe).count()
+        compositions_count = Composition.objects.filter(eleve=eleve).count()
+        
+        return render(request, 'admin/eleve_detail.html', {
+            'eleve': eleve,
+            'profile': profile,
+            'exams_count': exams_count,
+            'compositions_count': compositions_count,
+            'user': request.user,
+        })
+        
+    except User.DoesNotExist:
+        messages.error(request, "Élève non trouvé.")
+        return redirect('admin_eleve_list')
 

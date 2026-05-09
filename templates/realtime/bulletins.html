@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-8">Bulletins Temps Réel</h1>
+    
+    <div class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-xl font-semibold mb-4">Mises à jour de Bulletin</h2>
+        
+        <div id="bulletin-updates" class="space-y-4">
+            <p class="text-gray-600">En attente de connexion WebSocket...</p>
+        </div>
+    </div>
+    
+    <div class="mt-8 bg-white rounded-lg shadow p-6">
+        <h2 class="text-xl font-semibold mb-4">Bulletin Actuel</h2>
+        <div id="current-bulletin" class="p-4 bg-gray-50 rounded-lg">
+            <p class="text-gray-600">Chargement du bulletin...</p>
+        </div>
+    </div>
+</div>
+
+<script>
+let bulletinSocket = null;
+let bulletinData = null;
+
+function connectBulletinUpdates() {
+    const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    const wsUrl = `${protocol}://${window.location.host}/ws/bulletin/`;
+    
+    bulletinSocket = new WebSocket(wsUrl);
+    
+    bulletinSocket.onopen = function(e) {
+        console.log('Connecté aux mises à jour de bulletin');
+        loadCurrentBulletin();
+    };
+    
+    bulletinSocket.onmessage = function(e) {
+        const data = JSON.parse(e.data);
+        if (data.type === 'bulletin_update') {
+            bulletinData = data.bulletin;
+            updateBulletinDisplay(data.bulletin);
+            addBulletinUpdate(data.bulletin);
+        }
+    };
+    
+    bulletinSocket.onclose = function(e) {
+        console.log('Déconnecté des mises à jour de bulletin');
+    };
+}
+
+function loadCurrentBulletin() {
+    // Charger le bulletin actuel via API
+    fetch('/api/v1/bulletins/current/')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                bulletinData = data.bulletin;
+                updateBulletinDisplay(data.bulletin);
+            }
+        })
+        .catch(error => {
+            console.error('Erreur chargement bulletin:', error);
+        });
+}
+
+function updateBulletinDisplay(bulletin) {
+    const bulletinDiv = document.getElementById('current-bulletin');
+    
+    if (!bulletin) {
+        bulletinDiv.innerHTML = '<p class="text-gray-600">Aucun bulletin disponible</p>';
+        return;
+    }
+    
+    bulletinDiv.innerHTML = `
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <h3 class="font-semibold">Élève</h3>
+                <p>${bulletin.eleve_name || 'N/A'}</p>
+            </div>
+            <div>
+                <h3 class="font-semibold">Classe</h3>
+                <p>${bulletin.classe || 'N/A'}</p>
+            </div>
+            <div>
+                <h3 class="font-semibold">Moyenne Générale</h3>
+                <p class="text-2xl font-bold text-blue-600">${bulletin.moyenne_generale || 'N/A'}/20</p>
+            </div>
+            <div>
+                <h3 class="font-semibold">Rang</h3>
+                <p class="text-2xl font-bold text-green-600">${bulletin.rang || 'N/A'}/${bulletin.total_eleves || 'N/A'}</p>
+            </div>
+        </div>
+        
+        <div class="mt-4">
+            <h3 class="font-semibold mb-2">Dernière mise à jour</h3>
+            <p class="text-gray-600">${bulletin.last_update || 'N/A'}</p>
+        </div>
+    `;
+}
+
+function addBulletinUpdate(bulletin) {
+    const updatesDiv = document.getElementById('bulletin-updates');
+    const timestamp = new Date().toLocaleTimeString();
+    
+    const updateHTML = `
+        <div class="p-4 bg-green-50 rounded-lg border-l-4 border-green-500">
+            <div class="flex justify-between items-start">
+                <div>
+                    <h3 class="font-semibold">Bulletin mis à jour</h3>
+                    <p class="text-gray-600">Moyenne: ${bulletin.moyenne_generale || 'N/A'}/20</p>
+                </div>
+                <span class="text-sm text-gray-400">${timestamp}</span>
+            </div>
+        </div>
+    `;
+    
+    updatesDiv.innerHTML = updateHTML + updatesDiv.innerHTML;
+}
+
+// Connecter au chargement
+window.addEventListener('load', connectBulletinUpdates);
+</script>
+{% endblock %}

@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rappel - Renouvellement d'abonnement</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', sans-serif;
+            background-color: #f1f5f9;
+            margin: 0;
+            padding: 0;
+        }
+        .email-wrapper {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+        }
+        .email-header {
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            padding: 40px 30px;
+            text-align: center;
+        }
+        .email-header h1 {
+            color: #ffffff;
+            margin: 0;
+            font-size: 24px;
+            font-weight: 700;
+        }
+        .email-header .icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+        .email-body {
+            padding: 40px 30px;
+        }
+        .reminder-box {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border-left: 4px solid #f59e0b;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        .reminder-box h2 {
+            color: #92400e;
+            margin: 0 0 10px 0;
+            font-size: 18px;
+        }
+        .reminder-box p {
+            color: #78350f;
+            margin: 0;
+            font-size: 14px;
+        }
+        .countdown {
+            text-align: center;
+            margin: 30px 0;
+        }
+        .countdown-number {
+            font-size: 72px;
+            font-weight: 800;
+            color: #ef4444;
+            line-height: 1;
+        }
+        .countdown-label {
+            font-size: 18px;
+            color: #64748b;
+            margin-top: 10px;
+        }
+        .plan-info {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+        .plan-info h3 {
+            margin: 0 0 15px 0;
+            color: #1e293b;
+            font-size: 18px;
+        }
+        .plan-details {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .plan-details:last-child {
+            border-bottom: none;
+        }
+        .plan-label {
+            color: #64748b;
+            font-size: 14px;
+        }
+        .plan-value {
+            color: #1e293b;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            color: #ffffff;
+            text-decoration: none;
+            padding: 18px 40px;
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 16px;
+            margin: 30px 0;
+            text-align: center;
+        }
+        .features-list {
+            background-color: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 12px;
+            padding: 25px;
+            margin: 30px 0;
+        }
+        .features-list h4 {
+            color: #166534;
+            margin: 0 0 15px 0;
+        }
+        .features-list ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        .features-list li {
+            color: #15803d;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        .footer {
+            background-color: #f8fafc;
+            padding: 30px;
+            text-align: center;
+            border-top: 1px solid #e2e8f0;
+        }
+        .footer p {
+            color: #64748b;
+            font-size: 12px;
+            margin: 0;
+        }
+        .social-links {
+            margin-top: 20px;
+        }
+        .social-links a {
+            display: inline-block;
+            margin: 0 10px;
+            color: #3b82f6;
+            text-decoration: none;
+        }
+        @media (max-width: 600px) {
+            .email-body {
+                padding: 20px;
+            }
+            .countdown-number {
+                font-size: 48px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-wrapper">
+        <!-- Header -->
+        <div class="email-header">
+            <div class="icon">⏰</div>
+            <h1>Votre abonnement expire bientôt</h1>
+        </div>
+        
+        <!-- Body -->
+        <div class="email-body">
+            <!-- Reminder Box -->
+            <div class="reminder-box">
+                <h2>🔔 Rappel important</h2>
+                <p>Bonjour {{ eleve.first_name }}, nous vous informons que votre abonnement à l'Académie Numérique expire dans <strong>{{ jours_restants }} jours</strong>.</p>
+            </div>
+            
+            <!-- Countdown -->
+            <div class="countdown">
+                <div class="countdown-number">{{ jours_restants }}</div>
+                <div class="countdown-label">jours restants</div>
+            </div>
+            
+            <!-- Plan Info -->
+            <div class="plan-info">
+                <h3>📋 Détails de votre abonnement</h3>
+                <div class="plan-details">
+                    <span class="plan-label">Plan</span>
+                    <span class="plan-value">{{ plan.nom }}</span>
+                </div>
+                <div class="plan-details">
+                    <span class="plan-label">Numéro d'abonnement</span>
+                    <span class="plan-value">{{ abonnement.numero_abonnement }}</span>
+                </div>
+                <div class="plan-details">
+                    <span class="plan-label">Date d'expiration</span>
+                    <span class="plan-value">{{ abonnement.date_fin|date:"d/m/Y" }}</span>
+                </div>
+                <div class="plan-details">
+                    <span class="plan-label">Montant du renouvellement</span>
+                    <span class="plan-value">{{ plan.prix_mensuel|floatformat:0 }} FCFA/mois</span>
+                </div>
+            </div>
+            
+            <!-- CTA Button -->
+            <center>
+                <a href="{{ url_renouvellement }}" class="cta-button">
+                    🔄 Renouveler mon abonnement
+                </a>
+            </center>
+            
+            <!-- Features -->
+            <div class="features-list">
+                <h4>✨ Ne perdez pas l'accès à :</h4>
+                <ul>
+                    <li>Tous vos cours et compositions enregistrés</li>
+                    <li>Votre historique de progression</li>
+                    <li>Les corrections IA de vos devoirs</li>
+                    <li>Vos certificats et diplômes</li>
+                    <li>Le support prioritaire</li>
+                </ul>
+            </div>
+            
+            <p style="color: #64748b; font-size: 14px; line-height: 1.6;">
+                Si vous ne renouvelez pas votre abonnement, vous perdrez l'accès à toutes ces fonctionnalités à partir du <strong>{{ abonnement.date_fin|date:"d/m/Y" }}</strong>.
+            </p>
+            
+            <p style="color: #64748b; font-size: 14px; margin-top: 30px;">
+                Besoin d'aide ? Contactez notre support à <a href="mailto:support@academie-numerique.bj">support@academie-numerique.bj</a> ou par WhatsApp au +229 01 23 45 67 89.
+            </p>
+        </div>
+        
+        <!-- Footer -->
+        <div class="footer">
+            <p>© 2024 Académie Numérique. Tous droits réservés.</p>
+            <p style="margin-top: 10px;">Cotonou, Bénin 🇧🇯</p>
+            <div class="social-links">
+                <a href="#">Facebook</a>
+                <a href="#">WhatsApp</a>
+                <a href="#">Site web</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

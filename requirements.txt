@@ -138,3 +138,16 @@ zopfli==0.4.1
 dj_database_url
 psycopg2-binary
 redis
+# NVIDIA OCR et traitement d'images
+requests>=2.31.0
+Pillow>=10.0.0
+# Pour le mode démo si NVIDIA API non configurée
+pytesseract>=0.3.10
+pdf2image>=1.16.3
+
+# Temps réel
+channels==4.0.0
+channels-redis==4.2.0
+daphne==4.0.0
+django-redis==5.4.0
+redis==5.0.1

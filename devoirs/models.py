@@ -25,7 +25,7 @@ class Devoir(models.Model):
     coefficient_default = models.DecimalField(_('coefficient par défaut'), max_digits=4, decimal_places=2, default=1.00)
     coefficients_par_matiere = models.JSONField(_('coefficients par matière'), default=dict, blank=True)
     classes = models.ManyToManyField(Classe, related_name='devoirs', verbose_name=_('classes concernées'))
-    matieres = models.ManyToManyField(Matiere, related_name='devoirs', verbose_name=_('matières concernées'))
+    matieres = models.ManyToManyField(Matiere, related_name='devoirs_nationaux', verbose_name=_('matières concernées'))
     statut = models.CharField(_('statut'), max_length=30, choices=Statut.choices, default=Statut.BROUILLON)
     createur = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='devoirs_crees')
     instructions = models.TextField(_('instructions'), blank=True, default='')
@@ -130,7 +130,7 @@ class Certificat(models.Model):
         FIN_ANNEE = 'fin_annee', _('Fin d\'année')
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    eleve = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='certificats')
+    eleve = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='certificats_devoirs')
     devoir = models.ForeignKey(Devoir, on_delete=models.SET_NULL, null=True, blank=True, related_name='certificats')
     type_certificat = models.CharField(_('type'), max_length=20, choices=TypeCertificat.choices, default=TypeCertificat.ADMISSION)
     moyenne_obtenue = models.DecimalField(_('moyenne'), max_digits=5, decimal_places=2, default=0.00)

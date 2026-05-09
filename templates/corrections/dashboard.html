@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-8">Dashboard Corrections</h1>
+    
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-xl font-semibold mb-2">Total Corrections</h2>
+            <p class="text-3xl font-bold text-blue-600">{{ total_corrections }}</p>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-xl font-semibold mb-2">En Attente</h2>
+            <p class="text-3xl font-bold text-yellow-600">{{ pending_corrections }}</p>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-xl font-semibold mb-2">Terminées</h2>
+            <p class="text-3xl font-bold text-green-600">{{ completed_corrections }}</p>
+        </div>
+    </div>
+    
+    <div class="mt-8">
+        <h2 class="text-xl font-semibold mb-4">Actions Rapides</h2>
+        <div class="space-x-4">
+            <a href="{% url 'corrections:corrige_types_list' %}" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                Gérer Corrigés Types
+            </a>
+            <a href="{% url 'corrections:baremes_list' %}" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+                Gérer Barèmes
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

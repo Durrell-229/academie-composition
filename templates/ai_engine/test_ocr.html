@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-8">Test OCR NVIDIA</h1>
+    
+    <div class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-xl font-semibold mb-4">Test OCR</h2>
+        
+        <form method="post" enctype="multipart/form-data" class="space-y-4">
+            {% csrf_token %}
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Fichier à traiter</label>
+                <input type="file" name="file" class="border rounded p-2 w-full" accept="image/*,.pdf">
+            </div>
+            <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                Traiter avec OCR
+            </button>
+        </form>
+    </div>
+    
+    <div id="ocr-result" class="mt-8 hidden">
+        <h2 class="text-xl font-semibold mb-4">Résultat OCR</h2>
+        <div class="bg-white rounded-lg shadow p-6">
+            <pre id="ocr-text"></pre>
+        </div>
+    </div>
+</div>
+
+<script>
+document.querySelector('form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    
+    try {
+        const response = await fetch('/ocr/upload/', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        });
+        
+        const result = await response.json();
+        
+        document.getElementById('ocr-result').classList.remove('hidden');
+        document.getElementById('ocr-text').textContent = JSON.stringify(result, null, 2);
+        
+    } catch (error) {
+        console.error('Error:', error);
+    }
+});
+</script>
+{% endblock %}

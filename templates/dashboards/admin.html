@@ -1,0 +1,200 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard Admin - Académie Numérique{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+    <!-- Header -->
+    <div class="bg-gradient-to-r from-slate-700 to-slate-900 p-8 rounded-2xl text-white">
+        <div class="flex items-center gap-6">
+            <div class="relative">
+                {% if user.avatar %}
+                <img src="{{ user.avatar.url }}" class="w-20 h-20 rounded-2xl shadow-2xl object-cover border-4 border-white">
+                {% else %}
+                <img src="https://ui-avatars.com/api/?name={{ user.first_name }}+{{ user.last_name }}&background=475569&color=fff" class="w-20 h-20 rounded-2xl shadow-2xl border-4 border-white">
+                {% endif %}
+            </div>
+            <div>
+                <h1 class="text-3xl font-black">Administration</h1>
+                <p class="text-slate-300">Vue d'ensemble de l'académie</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Globales -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="bg-white p-6 rounded-2xl shadow-lg border-l-4 border-blue-500">
+            <p class="text-gray-500 text-sm font-bold uppercase tracking-widest mb-2">Élèves</p>
+            <h3 class="text-3xl font-black text-gray-800">{{ total_eleves|default:0 }}</h3>
+            <p class="text-xs text-green-600">+{{ nouveaux_eleves|default:0 }} cette semaine</p>
+        </div>
+        
+        <div class="bg-white p-6 rounded-2xl shadow-lg border-l-4 border-emerald-500">
+            <p class="text-gray-500 text-sm font-bold uppercase tracking-widest mb-2">Professeurs</p>
+            <h3 class="text-3xl font-black text-gray-800">{{ total_professeurs|default:0 }}</h3>
+            <p class="text-xs text-gray-400">Enseignants actifs</p>
+        </div>
+        
+        <div class="bg-white p-6 rounded-2xl shadow-lg border-l-4 border-purple-500">
+            <p class="text-gray-500 text-sm font-bold uppercase tracking-widest mb-2">Classes</p>
+            <h3 class="text-3xl font-black text-gray-800">{{ total_classes|default:0 }}</h3>
+            <p class="text-xs text-gray-400">{{ total_matieres }} matières</p>
+        </div>
+        
+        <div class="bg-white p-6 rounded-2xl shadow-lg border-l-4 border-orange-500">
+            <p class="text-gray-500 text-sm font-bold uppercase tracking-widest mb-2">Examens</p>
+            <h3 class="text-3xl font-black text-gray-800">{{ examens_total|default:0 }}</h3>
+            <p class="text-xs text-gray-400">{{ examens_en_cours|default:0 }} en cours</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Graphique d'activité mensuelle -->
+        <div class="lg:col-span-2 bg-white p-8 rounded-2xl shadow-lg">
+            <h3 class="text-xl font-bold text-gray-800 mb-6">Activité Mensuelle</h3>
+            <canvas id="activiteChart" height="250"></canvas>
+        </div>
+
+        <!-- Résumé copies -->
+        <div class="bg-white p-8 rounded-2xl shadow-lg">
+            <h3 class="text-xl font-bold text-gray-800 mb-6">Copies</h3>
+            <div class="space-y-4">
+                <div class="flex justify-between items-center p-4 bg-gray-50 rounded-xl">
+                    <span class="text-gray-600">Total</span>
+                    <span class="text-2xl font-black text-gray-800">{{ copies_total|default:0 }}</span>
+                </div>
+                <div class="flex justify-between items-center p-4 bg-green-50 rounded-xl">
+                    <span class="text-green-700">Corrigées</span>
+                    <span class="text-2xl font-black text-green-700">{{ copies_corrigees|default:0 }}</span>
+                </div>
+                <div class="flex justify-between items-center p-4 bg-orange-50 rounded-xl">
+                    <span class="text-orange-700">En attente</span>
+                    <span class="text-2xl font-black text-orange-700">{{ copies_en_attente|default:0 }}</span>
+                </div>
+                <div class="flex justify-between items-center p-4 bg-blue-50 rounded-xl">
+                    <span class="text-blue-700">Moyenne globale</span>
+                    <span class="text-2xl font-black text-blue-700">{{ moyenne_globale|default:0|floatformat:2 }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Performances -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Top classes -->
+        <div class="bg-white p-8 rounded-2xl shadow-lg">
+            <h3 class="text-xl font-bold text-gray-800 mb-6">Top Classes</h3>
+            <div class="space-y-3">
+                {% for classe in top_classes %}
+                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                    <div class="flex items-center gap-3">
+                        <span class="w-8 h-8 bg-blue-100 text-blue-700 rounded-full flex items-center justify-center font-bold text-sm">{{ forloop.counter }}</span>
+                        <span class="font-semibold text-gray-800">{{ classe.nom }}</span>
+                    </div>
+                    <span class="font-bold {% if classe.moyenne >= 10 %}text-green-600{% else %}text-red-600{% endif %}">{{ classe.moyenne|floatformat:2 }}/20</span>
+                </div>
+                {% empty %}
+                <p class="text-gray-500 text-center py-4">Aucune donnée disponible</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Top matières -->
+        <div class="bg-white p-8 rounded-2xl shadow-lg">
+            <h3 class="text-xl font-bold text-gray-800 mb-6">Matières les plus utilisées</h3>
+            <div class="space-y-3">
+                {% for matiere in top_matieres %}
+                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                    <div class="flex items-center gap-3">
+                        <span class="w-8 h-8 bg-purple-100 text-purple-700 rounded-full flex items-center justify-center font-bold text-sm">{{ forloop.counter }}</span>
+                        <span class="font-semibold text-gray-800">{{ matiere.nom }}</span>
+                    </div>
+                    <span class="text-gray-500">{{ matiere.total_examens }} examens</span>
+                </div>
+                {% empty %}
+                <p class="text-gray-500 text-center py-4">Aucune donnée disponible</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Utilisateurs récents -->
+    <div class="bg-white p-8 rounded-2xl shadow-lg">
+        <h3 class="text-xl font-bold text-gray-800 mb-6">Utilisateurs Récents</h3>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left">
+                <thead>
+                    <tr class="text-gray-500 text-sm uppercase tracking-widest border-b border-gray-200">
+                        <th class="pb-4 font-medium">Utilisateur</th>
+                        <th class="pb-4 font-medium">Rôle</th>
+                        <th class="pb-4 font-medium">Dernière connexion</th>
+                        <th class="pb-4 font-medium">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for u in utilisateurs_recents %}
+                    <tr class="border-b border-gray-100 hover:bg-gray-50 transition">
+                        <td class="py-4 flex items-center gap-3">
+                            <img src="https://ui-avatars.com/api/?name={{ u.first_name }}+{{ u.last_name }}&background=random" class="w-8 h-8 rounded-full">
+                            <span class="font-semibold text-gray-800">{{ u.get_full_name }}</span>
+                        </td>
+                        <td class="py-4"><span class="px-2 py-1 rounded-full text-xs font-bold {% if u.role == 'eleve' %}bg-blue-100 text-blue-700{% elif u.role == 'professeur' %}bg-emerald-100 text-emerald-700{% else %}bg-purple-100 text-purple-700{% endif %}">{{ u.get_role_display }}</span></td>
+                        <td class="py-4 text-gray-600">{{ u.last_login|date:"d/m/Y H:i"|default:"Jamais" }}</td>
+                        <td class="py-4">
+                            <a href="/admin/accounts/user/{{ u.id }}/change/" class="text-slate-600 font-semibold hover:text-slate-800 transition">Gérer</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="py-8 text-center text-gray-500">Aucun utilisateur récent</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const ctx = document.getElementById('activiteChart');
+    if (ctx) {
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: {{ mois_labels|safe|default:"['Jan','Fév','Mar','Avr','Mai','Juin']" }},
+                datasets: [
+                    {
+                        label: 'Examens',
+                        data: {{ examens_par_mois|safe|default:"[0,0,0,0,0,0]" }},
+                        borderColor: 'rgb(59, 130, 246)',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4
+                    },
+                    {
+                        label: 'Copies',
+                        data: {{ copies_par_mois|safe|default:"[0,0,0,0,0,0]" }},
+                        borderColor: 'rgb(16, 185, 129)',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom' } },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

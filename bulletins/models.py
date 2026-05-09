@@ -19,7 +19,7 @@ class Bulletin(models.Model):
         QCM = 'qcm', 'QCM (Test de Connaissances)'
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    eleve = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='bulletins')
+    eleve = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='bulletins_officiels')
     classe = models.CharField(max_length=100)
     annee_scolaire = models.CharField(max_length=20)
     periode = models.CharField(max_length=5, choices=Periode.choices)

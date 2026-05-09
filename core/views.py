@@ -17,7 +17,7 @@ def home_view(request):
 
 @login_required
 def admin_dashboard_view(request):
-    if not request.user.is_superuser:
+    if not request.user.is_superuser and request.user.role != 'admin':
         return redirect('home')
 
     pending_exams = Exam.objects.filter(approval_status='pending')
@@ -26,5 +26,6 @@ def admin_dashboard_view(request):
     return render(request, 'admin/dashboard.html', {
         'pending_exams': pending_exams,
         'pending_count': pending_exams.count(),
-        'notifications': notifications
+        'notifications': notifications,
+        'user': request.user,
     })

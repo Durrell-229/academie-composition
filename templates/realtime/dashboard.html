@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-8">Tableau de Bord Temps Réel</h1>
+    
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Statut de connexion -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-xl font-semibold mb-4">Statut de Connexion</h2>
+            <div id="connection-status" class="text-gray-600">
+                <span class="inline-block w-3 h-3 bg-yellow-400 rounded-full mr-2"></span>
+                En attente de connexion...
+            </div>
+        </div>
+        
+        <!-- Notifications -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-xl font-semibold mb-4">Notifications</h2>
+            <div id="notification-count" class="text-2xl font-bold text-blue-600">0</div>
+            <p class="text-gray-600 text-sm">Notifications non lues</p>
+        </div>
+        
+        <!-- Salles d'examen actives -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-xl font-semibold mb-4">Salles d'Examen</h2>
+            <div id="active-exams" class="text-2xl font-bold text-green-600">0</div>
+            <p class="text-gray-600 text-sm">Salles actives</p>
+        </div>
+    </div>
+    
+    <!-- Zone de test WebSocket -->
+    <div class="mt-8 bg-white rounded-lg shadow p-6">
+        <h2 class="text-xl font-semibold mb-4">Test de Connexion WebSocket</h2>
+        <button onclick="connectWebSocket()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+            Tester la connexion
+        </button>
+        <div id="ws-test-result" class="mt-4 p-4 bg-gray-100 rounded hidden">
+            <pre id="ws-test-output"></pre>
+        </div>
+    </div>
+</div>
+
+<script>
+let notificationSocket = null;
+let notificationCount = 0;
+
+function connectWebSocket() {
+    const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    const wsUrl = `${protocol}://${window.location.host}/ws/notifications/`;
+    
+    notificationSocket = new WebSocket(wsUrl);
+    
+    const statusDiv = document.getElementById('connection-status');
+    const testResult = document.getElementById('ws-test-result');
+    const testOutput = document.getElementById('ws-test-output');
+    
+    testResult.classList.remove('hidden');
+    testOutput.textContent = 'Tentative de connexion à: ' + wsUrl + '\n';
+    
+    notificationSocket.onopen = function(e) {
+        statusDiv.innerHTML = '<span class="inline-block w-3 h-3 bg-green-400 rounded-full mr-2"></span>Connecté';
+        testOutput.textContent += '✅ Connexion réussie!\n';
+        testOutput.textContent += 'WebSocket ID: ' + notificationSocket.readyState + '\n';
+    };
+    
+    notificationSocket.onmessage = function(e) {
+        const data = JSON.parse(e.data);
+        testOutput.textContent += '📨 Message reçu: ' + JSON.stringify(data) + '\n';
+        
+        if (data.type === 'notification') {
+            notificationCount++;
+            document.getElementById('notification-count').textContent = notificationCount;
+        }
+    };
+    
+    notificationSocket.onclose = function(e) {
+        statusDiv.innerHTML = '<span class="inline-block w-3 h-3 bg-red-400 rounded-full mr-2"></span>Déconnecté';
+        testOutput.textContent += '❌ Connexion fermée: ' + e.code + '\n';
+    };
+    
+    notificationSocket.onerror = function(e) {
+        statusDiv.innerHTML = '<span class="inline-block w-3 h-3 bg-red-400 rounded-full mr-2"></span>Erreur';
+        testOutput.textContent += '⚠️ Erreur de connexion\n';
+    };
+}
+
+// Auto-connexion au chargement
+window.addEventListener('load', function() {
+    // Ne pas auto-connecter pour éviter les erreurs
+    console.log('Dashboard temps réel chargé');
+});
+</script>
+{% endblock %}

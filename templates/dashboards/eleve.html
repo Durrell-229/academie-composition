@@ -1,148 +1,187 @@
 {% extends 'base.html' %}
-{% block title %}Dashboard Éélève - Académie Numérique{% endblock %}
+{% block title %}Dashboard Élève - Académie Numérique{% endblock %}
 
 {% block content %}
 <div class="space-y-8" x-data="{ tab: 'overview' }">
-    <!-- Header avec XP Bar -->
-    <div class="glass p-8 rounded-[2rem] flex flex-col md:flex-row justify-between items-center gap-6 border-b-4 border-primary">
+    <!-- Header avec données réelles -->
+    <div class="bg-gradient-to-r from-blue-600 to-indigo-700 p-8 rounded-2xl flex flex-col md:flex-row justify-between items-center gap-6 text-white">
         <div class="flex items-center gap-6">
             <div class="relative">
                 {% if user.avatar %}
-                <img src="{{ user.avatar.url }}" class="w-20 h-20 rounded-2xl shadow-2xl object-cover">
+                <img src="{{ user.avatar.url }}" class="w-20 h-20 rounded-2xl shadow-2xl object-cover border-4 border-white">
                 {% else %}
-                <img src="https://ui-avatars.com/api/?name={{ user.full_name }}&background=6366F1&color=fff" class="w-20 h-20 rounded-2xl shadow-2xl">
+                <img src="https://ui-avatars.com/api/?name={{ user.first_name }}+{{ user.last_name }}&background=6366F1&color=fff" class="w-20 h-20 rounded-2xl shadow-2xl border-4 border-white">
                 {% endif %}
-                <div class="absolute -bottom-2 -right-2 bg-accent text-dark-bg text-xs font-black px-2 py-1 rounded-lg">LVL 12</div>
+                <div class="absolute -bottom-2 -right-2 bg-yellow-400 text-gray-900 text-xs font-black px-2 py-1 rounded-lg">NIV {{ niveau|default:1 }}</div>
             </div>
             <div>
-                <h1 class="text-3xl font-black text-white">Bonjour, {{ user.first_name }} 👋</h1>
-                <p class="text-text-muted">Prêt pour tes examens aujourd'hui ?</p>
+                <h1 class="text-3xl font-black">Bonjour, {{ user.first_name }} 👋</h1>
+                <p class="text-blue-100">{% if user.classe %}Classe: {{ user.classe }}{% else %}Aucune classe assignée{% endif %}</p>
+                <p class="text-blue-200 text-sm">{{ notifications_non_lues|default:0 }} notification(s) non lue(s)</p>
             </div>
         </div>
         
-        <div class="w-full md:w-72 space-y-2">
+        <div class="w-full md:w-72 space-y-2 bg-white/10 p-4 rounded-xl">
             <div class="flex justify-between text-sm font-bold">
-                <span class="text-primary">Progression Niveau</span>
-                <span class="text-text-muted">2,450 / 3,000 XP</span>
+                <span>Progression Niveau</span>
+                <span>{{ xp_total|default:0 }} / {{ niveau|default:1|add:1 }}000 XP</span>
             </div>
-            <div class="w-full h-3 bg-bg-secondary rounded-full overflow-hidden">
-                <div class="bg-gradient-to-r from-primary to-accent h-full w-[75%]" id="xp-bar"></div>
+            <div class="w-full h-3 bg-white/20 rounded-full overflow-hidden">
+                <div class="bg-gradient-to-r from-yellow-400 to-orange-500 h-full transition-all duration-500" style="width: {{ xp_pourcentage|default:0 }}%"></div>
             </div>
         </div>
     </div>
 
-    <!-- Stats Rapides -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div class="glass p-6 rounded-3xl border-l-4 border-accent">
-            <p class="text-text-muted text-sm font-bold uppercase tracking-widest mb-2">Moyenne</p>
-            <h3 class="text-3xl font-black text-white">15.42<span class="text-sm text-text-muted">/20</span></h3>
+    <!-- Stats Rapides avec données réelles -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="bg-white p-6 rounded-2xl shadow-lg border-l-4 border-blue-500 hover:shadow-xl transition-shadow">
+            <p class="text-gray-500 text-sm font-bold uppercase tracking-widest mb-2">Moyenne Générale</p>
+            <h3 class="text-3xl font-black text-gray-800">{{ moyenne_generale|default:0|floatformat:2 }}<span class="text-sm text-gray-500">/20</span></h3>
+            <p class="text-xs text-gray-400 mt-1">Sur toutes les matières</p>
         </div>
-        <div class="glass p-6 rounded-3xl border-l-4 border-success">
-            <p class="text-text-muted text-sm font-bold uppercase tracking-widest mb-2">Examens Finis</p>
-            <h3 class="text-3xl font-black text-white">24</h3>
+        
+        <div class="bg-white p-6 rounded-2xl shadow-lg border-l-4 border-green-500 hover:shadow-xl transition-shadow">
+            <p class="text-gray-500 text-sm font-bold uppercase tracking-widest mb-2">Examens Terminés</p>
+            <h3 class="text-3xl font-black text-gray-800">{{ examens_termines|default:0 }}</h3>
+            <p class="text-xs text-gray-400 mt-1">{% if examens_en_cours %}{{ examens_en_cours }} en cours{% else %}Aucun en cours{% endif %}</p>
         </div>
-        <div class="glass p-6 rounded-3xl border-l-4 border-primary">
-            <p class="text-text-muted text-sm font-bold uppercase tracking-widest mb-2">Rang Classe</p>
-            <h3 class="text-3xl font-black text-white">4<span class="text-sm text-text-muted">ème</span></h3>
+        
+        <div class="bg-white p-6 rounded-2xl shadow-lg border-l-4 border-purple-500 hover:shadow-xl transition-shadow">
+            <p class="text-gray-500 text-sm font-bold uppercase tracking-widest mb-2">Rang Classe</p>
+            <h3 class="text-3xl font-black text-gray-800">{% if rang_classe %}{{ rang_classe }}<span class="text-sm text-gray-500">/{{ total_eleves }}</span>{% else %}-{% endif %}</h3>
+            <p class="text-xs text-gray-400 mt-1">{% if rang_classe %}{% if rang_classe == 1 %}1er{% else %}{{ rang_classe }}ème{% endif %}{% else %}Non classé{% endif %}</p>
         </div>
-        <div class="glass p-6 rounded-3xl border-l-4 border-secondary">
-            <p class="text-text-muted text-sm font-bold uppercase tracking-widest mb-2">Badges</p>
-            <h3 class="text-3xl font-black text-white">12</h3>
+        
+        <div class="bg-white p-6 rounded-2xl shadow-lg border-l-4 border-yellow-500 hover:shadow-xl transition-shadow">
+            <p class="text-gray-500 text-sm font-bold uppercase tracking-widest mb-2">Badges</p>
+            <h3 class="text-3xl font-black text-gray-800">{{ badges_count|default:0 }}</h3>
+            <p class="text-xs text-gray-400 mt-1">{{ xp_total|default:0 }} XP total</p>
         </div>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <!-- Graphique de Performance -->
-        <div class="lg:col-span-2 glass p-8 rounded-[2rem]">
-            <div class="flex justify-between items-center mb-8">
-                <h3 class="text-xl font-bold text-white flex items-center">
-                    <i class="fas fa-chart-line mr-3 text-primary"></i> Analyse de Progression
+        <!-- Graphique de Performance par matière -->
+        <div class="lg:col-span-2 bg-white p-8 rounded-2xl shadow-lg">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-gray-800 flex items-center">
+                    <svg class="w-6 h-6 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                    Performance par Matière
                 </h3>
-                <select class="bg-bg-secondary border-none rounded-lg text-xs p-2" style="color: #CBD5E1;">
-                    <option>6 derniers mois</option>
-                    <option>Année complète</option>
-                </select>
             </div>
-            <canvas id="studentChart" height="280"></canvas>
+            <canvas id="matiereChart" height="250"></canvas>
         </div>
 
-        <!-- Badges et Récompenses -->
-        <div class="glass p-8 rounded-[2rem]">
-            <h3 class="text-xl font-bold text-white mb-6">Badges récents</h3>
-            <div class="grid grid-cols-2 gap-4">
-                <div class="bg-bg-secondary/50 p-4 rounded-2xl text-center border border-border-standard hover:border-primary transition group">
-                    <div class="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition">
-                        <i class="fas fa-bolt text-primary text-xl"></i>
+        <!-- Dernières Corrections -->
+        <div class="bg-white p-8 rounded-2xl shadow-lg">
+            <h3 class="text-xl font-bold text-gray-800 mb-6">Dernières Corrections</h3>
+            <div class="space-y-4">
+                {% for correction in dernieres_corrections %}
+                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition">
+                    <div>
+                        <p class="font-semibold text-gray-800">{{ correction.exam.titre }}</p>
+                        <p class="text-sm text-gray-500">{{ correction.exam.matiere.nom }}</p>
+                        <p class="text-xs text-gray-400">{{ correction.created_at|date:"d/m/Y H:i" }}</p>
                     </div>
-                    <p class="text-xs font-bold text-white">Rapide</p>
-                </div>
-                <div class="bg-bg-secondary/50 p-4 rounded-2xl text-center border border-border-standard hover:border-success transition group">
-                    <div class="w-12 h-12 bg-success/20 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition">
-                        <i class="fas fa-star text-success text-xl"></i>
+                    <div class="text-right">
+                        <span class="inline-block px-3 py-1 rounded-full text-sm font-bold {% if correction.grade >= 15 %}bg-green-100 text-green-700{% elif correction.grade >= 10 %}bg-yellow-100 text-yellow-700{% else %}bg-red-100 text-red-700{% endif %}">
+                            {{ correction.grade|floatformat:2 }}/20
+                        </span>
                     </div>
-                    <p class="text-xs font-bold text-white">Parfait</p>
                 </div>
-                <!-- Plus de badges... -->
+                {% empty %}
+                <p class="text-gray-500 text-center py-8">Aucune correction pour le moment</p>
+                {% endfor %}
             </div>
-            <button class="w-full mt-8 py-3 rounded-xl border border-border-standard text-text-muted font-bold hover:bg-bg-secondary transition">
-                Voir tous les trophées
-            </button>
+            {% if dernieres_corrections %}
+            <a href="{% url 'correction:dashboard' %}" class="block mt-4 text-center text-blue-600 font-semibold hover:text-blue-800 transition">Voir toutes les corrections</a>
+            {% endif %}
         </div>
     </div>
 
-    <!-- Examens à venir -->
-    <div class="glass p-8 rounded-[2rem]">
-        <h3 class="text-xl font-bold text-white mb-6">Prochains Examens</h3>
+    <!-- Évolution des notes -->
+    <div class="bg-white p-8 rounded-2xl shadow-lg">
+        <h3 class="text-xl font-bold text-gray-800 mb-6">Évolution de tes Notes</h3>
+        <canvas id="evolutionChart" height="200"></canvas>
+    </div>
+
+    <!-- Prochains Examens -->
+    <div class="bg-white p-8 rounded-2xl shadow-lg">
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="text-xl font-bold text-gray-800">Prochains Examens</h3>
+            <a href="{% url 'exams:exam_list' %}" class="text-blue-600 font-semibold hover:text-blue-800 transition">Voir tous</a>
+        </div>
         <div class="overflow-x-auto">
             <table class="w-full text-left">
                 <thead>
-                    <tr class="text-text-muted text-sm uppercase tracking-widest border-b border-border-standard/50">
+                    <tr class="text-gray-500 text-sm uppercase tracking-widest border-b border-gray-200">
                         <th class="pb-4 font-medium">Examen</th>
                         <th class="pb-4 font-medium">Matière</th>
                         <th class="pb-4 font-medium">Date</th>
+                        <th class="pb-4 font-medium">Durée</th>
                         <th class="pb-4 font-medium">Action</th>
                     </tr>
                 </thead>
-                <tbody class="text-white">
-                    <tr class="border-b border-border-standard/50">
-                        <td class="py-6 font-bold">SVT : Génétique Humaine</td>
-                        <td class="py-6"><span class="bg-success/10 text-success px-3 py-1 rounded-full text-xs">Biologie</span></td>
-                        <td class="py-6 text-text-muted">Demain, 08:30</td>
-                        <td class="py-6">
-                            <a href="/exams/rules/" class="bg-primary px-4 py-2 rounded-lg text-sm font-bold hover:bg-secondary transition">S'inscrire</a>
+                <tbody>
+                    {% for assignment in prochains_examens %}
+                    <tr class="border-b border-gray-100 hover:bg-gray-50 transition">
+                        <td class="py-4 font-semibold text-gray-800">{{ assignment.exam.titre }}</td>
+                        <td class="py-4"><span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold">{{ assignment.exam.matiere.nom }}</span></td>
+                        <td class="py-4 text-gray-600">{{ assignment.exam.date_debut|date:"d/m/Y H:i" }}</td>
+                        <td class="py-4 text-gray-600">{{ assignment.exam.duree }} min</td>
+                        <td class="py-4">
+                            {% if assignment.exam.statut == 'en_cours' %}
+                            <a href="{% url 'compositions:composition_room' assignment.exam.id %}" class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-green-700 transition">Rejoindre</a>
+                            {% else %}
+                            <span class="bg-gray-100 text-gray-600 px-4 py-2 rounded-lg text-sm">{{ assignment.exam.get_statut_display }}</span>
+                            {% endif %}
                         </td>
                     </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="py-8 text-center text-gray-500">Aucun examen programmé</td>
+                    </tr>
+                    {% endfor %}
                 </tbody>
             </table>
         </div>
     </div>
+
+    <!-- Badges récents -->
+    {% if badges %}
+    <div class="bg-white p-8 rounded-2xl shadow-lg">
+        <h3 class="text-xl font-bold text-gray-800 mb-6">Tes Badges</h3>
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            {% for badge in badges %}
+            <div class="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-xl text-center border border-gray-200 hover:shadow-lg transition group">
+                <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path></svg>
+                </div>
+                <p class="text-xs font-bold text-gray-800">{{ badge.name }}</p>
+                <p class="text-xs text-gray-500">{{ badge.description|truncatechars:30 }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const ctx = document.getElementById('studentChart').getContext('2d');
-        new Chart(ctx, {
-            type: 'line',
+document.addEventListener('DOMContentLoaded', () => {
+    // Chart par matière
+    const matiereCtx = document.getElementById('matiereChart');
+    if (matiereCtx) {
+        new Chart(matiereCtx, {
+            type: 'bar',
             data: {
-                labels: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin'],
+                labels: {{ chart_labels|safe|default:"[]" }},
                 datasets: [{
-                    label: 'Score Moyen',
-                    data: [14.5, 13.8, 15.2, 16.5, 15.9, 17.2],
-                    borderColor: '#6366F1',
-                    borderWidth: 4,
-                    pointBackgroundColor: '#6366F1',
-                    pointBorderColor: '#0F172A',
-                    pointBorderWidth: 3,
-                    pointRadius: 6,
-                    tension: 0.4,
-                    fill: true,
-                    backgroundColor: (context) => {
-                        const gradient = context.chart.ctx.createLinearGradient(0, 0, 0, 400);
-                        gradient.addColorStop(0, 'rgba(99, 102, 241, 0.3)');
-                        gradient.addColorStop(1, 'rgba(99, 102, 241, 0)');
-                        return gradient;
-                    }
+                    label: 'Moyenne',
+                    data: {{ chart_data|safe|default:"[]" }},
+                    backgroundColor: 'rgba(59, 130, 246, 0.7)',
+                    borderColor: 'rgb(59, 130, 246)',
+                    borderWidth: 2,
+                    borderRadius: 8,
                 }]
             },
             options: {
@@ -150,16 +189,43 @@
                 maintainAspectRatio: false,
                 plugins: { legend: { display: false } },
                 scales: {
-                    x: { grid: { display: false }, ticks: { color: '#94A3B8' } },
-                    y: { 
-                        grid: { color: 'rgba(71, 85, 105, 0.3)' }, 
-                        ticks: { color: '#94A3B8' },
-                        min: 0,
-                        max: 20
-                    }
+                    y: { beginAtZero: true, max: 20, grid: { color: 'rgba(0,0,0,0.05)' } },
+                    x: { grid: { display: false } }
                 }
             }
         });
-    });
+    }
+
+    // Chart évolution
+    const evolutionCtx = document.getElementById('evolutionChart');
+    if (evolutionCtx) {
+        new Chart(evolutionCtx, {
+            type: 'line',
+            data: {
+                labels: {{ evolution_labels|safe|default:"[]" }},
+                datasets: [{
+                    label: 'Note',
+                    data: {{ evolution_data|safe|default:"[]" }},
+                    borderColor: 'rgb(147, 51, 234)',
+                    backgroundColor: 'rgba(147, 51, 234, 0.1)',
+                    borderWidth: 3,
+                    pointRadius: 5,
+                    pointBackgroundColor: 'rgb(147, 51, 234)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, max: 20, grid: { color: 'rgba(0,0,0,0.05)' } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    }
+});
 </script>
 {% endblock %}

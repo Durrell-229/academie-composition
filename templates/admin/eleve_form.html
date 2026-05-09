@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}
+    {% if action == 'create' %}Créer un Élève{% else %}Modifier un Élève{% endif %} - Administration
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-bg-primary p-6">
+    <div class="max-w-4xl mx-auto">
+        <!-- Header -->
+        <div class="mb-8">
+            <div class="flex items-center mb-4">
+                <a href="{% url 'admin_eleve_list' %}" 
+                   class="text-text-muted hover:text-white transition-colors mr-4">
+                    <i class="fa-solid fa-arrow-left mr-2"></i>
+                    Retour à la liste
+                </a>
+            </div>
+            <h1 class="text-3xl font-bold text-white mb-2">
+                <i class="fa-solid fa-graduation-cap mr-3 text-primary"></i>
+                {% if action == 'create' %}Créer un Nouvel Élève{% else %}Modifier l'Élève{% endif %}
+            </h1>
+            <p class="text-text-muted">
+                {% if action == 'create' %}
+                    Remplissez les informations pour créer un nouveau compte élève
+                {% else %}
+                    Modifiez les informations de l'élève
+                {% endif %}
+            </p>
+        </div>
+
+        <!-- Formulaire -->
+        <div class="bg-bg-secondary rounded-xl p-8">
+            <form method="post" class="space-y-6">
+                {% csrf_token %}
+                
+                <!-- Informations Personnelles -->
+                <div class="border-b border-bg-tertiary pb-6">
+                    <h3 class="text-lg font-semibold text-white mb-4">
+                        <i class="fa-solid fa-user mr-2 text-primary"></i>
+                        Informations Personnelles
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-text-secondary mb-2">
+                                Prénom <span class="text-red-400">*</span>
+                            </label>
+                            <input type="text" 
+                                   name="first_name" 
+                                   value="{{ eleve.first_name|default:'' }}"
+                                   required
+                                   class="w-full px-4 py-2 bg-bg-tertiary text-white rounded-lg focus:ring-2 focus:ring-primary focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-text-secondary mb-2">
+                                Nom <span class="text-red-400">*</span>
+                            </label>
+                            <input type="text" 
+                                   name="last_name" 
+                                   value="{{ eleve.last_name|default:'' }}"
+                                   required
+                                   class="w-full px-4 py-2 bg-bg-tertiary text-white rounded-lg focus:ring-2 focus:ring-primary focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-text-secondary mb-2">
+                                Email <span class="text-red-400">*</span>
+                            </label>
+                            <input type="email" 
+                                   name="email" 
+                                   value="{{ eleve.email|default:'' }}"
+                                   required
+                                   class="w-full px-4 py-2 bg-bg-tertiary text-white rounded-lg focus:ring-2 focus:ring-primary focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-text-secondary mb-2">
+                                {% if action == 'create' %}Mot de passe <span class="text-red-400">*</span>{% else %}Nouveau mot de passe{% endif %}
+                            </label>
+                            <input type="password" 
+                                   name="password" 
+                                   {% if action == 'create' %}required{% endif %}
+                                   placeholder="{% if action == 'edit' %}Laisser vide pour ne pas changer{% endif %}"
+                                   class="w-full px-4 py-2 bg-bg-tertiary text-white rounded-lg focus:ring-2 focus:ring-primary focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-text-secondary mb-2">
+                                Téléphone
+                            </label>
+                            <input type="tel" 
+                                   name="phone" 
+                                   value="{{ eleve.phone|default:'' }}"
+                                   class="w-full px-4 py-2 bg-bg-tertiary text-white rounded-lg focus:ring-2 focus:ring-primary focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-text-secondary mb-2">
+                                Pays
+                            </label>
+                            <select name="country" 
+                                    class="w-full px-4 py-2 bg-bg-tertiary text-white rounded-lg focus:ring-2 focus:ring-primary focus:outline-none">
+                                <option value="Bénin" {% if eleve.country == 'Bénin' or not eleve.country %}selected{% endif %}>Bénin</option>
+                                <option value="France" {% if eleve.country == 'France' %}selected{% endif %}>France</option>
+                                <option value="Côte d'Ivoire" {% if eleve.country == 'Côte d'Ivoire' %}selected{% endif %}>Côte d'Ivoire</option>
+                                <option value="Sénégal" {% if eleve.country == 'Sénégal' %}selected{% endif %}>Sénégal</option>
+                                <option value="Togo" {% if eleve.country == 'Togo' %}selected{% endif %}>Togo</option>
+                                <option value="Burkina Faso" {% if eleve.country == 'Burkina Faso' %}selected{% endif %}>Burkina Faso</option>
+                                <option value="Mali" {% if eleve.country == 'Mali' %}selected{% endif %}>Mali</option>
+                                <option value="Niger" {% if eleve.country == 'Niger' %}selected{% endif %}>Niger</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-text-secondary mb-2">
+                                Sexe
+                            </label>
+                            <select name="sexe" 
+                                    class="w-full px-4 py-2 bg-bg-tertiary text-white rounded-lg focus:ring-2 focus:ring-primary focus:outline-none">
+                                <option value="">Sélectionner...</option>
+                                <option value="Masculin" {% if eleve.sexe == 'Masculin' %}selected{% endif %}>Masculin</option>
+                                <option value="Féminin" {% if eleve.sexe == 'Féminin' %}selected{% endif %}>Féminin</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-text-secondary mb-2">
+                                Matricule
+                            </label>
+                            <input type="text" 
+                                   name="matricule" 
+                                   value="{{ eleve.matricule|default:'' }}"
+                                   placeholder="Ex: ELE-2024-00001"
+                                   class="w-full px-4 py-2 bg-bg-tertiary text-white rounded-lg focus:ring-2 focus:ring-primary focus:outline-none">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Informations Scolaires -->
+                <div class="pb-6">
+                    <h3 class="text-lg font-semibold text-white mb-4">
+                        <i class="fa-solid fa-school mr-2 text-primary"></i>
+                        Informations Scolaires
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-text-secondary mb-2">
+                                Niveau <span class="text-red-400">*</span>
+                            </label>
+                            <select name="niveau" 
+                                    required
+                                    class="w-full px-4 py-2 bg-bg-tertiary text-white rounded-lg focus:ring-2 focus:ring-primary focus:outline-none">
+                                <option value="">Sélectionner un niveau...</option>
+                                {% for niveau_value, niveau_label in niveaux %}
+                                <option value="{{ niveau_value }}" {% if eleve.niveau == niveau_value %}selected{% endif %}>
+                                    {{ niveau_label }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-text-secondary mb-2">
+                                Classe
+                            </label>
+                            <select name="classe" 
+                                    class="w-full px-4 py-2 bg-bg-tertiary text-white rounded-lg focus:ring-2 focus:ring-primary focus:outline-none">
+                                <option value="">Sélectionner une classe...</option>
+                                {% for classe in classes %}
+                                <option value="{{ classe.nom }}" {% if eleve.classe and classe.nom in eleve.classe %}selected{% endif %}>
+                                    {{ classe.nom }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-text-secondary mb-2">
+                                Série (pour Secondaire)
+                            </label>
+                            <select name="serie" 
+                                    class="w-full px-4 py-2 bg-bg-tertiary text-white rounded-lg focus:ring-2 focus:ring-primary focus:outline-none">
+                                <option value="">Aucune</option>
+                                <option value="A" {% if 'A' in eleve.classe %}selected{% endif %}>Série A</option>
+                                <option value="B" {% if 'B' in eleve.classe %}selected{% endif %}>Série B</option>
+                                <option value="C" {% if 'C' in eleve.classe %}selected{% endif %}>Série C</option>
+                                <option value="D" {% if 'D' in eleve.classe %}selected{% endif %}>Série D</option>
+                                <option value="E" {% if 'E' in eleve.classe %}selected{% endif %}>Série E</option>
+                                <option value="F" {% if 'F' in eleve.classe %}selected{% endif %}>Série F</option>
+                                <option value="G" {% if 'G' in eleve.classe %}selected{% endif %}>Série G</option>
+                                <option value="H" {% if 'H' in eleve.classe %}selected{% endif %}>Série H</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="flex items-center justify-between pt-6">
+                    <a href="{% url 'admin_eleve_list' %}" 
+                       class="text-text-muted hover:text-white transition-colors">
+                        Annuler
+                    </a>
+                    <div class="space-x-4">
+                        <button type="reset" 
+                                class="px-6 py-2 bg-bg-tertiary hover:bg-bg-tertiary/80 text-white rounded-lg font-medium transition-colors">
+                            Réinitialiser
+                        </button>
+                        <button type="submit" 
+                                class="px-6 py-2 bg-primary hover:bg-primary/80 text-white rounded-lg font-medium transition-colors">
+                            {% if action == 'create' %}
+                                <i class="fa-solid fa-plus mr-2"></i>
+                                Créer l'élève
+                            {% else %}
+                                <i class="fa-solid fa-save mr-2"></i>
+                                Enregistrer les modifications
+                            {% endif %}
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

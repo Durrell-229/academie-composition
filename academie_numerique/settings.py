@@ -30,6 +30,7 @@ THIRD_PARTY_APPS = [
     'ninja',
     'corsheaders',
     'storages',
+    'channels',
 ]
 
 LOCAL_APPS = [
@@ -48,8 +49,21 @@ LOCAL_APPS = [
     'audittrail',
     'webhooks',
     'subscriptions',
+    'realtime',
+    'corrections',
     'cours',
     'devoirs',
+    'schools',
+    'academic',
+    'schedule',
+    'attendance',
+    'cahier',
+    'messaging',
+    'certificats',
+    'payments',
+    'parents',
+    'library',
+    'analytics',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
