@@ -129,7 +129,6 @@ websockets==16.0
 weasyprint==60.1
 whitenoise==6.12.0
 django-storages==1.14.6
-cloudinary-storage==1.14.0
 boto3==1.38.35
 django-cloudinary-storage==0.3.0
 cloudinary==1.44.0
