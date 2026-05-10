@@ -70,15 +70,16 @@ INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
-    'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
+    'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.locale.LocaleMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django.middleware.locale.LocaleMiddleware',
+    'security.middleware.SecurityHeadersMiddleware',
 ]
 
 ROOT_URLCONF = 'academie_numerique.urls'
@@ -297,8 +298,52 @@ if not DEBUG:
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
     SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
-    SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
+
+# Security Headers (anti-vulnérabilités)
+SECURITY_HEADERS = {
+    'Content-Security-Policy': (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://cdnjs.cloudflare.com https://unpkg.com https://js.stripe.com; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; "
+        "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; "
+        "img-src 'self' data: https:; "
+        "connect-src 'self' https://api.stripe.com https://integrate.api.nvidia.com; "
+        "frame-src 'self' https://js.stripe.com; "
+        "object-src 'none'; "
+        "base-uri 'self'; "
+        "form-action 'self'; "
+        "frame-ancestors 'none'; "
+        "upgrade-insecure-requests"
+    ),
+    'Permissions-Policy': (
+        'geolocation=(), '
+        'microphone=(), '
+        'camera=(), '
+        'magnetometer=(), '
+        'gyroscope=(), '
+        'speaker=(), '
+        'notifications=(), '
+        'push=(), '
+        'midi=(), '
+        'vibrate=(), '
+        'payment=(), '
+        'encrypted-media=(), '
+        'picture-in-picture=(), '
+        'ambient-light-sensor=(), '
+        'accelerometer=(), '
+        'bluetooth=(), '
+        'usb=()'
+    ),
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'DENY',
+    'X-XSS-Protection': '1; mode=block',
+    'Referrer-Policy': 'strict-origin-when-cross-origin',
+    'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload'
+}
+
+# Production Security - Additional settings
+CSRF_COOKIE_SECURE = not DEBUG
+SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
 
 # Logging
 LOGGING = {
