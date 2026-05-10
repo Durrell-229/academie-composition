@@ -79,7 +79,6 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.locale.LocaleMiddleware',
-    'security.middleware.SecurityHeadersMiddleware',
 ]
 
 ROOT_URLCONF = 'academie_numerique.urls'
