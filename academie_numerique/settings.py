@@ -31,6 +31,7 @@ THIRD_PARTY_APPS = [
     'corsheaders',
     'storages',
     'channels',
+    'cloudinary_storage',
 ]
 
 LOCAL_APPS = [
