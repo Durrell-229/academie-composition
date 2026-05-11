@@ -174,6 +174,9 @@ class AntiCheatLog(models.Model):
         COPY_PASTE = 'copy_paste', _('Copier/Coller')
         RIGHT_CLICK = 'right_click', _('Clic droit')
         SUSPICIOUS_MOVEMENT = 'suspicious_movement', _('Mouvement suspect')
+        DEVTOOLS_ATTEMPT = 'devtools_attempt', _('Tentative DevTools')
+        PRINT_ATTEMPT = 'print_attempt', _('Tentative impression')
+        TEXT_SELECTION = 'text_selection', _('Sélection de texte')
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     session = models.ForeignKey(CompositionSession, on_delete=models.CASCADE, related_name='anti_cheat_logs')

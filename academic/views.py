@@ -5,7 +5,7 @@ Vues pour la gestion académique
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.db.models import Q, Avg, Count
+from django.db.models import Q, Avg, Count, Max, Min
 from .models import Promotion, Inscription, MatiereClasse, Evaluation, Note, BulletinNotes, Discipline
 
 
@@ -31,12 +31,32 @@ def promotion_list(request):
 @login_required
 def promotion_create(request):
     """Création d'une nouvelle promotion"""
+    from schools.models import Etablissement, NiveauScolaire
     if request.method == 'POST':
-        # Logique de création de promotion
-        messages.success(request, "La promotion a été créée avec succès.")
-        return redirect('academic:promotion_list')
-    
-    return render(request, 'academic/promotion_form.html', {'title': 'Créer une promotion'})
+        try:
+            etablissement = get_object_or_404(Etablissement, id=request.POST['etablissement'])
+            niveau_entree = get_object_or_404(NiveauScolaire, id=request.POST['niveau_entree'])
+            niveau_sortie = get_object_or_404(NiveauScolaire, id=request.POST['niveau_sortie'])
+            Promotion.objects.create(
+                etablissement=etablissement,
+                nom=request.POST['nom'],
+                code=request.POST['code'],
+                annee_entree=request.POST['annee_entree'],
+                annee_sortie=request.POST['annee_sortie'],
+                niveau_entree=niveau_entree,
+                niveau_sortie=niveau_sortie,
+                description=request.POST.get('description', ''),
+            )
+            messages.success(request, "La promotion a été créée avec succès.")
+            return redirect('academic:promotion_list')
+        except Exception as e:
+            messages.error(request, f"Erreur lors de la création : {e}")
+    context = {
+        'title': 'Créer une promotion',
+        'etablissements': Etablissement.objects.filter(is_active=True),
+        'niveaux': NiveauScolaire.objects.all(),
+    }
+    return render(request, 'academic/promotion_form.html', context)
 
 
 @login_required
@@ -81,12 +101,39 @@ def inscription_list(request):
 @login_required
 def inscription_create(request):
     """Création d'une nouvelle inscription"""
+    from schools.models import Classe as SchoolsClasse, AnneeScolaire
     if request.method == 'POST':
-        # Logique de création d'inscription
-        messages.success(request, "L'inscription a été créée avec succès.")
-        return redirect('academic:inscription_list')
-    
-    return render(request, 'academic/inscription_form.html', {'title': 'Nouvelle inscription'})
+        try:
+            from accounts.models import User as AuthUser
+            eleve = get_object_or_404(AuthUser, id=request.POST['eleve'])
+            classe = get_object_or_404(SchoolsClasse, id=request.POST['classe'])
+            annee_scolaire = get_object_or_404(AnneeScolaire, id=request.POST['annee_scolaire'])
+            promotion = None
+            if request.POST.get('promotion'):
+                promotion = Promotion.objects.filter(id=request.POST['promotion']).first()
+            inscription = Inscription(
+                eleve=eleve,
+                classe=classe,
+                annee_scolaire=annee_scolaire,
+                promotion=promotion,
+                statut=request.POST.get('statut', Inscription.StatutInscription.INSCRITE),
+            )
+            inscription.save()
+            messages.success(request, "L'inscription a été créée avec succès.")
+            return redirect('academic:inscription_list')
+        except Exception as e:
+            messages.error(request, f"Erreur lors de la création : {e}")
+    from schools.models import Classe as SchoolsClasse, AnneeScolaire
+    from accounts.models import User as AuthUser
+    context = {
+        'title': 'Nouvelle inscription',
+        'eleves': AuthUser.objects.filter(role='eleve').order_by('last_name'),
+        'classes': SchoolsClasse.objects.filter(is_active=True),
+        'annees': AnneeScolaire.objects.filter(est_active=True),
+        'promotions': Promotion.objects.filter(is_active=True),
+        'statuts': Inscription.StatutInscription.choices,
+    }
+    return render(request, 'academic/inscription_form.html', context)
 
 
 @login_required
@@ -137,18 +184,36 @@ def matiere_classe_list(request, classe_id):
 @login_required
 def matiere_classe_create(request, classe_id):
     """Ajout d'une matière à une classe"""
-    from schools.models import Classe
-    classe = get_object_or_404(Classe, id=classe_id)
-    
+    from schools.models import Classe as SchoolsClasse
+    classe = get_object_or_404(SchoolsClasse, id=classe_id)
     if request.method == 'POST':
-        # Logique de création
-        messages.success(request, "La matière a été ajoutée à la classe.")
-        return redirect('academic:matiere_classe_list', classe_id=classe.id)
-    
-    return render(request, 'academic/matiere_classe_form.html', {
+        try:
+            from core.models import Matiere
+            from accounts.models import User as AuthUser
+            matiere = get_object_or_404(Matiere, id=request.POST['matiere'])
+            professeur = None
+            if request.POST.get('professeur'):
+                professeur = AuthUser.objects.filter(id=request.POST['professeur'], role='professeur').first()
+            MatiereClasse.objects.create(
+                classe=classe,
+                matiere=matiere,
+                professeur=professeur,
+                coefficient=request.POST.get('coefficient', 1.0),
+                heures_semaine=request.POST.get('heures_semaine', 2),
+            )
+            messages.success(request, "La matière a été ajoutée à la classe.")
+            return redirect('academic:matiere_classe_list', classe_id=classe.id)
+        except Exception as e:
+            messages.error(request, f"Erreur lors de l'ajout : {e}")
+    from core.models import Matiere
+    from accounts.models import User as AuthUser
+    context = {
         'title': 'Ajouter une matière',
-        'classe': classe
-    })
+        'classe': classe,
+        'matieres': Matiere.objects.filter(is_active=True),
+        'professeurs': AuthUser.objects.filter(role='professeur').order_by('last_name'),
+    }
+    return render(request, 'academic/matiere_classe_form.html', context)
 
 
 @login_required
@@ -174,12 +239,33 @@ def evaluation_list(request):
 @login_required
 def evaluation_create(request):
     """Création d'une nouvelle évaluation"""
+    from schools.models import Classe as SchoolsClasse
     if request.method == 'POST':
-        # Logique de création
-        messages.success(request, "L'évaluation a été créée.")
-        return redirect('academic:evaluation_list')
-    
-    return render(request, 'academic/evaluation_form.html', {'title': 'Créer une évaluation'})
+        try:
+            matiere_classe = get_object_or_404(MatiereClasse, id=request.POST['matiere_classe'])
+            classe = get_object_or_404(SchoolsClasse, id=request.POST['classe'])
+            Evaluation.objects.create(
+                matiere_classe=matiere_classe,
+                classe=classe,
+                professeur=request.user,
+                titre=request.POST['titre'],
+                type_evaluation=request.POST['type_evaluation'],
+                description=request.POST.get('description', ''),
+                date_evaluation=request.POST['date_evaluation'],
+                duree=request.POST.get('duree', 60),
+                note_maximale=request.POST.get('note_maximale', 20),
+                coefficient=request.POST.get('coefficient', 1.0),
+            )
+            messages.success(request, "L'évaluation a été créée.")
+            return redirect('academic:evaluation_list')
+        except Exception as e:
+            messages.error(request, f"Erreur lors de la création : {e}")
+    context = {
+        'title': 'Créer une évaluation',
+        'matieres_classes': MatiereClasse.objects.filter(is_active=True).select_related('matiere', 'classe'),
+        'types': Evaluation.TypeEvaluation.choices,
+    }
+    return render(request, 'academic/evaluation_form.html', context)
 
 
 @login_required
@@ -191,8 +277,8 @@ def evaluation_detail(request, evaluation_id):
     # Statistiques
     if notes.exists():
         moyenne = notes.aggregate(Avg('note'))['note__avg']
-        max_note = notes.aggregate(models.Max('note'))['note__max']
-        min_note = notes.aggregate(models.Min('note'))['note__min']
+        max_note = notes.aggregate(Max('note'))['note__max']
+        min_note = notes.aggregate(Min('note'))['note__min']
     else:
         moyenne = max_note = min_note = None
     
@@ -255,15 +341,85 @@ def bulletin_detail(request, bulletin_id):
     return render(request, 'academic/bulletin_detail.html', context)
 
 
+def _appreciation_from_moyenne(moyenne):
+    if moyenne >= 16:
+        return "Excellent travail"
+    if moyenne >= 14:
+        return "Très bien"
+    if moyenne >= 12:
+        return "Bien"
+    if moyenne >= 10:
+        return "Assez bien"
+    return "Des efforts sont nécessaires"
+
+
 @login_required
 def bulletin_generate(request):
-    """Génération de bulletins"""
+    """Génération de bulletins pour une classe et une période"""
+    from schools.models import Classe as SchoolsClasse, AnneeScolaire
     if request.method == 'POST':
-        # Logique de génération
-        messages.success(request, "Les bulletins ont été générés.")
-        return redirect('academic:bulletin_list')
-    
-    return render(request, 'academic/bulletin_generate_form.html', {'title': 'Générer des bulletins'})
+        try:
+            classe = get_object_or_404(SchoolsClasse, id=request.POST['classe'])
+            annee_scolaire = get_object_or_404(AnneeScolaire, id=request.POST['annee_scolaire'])
+            periode = request.POST['periode']
+            type_bulletin = request.POST.get('type_bulletin', BulletinNotes.TypeBulletin.TRIMESTRIEL)
+
+            inscriptions = list(
+                Inscription.objects.filter(
+                    classe=classe,
+                    annee_scolaire=annee_scolaire,
+                    statut=Inscription.StatutInscription.CONFIRMEE,
+                ).select_related('eleve')
+            )
+            if not inscriptions:
+                messages.warning(request, "Aucun élève confirmé trouvé pour cette classe.")
+                return redirect('academic:bulletin_list')
+
+            moyennes = []
+            for inscription in inscriptions:
+                notes_qs = Note.objects.filter(inscription=inscription, est_absent=False).select_related('evaluation')
+                total_coef = sum(float(n.evaluation.coefficient) for n in notes_qs)
+                total_pts = sum(float(n.note_sur_20) * float(n.evaluation.coefficient) for n in notes_qs)
+                moyenne = round(total_pts / total_coef, 2) if total_coef > 0 else 0
+                moyennes.append((inscription, moyenne))
+
+            all_vals = [m for _, m in moyennes]
+            moyenne_classe = round(sum(all_vals) / len(all_vals), 2)
+            moyennes.sort(key=lambda x: x[1], reverse=True)
+
+            created_count = 0
+            for rang, (inscription, moyenne) in enumerate(moyennes, 1):
+                _, created = BulletinNotes.objects.update_or_create(
+                    inscription=inscription,
+                    periode=periode,
+                    annee_scolaire=annee_scolaire,
+                    defaults={
+                        'eleve': inscription.eleve,
+                        'classe': classe,
+                        'type_bulletin': type_bulletin,
+                        'moyenne_generale': moyenne,
+                        'moyenne_classe': moyenne_classe,
+                        'rang': rang,
+                        'effectif_classe': len(moyennes),
+                        'appreciation_generale': _appreciation_from_moyenne(moyenne),
+                        'signe_par': request.user,
+                    }
+                )
+                if created:
+                    created_count += 1
+
+            messages.success(request, f"{created_count} bulletin(s) créé(s), {len(moyennes) - created_count} mis à jour.")
+            return redirect('academic:bulletin_list')
+        except Exception as e:
+            messages.error(request, f"Erreur lors de la génération : {e}")
+
+    context = {
+        'title': 'Générer des bulletins',
+        'classes': SchoolsClasse.objects.filter(is_active=True),
+        'annees': AnneeScolaire.objects.filter(est_active=True),
+        'types': BulletinNotes.TypeBulletin.choices,
+    }
+    return render(request, 'academic/bulletin_generate_form.html', context)
 
 
 @login_required

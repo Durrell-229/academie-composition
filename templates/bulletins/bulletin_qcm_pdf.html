@@ -2,216 +2,445 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
+    <title>Bulletin QCM — {{ matiere|default:"Évaluation" }} — {{ eleve.get_full_name }}</title>
     <style>
-        @page { size: A4; margin: 12mm 18mm; }
-        body { font-family: 'Times New Roman', 'Helvetica', serif; color: #000; font-size: 10pt; line-height: 1.3; margin: 0; padding: 0; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { background: #fff; }
+        body { font-family: Arial, Helvetica, sans-serif; font-size: 9px; color: #000; }
 
-        /* Drapeau Bénin */
-        .flag-bar { display: table; width: 100%; margin-bottom: 8px; }
-        .flag-bar td { border: none; padding: 0; height: 8mm; }
-        .flag-green { background-color: #008751; width: 33.33%; }
-        .flag-yellow { background-color: #FCD116; width: 33.33%; }
-        .flag-red { background-color: #E8112D; width: 33.33%; }
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            background: white;
+            display: flex;
+            flex-direction: column;
+        }
 
-        /* En-tête officiel Ministère */
-        .header-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
-        .header-left { flex: 1; }
-        .header-right { width: 60px; text-align: center; }
-        .header-ministere { text-align: center; border-bottom: 3px double #000; padding-bottom: 10px; }
-        .republique { font-size: 11pt; font-weight: bold; text-transform: uppercase; margin: 0 0 2px 0; }
-        .ministere { font-size: 9pt; font-weight: bold; margin: 0 0 2px 0; }
-        .etablissement { font-size: 10pt; font-weight: bold; font-style: italic; margin: 0 0 5px 0; }
-        .annee-scolaire { font-size: 9pt; font-weight: bold; }
+        /* ===== DRAPEAU ===== */
+        .drapeau { width: 100%; height: 9mm; display: flex; }
+        .drapeau .vert  { flex: 0 0 33.33%; background: #008751; }
+        .drapeau .jaune { flex: 1; background: #FCD116; }
+        .drapeau .rouge { flex: 1; background: #E8112D; }
 
-        /* Titre du bulletin */
-        .titre-bulletin { text-align: center; font-size: 14pt; font-weight: bold; margin: 12px 0; text-transform: uppercase; letter-spacing: 1px; border: 1px solid #000; padding: 6px; background-color: #f5f5f5; }
+        /* ===== HEADER ===== */
+        .header { padding: 4mm 8mm 3mm 8mm; border-bottom: 2px solid #000; }
+        .header-row { display: flex; align-items: center; justify-content: space-between; }
+        .logo-box { width: 22mm; height: 26mm; border: 1px solid #000; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .logo-box svg { width: 100%; height: 100%; }
+        .header-center { flex: 1; text-align: center; padding: 0 4mm; }
+        .rep { font-size: 9px; font-weight: bold; text-transform: uppercase; }
+        .devise { font-size: 8px; font-style: italic; }
+        .min { font-size: 7.5px; font-weight: bold; margin: 1mm 0; }
+        .ecole-name { font-size: 13px; font-weight: bold; color: #008751; text-transform: uppercase; }
+        .ecole-sub { font-size: 7.5px; color: #444; }
 
-        /* Informations élève */
-        .info-eleve { margin-bottom: 12px; border: 1px solid #000; padding: 8px; }
-        .info-eleve table { width: 100%; border-collapse: collapse; }
-        .info-eleve td { border: none; padding: 2px 4px; font-size: 9pt; }
-        .label-field { font-weight: bold; width: 25%; }
+        /* ===== BANDEAU QCM ===== */
+        .qcm-header-band {
+            background: linear-gradient(90deg, #008751 0%, #005c38 40%, #003d25 100%);
+            color: #fff;
+            text-align: center;
+            padding: 3mm 8mm;
+            margin: 2mm 0;
+        }
+        .qcm-header-band h2 { font-size: 14px; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; }
+        .qcm-header-band p { font-size: 8.5px; margin-top: 1mm; opacity: 0.9; }
 
-        /* Tableau des notes */
-        .table-notes { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 9pt; }
-        .table-notes th { border: 1px solid #000; background-color: #e0e0e0; padding: 5px 4px; text-align: center; font-weight: bold; font-size: 8pt; }
-        .table-notes td { border: 1px solid #000; padding: 5px 4px; text-align: center; }
-        .table-notes td:first-child { text-align: left; }
-        .note-val { font-weight: bold; font-size: 10pt; }
+        .content { padding: 0 8mm; flex: 1; }
 
-        /* Résultat global */
-        .resultat-global { margin: 12px 0; border: 1px solid #000; padding: 8px; text-align: center; background-color: #f9f9f9; }
-        .moyenne-generale { font-size: 20pt; font-weight: bold; margin: 5px 0; }
-        .mention { font-size: 11pt; font-weight: bold; text-transform: uppercase; margin: 5px 0; padding: 3px 10px; display: inline-block; }
-        .mention-excellent { background-color: #dcfce7; color: #166534; }
-        .mention-tres-bien { background-color: #dbeafe; color: #1e40af; }
-        .mention-bien { background-color: #fef3c7; color: #92400e; }
-        .mention-passable { background-color: #fee2e2; color: #991b1b; }
+        /* ===== FICHE ÉLÈVE ===== */
+        .fiche {
+            display: flex;
+            border: 1px solid #000;
+            margin-bottom: 3mm;
+        }
+        .photo-bloc { flex: 0 0 22mm; border-right: 1px solid #000; padding: 2mm; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .photo-cadre { width: 18mm; height: 22mm; border: 1px solid #000; background: #f0f0f0; display: flex; align-items: center; justify-content: center; font-size: 6px; color: #999; text-align: center; overflow: hidden; }
+        .photo-cadre img { width: 100%; height: 100%; object-fit: cover; }
 
-        /* Appréciation */
-        .appreciation-box { margin: 10px 0; border: 1px solid #000; padding: 8px; }
-        .appreciation-box h4 { margin: 0 0 5px 0; font-size: 9pt; font-weight: bold; text-transform: uppercase; }
-        .appreciation-box p { margin: 0; font-size: 9pt; line-height: 1.4; }
+        .infos-bloc { flex: 1; padding: 2mm 3mm; display: flex; flex-wrap: wrap; gap: 1.5mm 5mm; }
+        .info-l { display: flex; align-items: center; gap: 1.5mm; min-width: 42%; }
+        .lbl { font-weight: bold; font-size: 8px; white-space: nowrap; }
+        .val { border-bottom: 1px solid #555; padding: 0 1mm; min-height: 4mm; font-size: 8.5px; flex: 1; }
 
-        /* Signature */
-        .signature-section { margin-top: 20px; display: table; width: 100%; }
-        .signature-section td { border: none; width: 50%; vertical-align: top; padding: 5px; }
-        .signature-block { text-align: center; }
-        .signature-block .titre-sig { font-weight: bold; font-size: 9pt; margin-bottom: 30px; }
-        .signature-block .mention-sig { font-size: 8pt; font-style: italic; color: #333; }
+        /* ===== JAUGE DE SCORE ===== */
+        .score-section {
+            display: flex;
+            gap: 3mm;
+            margin-bottom: 3mm;
+        }
+        .score-main {
+            flex: 0 0 55mm;
+            border: 2px solid #000;
+            text-align: center;
+            padding: 3mm;
+        }
+        .score-header { background: #333; color: #fff; padding: 1.5mm; margin: -3mm -3mm 3mm -3mm; font-size: 8px; font-weight: bold; text-transform: uppercase; }
+        .score-number { font-size: 32px; font-weight: bold; line-height: 1; }
+        .score-number.vert { color: #006600; }
+        .score-number.orange { color: #cc5500; }
+        .score-number.rouge { color: #cc0000; }
+        .score-over { font-size: 9px; color: #444; margin: 1mm 0; }
+        .score-pct-bar { background: #eee; border: 1px solid #ccc; height: 5mm; border-radius: 2px; overflow: hidden; margin: 2mm 0; }
+        .score-pct-fill { height: 100%; background: linear-gradient(90deg, #008751, #00c87a); border-radius: 2px; }
+        .score-pct-fill.orange { background: linear-gradient(90deg, #cc5500, #ff8c00); }
+        .score-pct-fill.rouge { background: linear-gradient(90deg, #cc0000, #ff4444); }
+        .score-pct-text { font-size: 9px; font-weight: bold; }
 
-        /* Vérification */
-        .verification-box { margin-top: 15px; border: 1px solid #999; padding: 5px; font-family: 'Courier New', monospace; font-size: 7pt; background-color: #fafafa; }
-        .verification-box strong { font-family: 'Times New Roman', serif; }
+        .score-stats { flex: 1; border: 1px solid #000; }
+        .score-stats h5 { background: #d0d0d0; border-bottom: 1px solid #000; padding: 1.5mm 2mm; font-size: 8px; font-weight: bold; text-transform: uppercase; }
+        .stats-grid { display: flex; flex-wrap: wrap; padding: 2mm; gap: 2mm; }
+        .stat-item { flex: 1; min-width: 40%; border: 1px solid #ccc; padding: 1.5mm; text-align: center; background: #fafafa; }
+        .stat-v { font-size: 14px; font-weight: bold; color: #008751; }
+        .stat-v.rouge { color: #cc0000; }
+        .stat-k { font-size: 7px; color: #555; margin-top: 0.5mm; }
 
-        /* Footer */
-        .footer-officiel { margin-top: 15px; text-align: center; font-size: 7pt; color: #666; border-top: 1px solid #ccc; padding-top: 5px; }
+        .mention-bloc {
+            text-align: center;
+            padding: 2mm;
+            border: 1px solid #000;
+            border-top: none;
+        }
+        .mention-badge {
+            display: inline-block;
+            padding: 2mm 6mm;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border-radius: 2px;
+        }
+        .m-excellent   { background: #006600; color: #fff; }
+        .m-tres-bien   { background: #0055aa; color: #fff; }
+        .m-bien        { background: #007a1a; color: #fff; }
+        .m-assez-bien  { background: #cc6600; color: #fff; }
+        .m-passable    { background: #cc9900; color: #000; }
+        .m-insuffisant { background: #cc0000; color: #fff; }
+
+        /* ===== TABLEAU DES QUESTIONS ===== */
+        .questions-section { border: 1px solid #000; margin-bottom: 3mm; }
+        .questions-section h5 { background: #d0d0d0; border-bottom: 1px solid #000; padding: 1.5mm 3mm; font-size: 8px; font-weight: bold; text-transform: uppercase; }
+        .questions-table { width: 100%; border-collapse: collapse; font-size: 8px; }
+        .questions-table th { background: #e8e8e8; border: 1px solid #000; padding: 1.5mm 2mm; font-size: 7.5px; font-weight: bold; text-align: center; }
+        .questions-table td { border: 1px solid #ccc; padding: 1.5mm 2mm; text-align: center; vertical-align: top; }
+        .questions-table td.question-text { text-align: left; font-size: 7.5px; max-width: 70mm; }
+        .rep-correcte { background: #d4edda; color: #006600; font-weight: bold; padding: 0.5mm 1.5mm; border-radius: 2px; }
+        .rep-eleve-ok { background: #d4edda; color: #006600; font-weight: bold; padding: 0.5mm 1.5mm; border-radius: 2px; }
+        .rep-eleve-nok { background: #f8d7da; color: #cc0000; font-weight: bold; padding: 0.5mm 1.5mm; border-radius: 2px; }
+        .icon-ok  { color: #006600; font-size: 9px; }
+        .icon-nok { color: #cc0000; font-size: 9px; }
+
+        /* ===== FEEDBACK IA ===== */
+        .feedback-section { border: 1px solid #000; margin-bottom: 3mm; }
+        .feedback-section h5 { background: #d0d0d0; border-bottom: 1px solid #000; padding: 1.5mm 3mm; font-size: 8px; font-weight: bold; text-transform: uppercase; }
+        .feedback-grid { display: flex; gap: 3mm; padding: 2mm 3mm; }
+        .feedback-bloc { flex: 1; }
+        .feedback-bloc strong { font-size: 7.5px; text-transform: uppercase; color: #333; display: block; margin-bottom: 1mm; }
+        .feedback-text { font-size: 8px; line-height: 1.5; color: #222; }
+        .pf-item { color: #006600; margin-bottom: 0.5mm; }
+        .aa-item { color: #cc5500; margin-bottom: 0.5mm; }
+
+        /* ===== APPRECIATION ===== */
+        .appreciation { border: 1px solid #c8a000; background: #fffbea; padding: 2mm 3mm; margin-bottom: 3mm; font-size: 8px; line-height: 1.5; }
+        .appreciation strong { color: #8a6000; font-size: 8px; display: block; margin-bottom: 1mm; }
+
+        /* ===== SIGNATURES ===== */
+        .sigs { display: flex; gap: 3mm; margin-bottom: 3mm; }
+        .sig { flex: 1; text-align: center; padding-top: 10mm; border-top: 1px solid #000; font-size: 7.5px; }
+        .sig strong { display: block; font-size: 7.5px; }
+        .sig .ai-note { font-size: 6.5px; color: #008751; font-style: italic; margin-top: 0.5mm; }
+
+        /* ===== FOOTER ===== */
+        .qr-footer { display: flex; align-items: flex-end; justify-content: space-between; padding: 2mm 8mm; border-top: 1px solid #ccc; font-size: 7px; }
+        .qr-z { text-align: center; }
+        .qr-img { width: 18mm; height: 18mm; border: 1px solid #000; margin: 0 auto 1mm auto; display: flex; align-items: center; justify-content: center; }
+        .qr-img img { width: 100%; height: 100%; }
+        .qr-lbl { font-size: 6px; font-weight: bold; text-transform: uppercase; }
+        .qr-ref { font-size: 5.5px; font-family: monospace; color: #666; }
+        .footer-c { flex: 1; text-align: center; padding: 0 5mm; font-size: 7px; color: #555; }
+
+        .drapeau-bottom { width: 100%; height: 8mm; display: flex; margin-top: auto; }
+        .drapeau-bottom .vert  { flex: 0 0 33.33%; background: #008751; }
+        .drapeau-bottom .jaune { flex: 1; background: #FCD116; }
+        .drapeau-bottom .rouge { flex: 1; background: #E8112D; }
+
+        @media print {
+            @page { size: A4; margin: 0; }
+        }
     </style>
 </head>
 <body>
-    <!-- Drapeau Bénin - Barre supérieure -->
-    <table class="flag-bar"><tr><td class="flag-green"></td><td class="flag-yellow"></td><td class="flag-red"></td></tr></table>
-    
-    <!-- En-tête Officiel -->
-    <div class="header-row">
-        <div class="header-left">
-            <div class="header-ministere">
-                <div class="republique">RÉPUBLIQUE DU BÉNIN</div>
-                <div class="ministere">MINISTÈRE DE L'ENSEIGNEMENT SECONDAIRE, TECHNIQUE ET DE LA FORMATION PROFESSIONNELLE</div>
-                <div class="etablissement">ACADÉMIE NUMÉRIQUE INTELLIGENTE — IA</div>
-                <div class="annee-scolaire">ANNÉE SCOLAIRE : {{ annee_scolaire }}</div>
+<div class="page">
+    <!-- DRAPEAU -->
+    <div class="drapeau">
+        <div class="vert"></div><div class="jaune"></div><div class="rouge"></div>
+    </div>
+
+    <!-- HEADER -->
+    <div class="header">
+        <div class="header-row">
+            <div class="logo-box">
+                <svg viewBox="0 0 120 140" xmlns="http://www.w3.org/2000/svg">
+                    <ellipse cx="60" cy="70" rx="55" ry="65" fill="#008751" stroke="#000" stroke-width="2"/>
+                    <text x="60" y="45" text-anchor="middle" fill="#FCD116" font-size="16" font-weight="bold" font-family="Arial">ANI</text>
+                    <text x="60" y="65" text-anchor="middle" fill="#fff" font-size="9" font-family="Arial">ACADÉMIE</text>
+                    <text x="60" y="80" text-anchor="middle" fill="#fff" font-size="9" font-family="Arial">NUMÉRIQUE</text>
+                    <text x="60" y="100" text-anchor="middle" fill="#FCD116" font-size="8" font-family="Arial">BÉNIN</text>
+                </svg>
+            </div>
+            <div class="header-center">
+                <p class="rep">République du Bénin</p>
+                <p class="devise">Fraternité — Justice — Travail</p>
+                <p class="min">Ministère des Enseignements Secondaires, Technique et de la Formation Professionnelle</p>
+                <p class="ecole-name">{{ etablissement_nom|default:"Académie Numérique Intelligente" }}</p>
+                <p class="ecole-sub">Cotonou, Bénin — Année Scolaire : {{ annee_scolaire|default:"2025-2026" }}</p>
+            </div>
+            <div class="logo-box">
+                <svg viewBox="0 0 120 140" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M60 5 L110 25 L110 80 Q110 120 60 135 Q10 120 10 80 L10 25 Z" fill="none" stroke="#000" stroke-width="2"/>
+                    <path d="M60 5 L10 25 L10 80 Q10 120 60 135 Z" fill="#008751"/>
+                    <path d="M60 5 L110 25 L110 57 L60 57 Z" fill="#E8112D"/>
+                    <path d="M60 57 L110 57 L110 80 Q110 120 60 135 Z" fill="#FCD116"/>
+                    <text x="80" y="48" text-anchor="middle" fill="#000" font-size="16">★</text>
+                    <rect x="18" y="65" width="30" height="25" fill="none" stroke="#FCD116" stroke-width="1.5"/>
+                    <rect x="22" y="58" width="8" height="12" fill="none" stroke="#FCD116" stroke-width="1.5"/>
+                    <rect x="33" y="58" width="8" height="12" fill="none" stroke="#FCD116" stroke-width="1.5"/>
+                    <text x="60" y="125" text-anchor="middle" fill="#000" font-size="7" font-weight="bold" font-family="Arial">BÉNIN</text>
+                </svg>
             </div>
         </div>
-        <div class="header-right">
-            <svg width="50" height="50" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="50" cy="50" r="48" fill="#4F46E5" stroke="#fff" stroke-width="2"/>
-                <text x="50" y="35" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold" font-family="Arial">ACADÉMIE</text>
-                <text x="50" y="52" text-anchor="middle" fill="#FCD116" font-size="12" font-weight="bold" font-family="Arial">NUMÉRIQUE</text>
-                <text x="50" y="68" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold" font-family="Arial">INTELLIGENTE</text>
-                <circle cx="50" cy="80" r="4" fill="#008751"/>
-                <circle cx="42" cy="80" r="3" fill="#FCD116"/>
-                <circle cx="58" cy="80" r="3" fill="#E8112D"/>
-            </svg>
+    </div>
+
+    <!-- BANDEAU QCM -->
+    <div class="qcm-header-band">
+        <h2>Bulletin d'Évaluation QCM</h2>
+        <p>{{ matiere|default:"Matière" }} — Classe {{ classe|default:"N/A" }} — {{ annee_scolaire|default:"2025-2026" }}</p>
+    </div>
+
+    <div class="content">
+        <!-- FICHE ÉLÈVE -->
+        <div class="fiche">
+            <div class="photo-bloc">
+                <div class="photo-cadre">
+                    {% if eleve.avatar and eleve.avatar.name %}
+                    <img src="{{ eleve.avatar.url }}" alt="Photo">
+                    {% else %}PHOTO{% endif %}
+                </div>
+                <div style="font-size:6px;text-align:center;margin-top:1mm;font-weight:bold;">PHOTO</div>
+            </div>
+            <div class="infos-bloc">
+                <div class="info-l">
+                    <span class="lbl">NOM :</span>
+                    <span class="val">{{ eleve.last_name|upper|default:"N/A" }}</span>
+                </div>
+                <div class="info-l">
+                    <span class="lbl">PRÉNOM(S) :</span>
+                    <span class="val">{{ eleve.first_name|default:"N/A" }}</span>
+                </div>
+                <div class="info-l">
+                    <span class="lbl">CLASSE :</span>
+                    <span class="val">{{ classe|default:"N/A" }}</span>
+                </div>
+                <div class="info-l">
+                    <span class="lbl">MATRICULE :</span>
+                    <span class="val">{{ eleve.matricule|default:"N/A" }}</span>
+                </div>
+                <div class="info-l">
+                    <span class="lbl">MATIÈRE :</span>
+                    <span class="val">{{ matiere|default:"N/A" }}</span>
+                </div>
+                <div class="info-l">
+                    <span class="lbl">TITRE DU QCM :</span>
+                    <span class="val">{{ titre_qcm|default:"Évaluation QCM" }}</span>
+                </div>
+                <div class="info-l">
+                    <span class="lbl">DATE :</span>
+                    <span class="val">{% now "d/m/Y" %}</span>
+                </div>
+                <div class="info-l">
+                    <span class="lbl">ENSEIGNANT :</span>
+                    <span class="val">{{ professeur|default:"N/A" }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- SCORE & STATISTIQUES -->
+        <div class="score-section">
+            <div class="score-main">
+                <div class="score-header">Résultat</div>
+                <div class="score-number {% if taux_reussite >= 60 %}vert{% elif taux_reussite >= 40 %}orange{% else %}rouge{% endif %}">
+                    {{ bonnes_reponses|default:"0" }}/{{ total_questions|default:"0" }}
+                </div>
+                <div class="score-over">réponses correctes</div>
+                <div class="score-pct-bar">
+                    <div class="score-pct-fill {% if taux_reussite < 60 %}{% if taux_reussite < 40 %}rouge{% else %}orange{% endif %}{% endif %}"
+                         style="width:{{ taux_reussite|floatformat:0|default:0 }}%;"></div>
+                </div>
+                <div class="score-pct-text">{{ taux_reussite|floatformat:0|default:"0" }} %</div>
+                <div style="margin-top:2mm;font-size:8px;font-weight:bold;">Note : {{ moyenne|default:"0" }}/20</div>
+            </div>
+            <div style="flex:1;display:flex;flex-direction:column;gap:3mm;">
+                <div class="score-stats">
+                    <h5>Statistiques Détaillées</h5>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-v vert">{{ bonnes_reponses|default:"0" }}</div>
+                            <div class="stat-k">Réponses correctes</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-v rouge">{{ mauvaises_reponses|default:0 }}</div>
+                            <div class="stat-k">Réponses incorrectes</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-v">{{ total_questions|default:"0" }}</div>
+                            <div class="stat-k">Questions au total</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-v">{{ moyenne|default:"0" }}/20</div>
+                            <div class="stat-k">Note /20</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mention-bloc">
+                    {% if moyenne >= 16 %}<span class="mention-badge m-excellent">Excellent</span>
+                    {% elif moyenne >= 14 %}<span class="mention-badge m-tres-bien">Très Bien</span>
+                    {% elif moyenne >= 12 %}<span class="mention-badge m-bien">Bien</span>
+                    {% elif moyenne >= 10 %}<span class="mention-badge m-assez-bien">Assez Bien</span>
+                    {% elif moyenne >= 8 %}<span class="mention-badge m-passable">Passable</span>
+                    {% else %}<span class="mention-badge m-insuffisant">Insuffisant</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- TABLEAU DES QUESTIONS -->
+        {% if questions %}
+        <div class="questions-section">
+            <h5>Détail des Réponses par Question</h5>
+            <table class="questions-table">
+                <thead>
+                    <tr>
+                        <th style="width:6%;">N°</th>
+                        <th style="width:42%;">Question</th>
+                        <th style="width:12%;">Réponse Correcte</th>
+                        <th style="width:12%;">Votre Réponse</th>
+                        <th style="width:8%;">Résultat</th>
+                        <th style="width:20%;">Explication</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for q in questions %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td class="question-text">{{ q.question|default:"--" }}</td>
+                        <td><span class="rep-correcte">{{ q.correcte|default:"--" }}. {{ q.explication_correcte|default:"" }}</span></td>
+                        <td>
+                            {% if q.reponse_eleve %}
+                                {% if q.reponse_eleve == q.correcte %}
+                                <span class="rep-eleve-ok">{{ q.reponse_eleve }}</span>
+                                {% else %}
+                                <span class="rep-eleve-nok">{{ q.reponse_eleve }}</span>
+                                {% endif %}
+                            {% else %}<span style="color:#999;">—</span>{% endif %}
+                        </td>
+                        <td>
+                            {% if q.reponse_eleve == q.correcte %}
+                            <span class="icon-ok">✓ Juste</span>
+                            {% else %}
+                            <span class="icon-nok">✗ Faux</span>
+                            {% endif %}
+                        </td>
+                        <td style="text-align:left;font-size:7px;line-height:1.3;">{{ q.explication|default:"—" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+
+        <!-- FEEDBACK IA -->
+        {% if feedback %}
+        <div class="feedback-section">
+            <h5>Feedback Pédagogique Personnalisé</h5>
+            <div class="feedback-grid">
+                {% if feedback.points_forts %}
+                <div class="feedback-bloc">
+                    <strong>Points Forts</strong>
+                    {% for pf in feedback.points_forts %}
+                    <div class="feedback-text pf-item">✓ {{ pf }}</div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                {% if feedback.axes_amelioration %}
+                <div class="feedback-bloc">
+                    <strong>Axes d'Amélioration</strong>
+                    {% for aa in feedback.axes_amelioration %}
+                    <div class="feedback-text aa-item">→ {{ aa }}</div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                {% if feedback.remediation %}
+                <div class="feedback-bloc">
+                    <strong>Remédiation</strong>
+                    <div class="feedback-text">{{ feedback.remediation }}</div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if appreciation %}
+        <div class="appreciation">
+            <strong>Appréciation Générale :</strong>
+            {{ appreciation }}
+        </div>
+        {% endif %}
+
+        <!-- SIGNATURES -->
+        <div class="sigs">
+            <div class="sig">
+                <strong>Système IA Académie Numérique</strong>
+                <div class="ai-note">✓ Corrigé automatiquement</div>
+            </div>
+            <div class="sig">
+                <strong>L'Enseignant de Matière</strong>
+                <div style="font-size:6.5px;color:#666;">{{ professeur|default:"" }}</div>
+            </div>
+            <div class="sig">
+                <strong>Le Chef d'Établissement</strong>
+            </div>
+            <div class="sig">
+                <strong>Visa des Parents / Tuteurs</strong>
+                <div style="font-size:6.5px;color:#666;">Signature et date</div>
+            </div>
         </div>
     </div>
 
-    <!-- Titre -->
-    <div class="titre-bulletin">
-        BULLETIN D'ÉVALUATION QCM — {{ matiere }}
+    <!-- FOOTER QR -->
+    <div class="qr-footer">
+        <div class="qr-z">
+            <div class="qr-lbl">Vérification</div>
+            <div class="qr-img">
+                {% if qr_data_uri %}<img src="{{ qr_data_uri }}" alt="QR">{% else %}<span style="font-size:6px;color:#999;">QR</span>{% endif %}
+            </div>
+            <div class="qr-ref">{{ verification_token|default:""|slice:":12"|upper }}</div>
+        </div>
+        <div class="footer-c">
+            <p>Bulletin QCM — {{ matiere|default:"N/A" }} | Délivré à Cotonou, le {% now "d/m/Y" %}</p>
+            <p style="font-style:italic;font-size:6.5px;color:#888;">Document officiel. Toute falsification est un délit. Vérifiable via le QR code.</p>
+        </div>
+        <div class="qr-z">
+            <div class="qr-lbl">Télécharger</div>
+            <div class="qr-img">
+                {% if qr_data_uri %}<img src="{{ qr_data_uri }}" alt="QR">{% else %}<span style="font-size:6px;color:#999;">QR</span>{% endif %}
+            </div>
+            <div class="qr-ref">BULLETIN PDF</div>
+        </div>
     </div>
 
-    <!-- Informations élève -->
-    <div class="info-eleve">
-        <table>
-            <tr>
-                <td class="label-field" rowspan="3" style="vertical-align:top; width:15%;">
-                    {% if eleve.avatar and eleve.avatar.name %}
-                    <img src="{{ eleve.avatar.url }}" style="width:70px;height:70px;object-fit:cover;border:1px solid #000;" onerror="this.style.display:none;this.nextElementSibling.style.display:flex;">
-                    <div style="width:70px;height:70px;border:1px solid #000;display:none;align-items:center;justify-content:center;background:#f0f0f0;font-size:24pt;font-weight:bold;color:#666;">?</div>
-                    {% else %}
-                    <div style="width:70px;height:70px;border:1px solid #000;display:flex;align-items:center;justify-content:center;background:#f0f0f0;font-size:24pt;font-weight:bold;color:#666;">?</div>
-                    {% endif %}
-                </td>
-                <td class="label-field">Nom et Prénom :</td>
-                <td><strong>{{ eleve.last_name }} {{ eleve.first_name }}</strong></td>
-                <td class="label-field">Matricule :</td>
-                <td><strong>{{ eleve.matricule|default:"N/A" }}</strong></td>
-            </tr>
-            <tr>
-                <td class="label-field">Classe :</td>
-                <td>{{ classe }}</td>
-                <td class="label-field">Série :</td>
-                <td><strong>{{ serie|upper }}</strong></td>
-            </tr>
-            <tr>
-                <td class="label-field">Date d'évaluation :</td>
-                <td>{{ bulletin.created_at|date:"d/m/Y" }}</td>
-                <td class="label-field">Type :</td>
-                <td><strong>Test de Connaissances</strong></td>
-            </tr>
-        </table>
+    <div class="drapeau-bottom">
+        <div class="vert"></div><div class="jaune"></div><div class="rouge"></div>
     </div>
-
-    <!-- Tableau des résultats -->
-    <table class="table-notes">
-        <thead>
-            <tr>
-                <th style="width: 25%;">Matière / Discipline</th>
-                <th style="width: 12%;">Coefficient</th>
-                <th style="width: 13%;">Note / 20</th>
-                <th style="width: 13%;">Bonnes Rép.</th>
-                <th style="width: 13%;">Total Quest.</th>
-                <th style="width: 14%;">Mention</th>
-                <th style="width: 10%;">Rang</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td><strong>{{ matiere }}</strong></td>
-                <td style="font-weight: bold;">{{ coefficient|default:"1" }}</td>
-                <td class="note-val">{{ moyenne }}/20</td>
-                <td>{{ bonnes_reponses|default:"-" }}</td>
-                <td>{{ total_questions|default:"-" }}</td>
-                <td>
-                    {% if moyenne >= 16 %}Excellent{% elif moyenne >= 14 %}Très Bien{% elif moyenne >= 12 %}Bien{% elif moyenne >= 10 %}Passable{% else %}Insuffisant{% endif %}
-                </td>
-                <td>{{ rang }}/{{ effectif }}</td>
-            </tr>
-        </tbody>
-    </table>
-
-    <!-- Résultat global -->
-    <div class="resultat-global">
-        <div style="font-size:9pt; font-weight:bold; margin-bottom:5px;">MOYENNE GÉNÉRALE</div>
-        <div class="moyenne-generale">{{ moyenne }}/20</div>
-        {% if moyenne >= 16 %}
-        <div class="mention mention-excellent">EXCELLENT</div>
-        {% elif moyenne >= 14 %}
-        <div class="mention mention-tres-bien">TRÈS BIEN</div>
-        {% elif moyenne >= 12 %}
-        <div class="mention mention-bien">BIEN</div>
-        {% elif moyenne >= 10 %}
-        <div class="mention mention-passable">PASSABLE</div>
-        {% else %}
-        <div class="mention mention-passable">INSUFFISANT</div>
-        {% endif %}
-        <div style="font-size:9pt; margin-top:5px;">Rang : {{ rang }} / {{ effectif|default:"N/A" }} apprenants</div>
-        {% if decision %}
-        <div style="font-size:10pt; font-weight:bold; margin-top:8px;">{{ decision }}</div>
-        {% endif %}
-    </div>
-
-    <!-- Appréciation IA -->
-    {% if appreciation %}
-    <div class="appreciation-box">
-        <h4>Synthèse pédagogique — Analyse IA :</h4>
-        <p>{{ appreciation }}</p>
-    </div>
-    {% endif %}
-
-    <!-- Signature et vérification -->
-    <table style="margin-top: 20px; display: table; width: 100%; border: none;">
-        <tr>
-            <td style="border: none; width: 50%; vertical-align: top;">
-                <div style="font-family: 'Courier New', monospace; font-size: 7pt; color: #666; margin-top: 15px; padding: 5px; border: 1px solid #ccc; background-color: #fafafa; text-align: center;">
-                    <strong>VÉRIFICATION NUMÉRIQUE</strong><br>
-                    AUTH-ID: {{ verification_token }}<br>
-                    Document certifié conforme — Plateforme Académie Numérique IA
-                </div>
-            </td>
-            <td style="border: none; width: 50%; vertical-align: top;">
-                <div style="text-align:center; padding: 10px;">
-                    <div style="font-weight: bold; margin-bottom: 40px;">Le Chef de l'Administration Scolaire</div>
-                    {% if qr_data_uri %}
-                    <img src="{{ qr_data_uri }}" style="width:20mm;height:20mm; margin: 0 auto 5px auto;">
-                    {% endif %}
-                    <div style="font-size:7pt; font-weight:bold; color:#666;">SCAN POUR TÉLÉCHARGER LE PDF</div>
-                </div>
-            </td>
-        </tr>
-    </table>
-    
-    <!-- Drapeau Bénin - Barre inférieure -->
-    <table class="flag-bar" style="margin-top: 15px;"><tr><td class="flag-green"></td><td class="flag-yellow"></td><td class="flag-red"></td></tr></table>
+</div>
 </body>
 </html>

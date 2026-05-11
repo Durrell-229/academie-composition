@@ -27,15 +27,45 @@ except ImportError:
         HAS_NEW_GENAI = None
 
 
+def _preprocess_image_for_ocr(image):
+    """Prétraitement d'image pour améliorer la qualité OCR."""
+    try:
+        from PIL import Image, ImageEnhance, ImageFilter
+        # Convertir en niveaux de gris
+        if image.mode != 'L':
+            image = image.convert('L')
+        # Augmenter la netteté
+        image = image.filter(ImageFilter.SHARPEN)
+        # Améliorer le contraste
+        enhancer = ImageEnhance.Contrast(image)
+        image = enhancer.enhance(2.0)
+        # Améliorer la luminosité si nécessaire
+        enhancer = ImageEnhance.Brightness(image)
+        image = enhancer.enhance(1.1)
+        # Redimensionner si trop petite (minimum 300 DPI équivalent)
+        w, h = image.size
+        if w < 1500 or h < 2000:
+            scale = max(1500 / w, 2000 / h)
+            image = image.resize((int(w * scale), int(h * scale)), Image.LANCZOS)
+    except Exception as e:
+        logger.debug(f"Prétraitement image partiel: {e}")
+    return image
+
+
 def extract_text_from_file(file_path: str) -> str:
-    """Extrait le texte d'un fichier (texte brut, PDF, ou image via OCR)."""
+    """
+    Extrait le texte complet d'un fichier (texte brut, PDF, ou image via OCR).
+    Aucune limite de caractères — tout le contenu est extrait pour une correction IA précise.
+    Pour les images : prétraitement automatique (contraste, netteté, redimensionnement)
+    pour minimiser les erreurs d'extraction OCR.
+    """
     if not os.path.exists(file_path):
         logger.warning(f"Fichier introuvable: {file_path}")
         return ""
-    
+
     ext = os.path.splitext(file_path)[1].lower()
-    
-    # Fichiers texte
+
+    # Fichiers texte brut
     if ext in ['.txt', '.md', '.csv']:
         try:
             with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
@@ -43,19 +73,43 @@ def extract_text_from_file(file_path: str) -> str:
         except Exception as e:
             logger.error(f"Erreur lecture fichier texte {file_path}: {e}")
             return ""
-    
-    # Fichiers PDF
+
+    # Fichiers PDF — extraction texte + OCR des pages scannées
     if ext == '.pdf':
         try:
             import fitz  # PyMuPDF
             doc = fitz.open(file_path)
-            text = ""
-            for page in doc:
-                text += page.get_text()
+            text_parts = []
+            for page_num, page in enumerate(doc):
+                # Essai extraction texte natif d'abord
+                page_text = page.get_text().strip()
+                if len(page_text) > 50:
+                    text_parts.append(page_text)
+                else:
+                    # Page scannée : rendre en image haute résolution et OCR
+                    try:
+                        from PIL import Image
+                        import pytesseract, io
+                        # 300 DPI pour qualité maximale
+                        mat = fitz.Matrix(300 / 72, 300 / 72)
+                        pix = page.get_pixmap(matrix=mat, alpha=False)
+                        img_bytes = pix.tobytes("png")
+                        image = Image.open(io.BytesIO(img_bytes))
+                        image = _preprocess_image_for_ocr(image)
+                        ocr_text = pytesseract.image_to_string(
+                            image, lang='fra+eng',
+                            config='--psm 1 --oem 3'
+                        )
+                        if ocr_text.strip():
+                            text_parts.append(f"[Page {page_num + 1}]\n{ocr_text}")
+                    except Exception as ocr_err:
+                        logger.warning(f"OCR page {page_num + 1} impossible: {ocr_err}")
+                        if page_text:
+                            text_parts.append(page_text)
             doc.close()
-            return text
+            return "\n\n".join(text_parts)
         except ImportError:
-            logger.warning("PyMuPDF non installé, tentative de lecture brute")
+            logger.warning("PyMuPDF non installé, tentative lecture brute")
             try:
                 with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
                     return f.read()
@@ -64,22 +118,29 @@ def extract_text_from_file(file_path: str) -> str:
         except Exception as e:
             logger.error(f"Erreur lecture PDF {file_path}: {e}")
             return ""
-    
-    # Fichiers image (OCR)
-    if ext in ['.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.webp']:
+
+    # Fichiers image — OCR avec prétraitement haute qualité
+    if ext in ['.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.tif', '.webp']:
         try:
             from PIL import Image
             import pytesseract
             image = Image.open(file_path)
-            return pytesseract.image_to_string(image, lang='fra')
+            image = _preprocess_image_for_ocr(image)
+            # PSM 1 = orientation auto + OSD ; OEM 3 = LSTM neural net (plus précis)
+            text = pytesseract.image_to_string(
+                image, lang='fra+eng',
+                config='--psm 1 --oem 3'
+            )
+            logger.info(f"OCR réussi sur {file_path}: {len(text)} caractères extraits")
+            return text
         except ImportError:
             logger.warning("Pillow ou pytesseract non installé pour OCR")
-            return "[Image - OCR non disponible]"
+            return "[Image reçue — OCR non disponible sur ce serveur. Installez Pillow et pytesseract.]"
         except Exception as e:
             logger.error(f"Erreur OCR {file_path}: {e}")
             return ""
-    
-    # Autre format : tenter lecture brute
+
+    # Autre format : lecture brute
     try:
         with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
             return f.read()
@@ -99,12 +160,12 @@ INFORMATIONS DE L'EXAMEN :
 
 CORRIGE TYPE (référence absolue) :
 ---
-{corrige_type_text[:5000]}
+{corrige_type_text}
 ---
 
 COPIE DE L'ELEVE :
 ---
-{copie_text[:5000]}
+{copie_text}
 ---
 
 INSTRUCTIONS CRITIQUES :

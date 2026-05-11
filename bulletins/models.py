@@ -53,7 +53,7 @@ class Bulletin(models.Model):
     
     # Sécurité & Légalité
     signature_numerique = models.CharField(max_length=255, blank=True)
-    verification_token = models.CharField(max_length=100, unique=True, default=uuid.uuid4)
+    verification_token = models.UUIDField(unique=True, default=uuid.uuid4, editable=False)
     is_signed = models.BooleanField(default=False)
     file_pdf = models.FileField(upload_to='bulletins_officiels/%Y/%m/', blank=True, null=True)
     

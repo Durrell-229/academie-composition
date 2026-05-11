@@ -8,10 +8,55 @@
 <div class="max-w-2xl mx-auto">
     <div class="bg-bg-card rounded-2xl shadow-sm border border-border-standard overflow-hidden">
         <div class="p-8 border-b border-border-standard bg-primary/10">
-            <h2 class="text-2xl font-bold text-text-primary">Soumission de Copie</h2>
+            <h2 class="text-2xl font-bold text-text-primary">Soumission de Copie Papier</h2>
             <p class="text-sm text-text-secondary mt-2">
-                Prenez en photo les pages de votre copie. Assurez-vous que le texte est bien lisible et que la luminosité est suffisante.
+                Photographiez chaque page de votre copie et soumettez-les. L'IA extraira et analysera tout votre texte grâce à la reconnaissance optique de caractères (OCR).
             </p>
+        </div>
+
+        <!-- GUIDE QUALITÉ IMAGE -->
+        <div class="p-6 border-b border-border-standard">
+            <h3 class="text-sm font-bold text-text-primary mb-3 flex items-center gap-2">
+                <i class="fa-solid fa-camera text-primary"></i>
+                Consignes pour des photos de qualité optimale
+            </h3>
+            <div class="grid grid-cols-2 gap-3">
+                <div class="bg-green-50 border border-green-200 rounded-xl p-3 flex items-start gap-2">
+                    <i class="fa-solid fa-circle-check text-green-600 mt-0.5 flex-shrink-0"></i>
+                    <div>
+                        <p class="text-xs font-bold text-green-800">Bonne luminosité</p>
+                        <p class="text-xs text-green-700">Photographiez en pleine lumière naturelle ou sous un bon éclairage. Évitez les ombres sur la feuille.</p>
+                    </div>
+                </div>
+                <div class="bg-green-50 border border-green-200 rounded-xl p-3 flex items-start gap-2">
+                    <i class="fa-solid fa-circle-check text-green-600 mt-0.5 flex-shrink-0"></i>
+                    <div>
+                        <p class="text-xs font-bold text-green-800">Image nette et droite</p>
+                        <p class="text-xs text-green-700">Placez la feuille à plat, cadrez perpendiculairement, sans flou. Tout le texte doit être lisible.</p>
+                    </div>
+                </div>
+                <div class="bg-green-50 border border-green-200 rounded-xl p-3 flex items-start gap-2">
+                    <i class="fa-solid fa-circle-check text-green-600 mt-0.5 flex-shrink-0"></i>
+                    <div>
+                        <p class="text-xs font-bold text-green-800">Haute résolution</p>
+                        <p class="text-xs text-green-700">Utilisez la plus haute qualité de votre appareil photo. Zoomez sur chaque page si nécessaire.</p>
+                    </div>
+                </div>
+                <div class="bg-green-50 border border-green-200 rounded-xl p-3 flex items-start gap-2">
+                    <i class="fa-solid fa-circle-check text-green-600 mt-0.5 flex-shrink-0"></i>
+                    <div>
+                        <p class="text-xs font-bold text-green-800">Une page par photo</p>
+                        <p class="text-xs text-green-700">Photographiez chaque page séparément. N'incluez pas plusieurs pages dans une seule photo.</p>
+                    </div>
+                </div>
+                <div class="bg-red-50 border border-red-200 rounded-xl p-3 flex items-start gap-2 col-span-2">
+                    <i class="fa-solid fa-triangle-exclamation text-red-600 mt-0.5 flex-shrink-0"></i>
+                    <div>
+                        <p class="text-xs font-bold text-red-800">Important — Qualité = Précision de correction</p>
+                        <p class="text-xs text-red-700">Une image floue, sombre ou de mauvaise qualité empêche l'IA d'extraire correctement votre texte, ce qui peut entraîner une note 0. Vérifiez chaque photo avant de soumettre.</p>
+                    </div>
+                </div>
+            </div>
         </div>
         
         <form method="POST" enctype="multipart/form-data" class="p-8 space-y-6">

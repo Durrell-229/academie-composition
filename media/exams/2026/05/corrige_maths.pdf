@@ -1,0 +1,20 @@
+CORRIGÉ TYPE - MATHÉMATIQUES
+
+Exercice 1 (5/5):
+2x² - 8x + 6 = 0
+Δ = b² - 4ac = 64 - 48 = 16
+x₁ = (8 + 4)/4 = 3
+x₂ = (8 - 4)/4 = 1
+Solutions: {1; 3}
+
+Exercice 2 (7/7):
+1. AB² + AC² = 64 + 36 = 100 = BC² → Triangle rectangle en A
+2. Aire = (AB × AC)/2 = (8 × 6)/2 = 24 cm²
+3. Hauteur = (2 × Aire)/BC = (2 × 24)/10 = 4,8 cm
+
+Exercice 3 (8/8):
+1. f'(x) = 4x - 4
+2. f'(x) = 0 → x = 1
+   Tableau de variations: décroissante sur ]-∞;1], croissante sur [1;+∞[
+3. Minimum: f(1) = -1
+4. Parabole avec sommet (1;-1)

@@ -31,7 +31,6 @@ THIRD_PARTY_APPS = [
     'corsheaders',
     'storages',
     'channels',
-    'cloudinary_storage',
 ]
 
 LOCAL_APPS = [
@@ -80,6 +79,8 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.locale.LocaleMiddleware',
+    # Protection des corrigés types - doit être après AuthenticationMiddleware
+    'compositions.middleware.CorrigeTypeProtectionMiddleware',
 ]
 
 ROOT_URLCONF = 'academie_numerique.urls'
@@ -249,7 +250,8 @@ MISTRAL_API_KEY = os.environ.get('MISTRAL_API_KEY', '')
 DEEPSEEK_API_KEY = os.environ.get('DEEPSEEK_API_KEY', '')
 
 # NVIDIA API Configuration
-NVIDIA_API_KEY = os.environ.get('NVIDIA_API_KEY', '')
+# Clé API NVIDIA fournie par l'utilisateur
+NVIDIA_API_KEY = os.environ.get('NVIDIA_API_KEY', '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')
 NVIDIA_API_BASE_URL = os.environ.get('NVIDIA_API_BASE_URL', 'https://integrate.api.nvidia.com/v1')
 NVIDIA_MODEL = os.environ.get('NVIDIA_MODEL', 'nvidia/nemotron-4-340b-instruct')
 

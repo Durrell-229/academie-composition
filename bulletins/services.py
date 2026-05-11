@@ -188,6 +188,14 @@ class BulletinService:
             ligne.save(update_fields=['coefficient'])
             logger.info(f"[QCM Bulletin] Coefficient appliqué: {matiere_nom} ({serie}) = {coefficient_officiel}")
 
+        # Calculer les valeurs mathématiques pour le template
+        moyenne_pourcentage = float(bulletin.moyenne_generale) * 5
+        
+        # Calculer le taux de réussite
+        br = qcm_resultat.bonnes_reponses if qcm_resultat else 0
+        tq = qcm_resultat.total_questions if qcm_resultat else 0
+        taux_reussite = (br * 100 / tq) if tq > 0 else 0
+
         context = {
             'bulletin': bulletin,
             'eleve': eleve,
@@ -195,6 +203,7 @@ class BulletinService:
             'serie': serie,
             'periode': bulletin.get_periode_display(),
             'moyenne': bulletin.moyenne_generale,
+            'moyenne_pourcentage': moyenne_pourcentage,
             'rang': bulletin.rang,
             'effectif': bulletin.effectif_total,
             'appreciation': bulletin.appreciation_ia,
@@ -205,9 +214,12 @@ class BulletinService:
             'signature': hashlib.sha256(f"{bulletin.id}{bulletin.verification_token}".encode()).hexdigest()[:16],
             'matiere': matiere_nom,
             'coefficient': coefficient_officiel,
-            'bonnes_reponses': qcm_resultat.bonnes_reponses if qcm_resultat else '-',
-            'total_questions': qcm_resultat.total_questions if qcm_resultat else '-',
+            'bonnes_reponses': br if qcm_resultat else '-',
+            'total_questions': tq if qcm_resultat else '-',
+            'taux_reussite': taux_reussite,
             'qr_data_uri': QRService.generate_bulletin_qr(bulletin),
+            'professeur': 'Professeur de ' + matiere_nom,
+            'directeur': 'Directeur Académie Numérique IA',
         }
 
         html = render_to_string('bulletins/bulletin_qcm_pdf.html', context)

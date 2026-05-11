@@ -18,6 +18,16 @@ class ExamOut(Schema):
 
 @router.get("/", response=List[ExamOut])
 def list_exams(request):
+    user = request.user
+    # Élève : seulement les examens de sa classe
+    if user.role == 'eleve':
+        return Exam.objects.filter(
+            assignments__eleve=user, statut='publie'
+        ).distinct()
+    # Professeur : seulement ses propres examens
+    if user.role == 'professeur':
+        return Exam.objects.filter(createur=user)
+    # Admin / Conseiller : tous les examens
     return Exam.objects.all()
 
 @router.post("/create-with-files")

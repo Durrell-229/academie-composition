@@ -79,16 +79,20 @@ def list_sessions(request: HttpRequest):
 def start_session(request: HttpRequest, exam_id: str, payload: StartSessionSchema):
     exam = get_object_or_404(Exam, id=exam_id)
 
-    # Vérifier que l'élève est assigné
+    # Vérifier que l'élève est assigné (individuellement ou par classe correspondante)
     if request.user.role == 'eleve':
-        assigned = ExamAssignment.objects.filter(
-            exam=exam,
-            eleve=request.user
-        ).exists() or ExamAssignment.objects.filter(
-            exam=exam,
-            classe__isnull=False
+        assigned_individual = ExamAssignment.objects.filter(
+            exam=exam, eleve=request.user
         ).exists()
-        if not assigned and not exam.est_public:
+
+        # Comparer par nom de classe (user.classe est un CharField, pas un UUID)
+        assigned_by_class = ExamAssignment.objects.filter(
+            exam=exam,
+            classe__nom=request.user.classe,
+            eleve__isnull=True
+        ).exists()
+
+        if not assigned_individual and not assigned_by_class and not exam.est_public:
             return 400, {"error": "Vous n'êtes pas assigné à cette épreuve.", "success": False}
 
     session, created = CompositionSession.objects.get_or_create(
@@ -183,13 +187,14 @@ def log_cheat_event(request: HttpRequest, session_id: str, payload: CheatEventSc
         'description': payload.description,
     })
 
-    if session.cheat_count >= 3:
+    # Plus tolérant : exclusion après 10 violations ou événement critique
+    if payload.severity == 'critical' or session.cheat_count >= 10:
         session.statut = CompositionSession.Statut.EXCLU
         session.save()
-        return 200, {"message": "ALERTE : Vous avez été exclu pour triche.", "success": False}
+        return 200, {"message": "ALERTE : Vous avez été exclu pour triche répétée.", "success": False}
 
     session.save()
-    return 200, {"message": f"Événement enregistré. Attention ({session.cheat_count}/3).", "success": True}
+    return 200, {"message": f"Événement enregistré. Attention ({session.cheat_count}/10).", "success": True}
 
 
 @router.get("/resultat/{session_id}")

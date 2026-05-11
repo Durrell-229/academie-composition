@@ -36,6 +36,9 @@ class Matiere(models.Model):
 
 
 class Classe(models.Model):
+    # Modèle léger utilisé par exams, devoirs, cours.
+    # schools.Classe est le modèle complet (avec Etablissement, NiveauScolaire, effectifs).
+    # Ne pas utiliser core.Classe pour les nouvelles apps — préférer schools.Classe.
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     nom = models.CharField(_('nom'), max_length=200)
     niveau = models.CharField(_('niveau'), max_length=20, choices=NIVEAU_CHOICES)
@@ -43,6 +46,11 @@ class Classe(models.Model):
     annee_academique = models.CharField(_('année académique'), max_length=20)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    # Lien optionnel vers schools.Classe pour migration progressive
+    schools_classe = models.ForeignKey(
+        'schools.Classe', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='core_classes'
+    )
 
     class Meta:
         verbose_name = _('classe')

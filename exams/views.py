@@ -73,13 +73,20 @@ def exam_create_view(request):
         # Création de l'examen
         exam = Exam.objects.create(
             titre=titre,
-            matiere_id=matiere_id,
-            classe_id=classe_id,
+            description=request.POST.get('description', ''),
+            matiere_id=matiere_id if matiere_id else None,
+            classe_id=classe_id if classe_id else None,
+            type_exam=request.POST.get('type_exam', 'composition'),
             duree_minutes=int(duree),
             date_debut=date_debut,
             date_fin=date_fin,
+            coefficient=float(request.POST.get('coefficient', 1)),
+            instructions=request.POST.get('instructions', ''),
+            anti_cheat_active='anti_cheat_active' in request.POST,
+            camera_required='camera_required' in request.POST,
+            fullscreen_required='fullscreen_required' in request.POST,
             createur=request.user,
-            statut='publie'
+            statut='publie',
         )
         
         # Gestion de l'upload des fichiers

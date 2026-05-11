@@ -2,584 +2,545 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Certificat - {{ certificat.eleve.get_full_name }}</title>
+    <title>Certificat — {{ eleve.get_full_name }}</title>
     <style>
-        @page {
-            size: A4 landscape;
-            margin: 0;
-        }
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Times New Roman', Georgia, serif;
-            background: linear-gradient(135deg, #1e3a8a 0%, #0f1f4a 100%);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
-        
-        .certificat-container {
-            width: 100%;
-            max-width: 1000px;
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { background: #fff; }
+        body { font-family: 'Times New Roman', Georgia, serif; color: #1a1a1a; }
+
+        .page {
+            width: 297mm;
+            height: 210mm;
+            margin: 0 auto;
             background: white;
-            border-radius: 0;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             position: relative;
             overflow: hidden;
-        }
-        
-        /* Bande décorative en haut à gauche */
-        .bande-superieure {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 40%;
-            height: 80px;
-            background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #60a5fa 100%);
-            clip-path: polygon(0 0, 100% 0, 85% 100%, 0 100%);
-        }
-        
-        /* Bande décorative en bas à droite */
-        .bande-inferieure {
-            position: absolute;
-            bottom: 0;
-            right: 0;
-            width: 35%;
-            height: 100px;
-            background: linear-gradient(135deg, #60a5fa 0%, #2563eb 50%, #1e3a8a 100%);
-            clip-path: polygon(15% 0, 100% 0, 100% 100%, 0 100%);
-        }
-        
-        /* Motifs géométriques */
-        .motif-circuit {
-            position: absolute;
-            top: 20px;
-            right: 30px;
-            width: 120px;
-            height: 80px;
-            opacity: 0.1;
-        }
-        
-        .motif-circuit svg {
-            width: 100%;
-            height: 100%;
-        }
-        
-        .motif-circuit-gauche {
-            position: absolute;
-            bottom: 120px;
-            left: 20px;
-            width: 100px;
-            height: 100px;
-            opacity: 0.08;
-        }
-        
-        /* Logo institution */
-        .logo-institution {
-            position: absolute;
-            top: 25px;
-            left: 30px;
-            width: 50px;
-            height: 50px;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 8px;
             display: flex;
-            align-items: center;
-            justify-content: center;
-            border: 2px solid rgba(255, 255, 255, 0.4);
+            flex-direction: column;
         }
-        
-        .logo-institution svg {
-            width: 30px;
-            height: 30px;
-            fill: white;
+
+        /* ===== BORDURE ORNEMENTALE ===== */
+        .bordure-exterieure {
+            position: absolute;
+            top: 5mm; left: 5mm; right: 5mm; bottom: 5mm;
+            border: 3px solid #8B6914;
         }
-        
-        /* Contenu principal */
-        .contenu {
-            padding: 100px 80px 120px 80px;
-            text-align: center;
-            position: relative;
-            z-index: 10;
+        .bordure-interieure {
+            position: absolute;
+            top: 7mm; left: 7mm; right: 7mm; bottom: 7mm;
+            border: 1px solid #c9a84c;
         }
-        
-        /* Titre principal */
-        .titre-principal {
-            font-size: 42px;
-            font-weight: bold;
-            color: #1e3a8a;
-            text-transform: uppercase;
-            letter-spacing: 3px;
-            margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+
+        /* ===== COINS ORNEMENTAUX ===== */
+        .coin {
+            position: absolute;
+            width: 12mm; height: 12mm;
         }
-        
-        .sous-titre {
-            font-size: 20px;
-            color: #2563eb;
-            font-weight: 600;
-            margin-bottom: 50px;
-        }
-        
-        /* Section photo et info */
-        .section-beneficiaire {
+        .coin-tl { top: 3mm; left: 3mm; }
+        .coin-tr { top: 3mm; right: 3mm; transform: scaleX(-1); }
+        .coin-bl { bottom: 3mm; left: 3mm; transform: scaleY(-1); }
+        .coin-br { bottom: 3mm; right: 3mm; transform: scale(-1); }
+        .coin svg { width: 100%; height: 100%; }
+
+        /* ===== BANDES DRAPEAU LATÉRALES ===== */
+        .bande-gauche {
+            position: absolute;
+            top: 0; left: 0;
+            width: 8mm; height: 100%;
             display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            gap: 40px;
-            margin-bottom: 40px;
+            flex-direction: column;
         }
-        
-        .photo-container {
-            width: 150px;
-            height: 180px;
-            border: 3px solid #1e3a8a;
-            border-radius: 8px;
-            overflow: hidden;
-            background: #f8fafc;
-            flex-shrink: 0;
-        }
-        
-        .photo-container img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        
-        .photo-placeholder {
-            width: 100%;
-            height: 100%;
+        .bande-gauche .seg-vert  { flex: 1; background: #008751; }
+        .bande-gauche .seg-jaune { flex: 1; background: #FCD116; }
+        .bande-gauche .seg-rouge { flex: 1; background: #E8112D; }
+
+        .bande-droite {
+            position: absolute;
+            top: 0; right: 0;
+            width: 8mm; height: 100%;
             display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #e2e8f0;
-            color: #64748b;
-            font-size: 12px;
+            flex-direction: column;
         }
-        
-        /* Texte d'attribution */
-        .texte-attribution {
+        .bande-droite .seg-vert  { flex: 1; background: #008751; }
+        .bande-droite .seg-jaune { flex: 1; background: #FCD116; }
+        .bande-droite .seg-rouge { flex: 1; background: #E8112D; }
+
+        /* ===== CONTENU PRINCIPAL ===== */
+        .content {
+            margin: 0 9mm;
+            padding: 6mm 8mm;
             flex: 1;
-            max-width: 500px;
-            text-align: left;
+            display: flex;
+            flex-direction: column;
         }
-        
-        .certifie-que {
-            font-size: 16px;
-            color: #475569;
-            margin-bottom: 20px;
-            font-style: italic;
+
+        /* ===== EN-TÊTE OFFICIEL ===== */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 4mm;
+            padding-bottom: 3mm;
+            border-bottom: 2px solid #8B6914;
         }
-        
-        .nom-beneficiaire {
-            font-size: 32px;
+        .logo-zone { width: 28mm; text-align: center; }
+        .logo-cert { width: 22mm; height: 26mm; border: 1px solid #8B6914; margin: 0 auto; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .logo-cert svg { width: 100%; height: 100%; }
+        .logo-label { font-size: 6px; font-family: Arial; margin-top: 1mm; color: #555; }
+
+        .header-center { flex: 1; text-align: center; padding: 0 5mm; }
+        .rep { font-family: Arial, sans-serif; font-size: 9px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; color: #1a1a1a; }
+        .devise { font-size: 8px; font-style: italic; color: #444; margin: 1mm 0; }
+        .min { font-family: Arial, sans-serif; font-size: 7.5px; font-weight: bold; color: #333; margin-bottom: 1mm; }
+        .ecole { font-family: Arial, sans-serif; font-size: 13px; font-weight: bold; color: #008751; text-transform: uppercase; }
+        .ecole-sub { font-family: Arial, sans-serif; font-size: 7.5px; color: #555; margin-top: 0.5mm; }
+
+        /* ===== TITRE CERTIFICAT ===== */
+        .titre-section { text-align: center; margin: 3mm 0; }
+        .titre-line { height: 0.5mm; background: linear-gradient(90deg, transparent, #8B6914, #c9a84c, #8B6914, transparent); margin-bottom: 2.5mm; }
+        .titre-cert {
+            font-size: 28px;
             font-weight: bold;
-            color: #1e3a8a;
-            border-bottom: 2px solid #2563eb;
-            padding-bottom: 10px;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-        
-        .info-complementaire {
-            font-size: 14px;
-            color: #64748b;
-            line-height: 1.8;
-            margin-bottom: 20px;
-        }
-        
-        .programme-texte {
-            font-size: 15px;
-            color: #334155;
-            font-style: italic;
-            margin-bottom: 20px;
-        }
-        
-        /* Mention ADMIS / REFUSÉ */
-        .mention-statut {
-            display: inline-block;
-            padding: 12px 40px;
-            font-size: 24px;
-            font-weight: bold;
+            color: #1a1a4a;
             text-transform: uppercase;
             letter-spacing: 4px;
-            border-radius: 4px;
-            margin: 20px 0;
+            text-shadow: 1px 1px 0 rgba(0,0,0,0.1);
         }
-        
-        .mention-admis {
-            background: linear-gradient(135deg, #10b981, #059669);
-            color: white;
-            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+        .sous-titre-cert {
+            font-size: 13px;
+            color: #8B6914;
+            font-style: italic;
+            margin-top: 1mm;
+            font-family: Arial, sans-serif;
         }
-        
-        .mention-refuse {
-            background: linear-gradient(135deg, #ef4444, #dc2626);
-            color: white;
-            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
-        }
-        
-        .mention-attente {
-            background: linear-gradient(135deg, #f59e0b, #d97706);
-            color: white;
-        }
-        
-        /* Résultats */
-        .resultats-container {
-            background: #f8fafc;
-            border: 2px solid #e2e8f0;
-            border-radius: 8px;
-            padding: 20px;
-            margin: 25px 0;
-        }
-        
-        .resultats-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
-            text-align: center;
-        }
-        
-        .resultat-item {
-            padding: 10px;
-        }
-        
-        .resultat-label {
-            font-size: 12px;
-            color: #64748b;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 5px;
-        }
-        
-        .resultat-valeur {
-            font-size: 20px;
-            font-weight: bold;
-            color: #1e3a8a;
-        }
-        
-        /* Section date et lieu */
-        .date-lieu-section {
-            display: flex;
-            justify-content: center;
-            gap: 80px;
-            margin: 30px 0;
-            font-size: 15px;
-            color: #475569;
-        }
-        
-        .date-lieu-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .date-lieu-label {
-            font-weight: 600;
-            color: #1e3a8a;
-        }
-        
-        /* Signatures */
-        .signatures-container {
-            display: flex;
-            justify-content: center;
-            gap: 150px;
-            margin-top: 50px;
-        }
-        
-        .signature-item {
-            text-align: center;
-        }
-        
-        .signature-ligne {
-            width: 200px;
-            height: 1px;
-            background: #1e3a8a;
-            margin-bottom: 10px;
-        }
-        
-        .signature-titre {
-            font-size: 14px;
-            color: #475569;
-            font-weight: 600;
-        }
-        
-        /* QR Code et vérification */
-        .verification-section {
-            position: absolute;
-            bottom: 110px;
-            right: 40px;
-            text-align: center;
-        }
-        
-        .qr-code {
-            width: 80px;
-            height: 80px;
-            background: white;
-            border: 2px solid #e2e8f0;
-            border-radius: 4px;
-            padding: 5px;
-            margin-bottom: 8px;
-        }
-        
-        .qr-code img {
-            width: 100%;
-            height: 100%;
-        }
-        
-        .code-verification {
-            font-size: 10px;
-            color: #64748b;
-            font-family: monospace;
-        }
-        
-        /* Logo en bas à droite */
-        .logo-footer {
-            position: absolute;
-            bottom: 15px;
-            right: 30px;
-            width: 80px;
-            height: 80px;
-            background: linear-gradient(135deg, #1e3a8a, #2563eb);
-            border-radius: 4px;
+
+        /* ===== CORPS DU CERTIFICAT ===== */
+        .corps { flex: 1; display: flex; align-items: flex-start; gap: 5mm; margin: 3mm 0; }
+
+        .photo-zone {
+            flex: 0 0 28mm;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            color: white;
-            padding: 8px;
         }
-        
-        .logo-footer svg {
-            width: 30px;
-            height: 30px;
-            fill: white;
-            margin-bottom: 4px;
+        .photo-cadre {
+            width: 24mm; height: 30mm;
+            border: 2px solid #8B6914;
+            background: #f5f0e8;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 7px; color: #999; text-align: center;
+            overflow: hidden;
         }
-        
-        .logo-footer-text {
-            font-size: 8px;
+        .photo-cadre img { width: 100%; height: 100%; object-fit: cover; }
+        .photo-seal {
+            width: 20mm; height: 20mm;
+            border: 2px solid #8B6914;
+            border-radius: 50%;
+            background: rgba(139, 105, 20, 0.05);
+            display: flex; align-items: center; justify-content: center;
+            margin-top: 2mm;
+        }
+        .photo-seal svg { width: 100%; height: 100%; }
+
+        .texte-principal { flex: 1; }
+
+        .certifie-phrase {
+            font-size: 10px;
+            color: #444;
+            font-style: italic;
+            margin-bottom: 2mm;
+            font-family: Arial, sans-serif;
+        }
+
+        .nom-certifie {
+            font-size: 22px;
             font-weight: bold;
+            color: #1a1a4a;
             text-align: center;
-            line-height: 1.2;
-            text-transform: uppercase;
+            border-bottom: 2px solid #8B6914;
+            padding-bottom: 1.5mm;
+            margin-bottom: 2mm;
+            font-family: 'Times New Roman', Georgia, serif;
         }
-        
-        /* Numéro de certificat */
-        .numero-certificat {
-            position: absolute;
-            bottom: 110px;
-            left: 40px;
+
+        .infos-eleve {
+            font-family: Arial, sans-serif;
+            font-size: 8.5px;
+            line-height: 1.7;
+            color: #333;
+            margin-bottom: 2mm;
+        }
+        .infos-eleve span { font-weight: bold; color: #1a1a4a; }
+
+        .motif-phrase {
+            font-size: 9.5px;
+            font-style: italic;
+            color: #444;
+            margin-bottom: 2mm;
+            font-family: Arial, sans-serif;
+            line-height: 1.5;
+        }
+        .motif-programme {
             font-size: 11px;
-            color: #64748b;
-            font-family: monospace;
-        }
-        
-        .numero-label {
             font-weight: bold;
-            color: #1e3a8a;
+            color: #008751;
+            text-align: center;
+            margin: 1.5mm 0;
         }
-        
-        /* Watermark */
+
+        /* Statut / Mention -->
+        .statut-bloc { text-align: center; margin: 2mm 0; }
+        .statut-badge {
+            display: inline-block;
+            padding: 2.5mm 8mm;
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            border: 2px solid;
+        }
+        .st-admis   { background: #d4edda; color: #006600; border-color: #006600; }
+        .st-mention { background: #fff3cd; color: #8a6000; border-color: #8a6000; }
+        .st-excellent { background: #1a4a1a; color: #fff; border-color: #006600; }
+        .st-honneur { background: #1a1a4a; color: #fff; border-color: #1a1a4a; }
+        .st-refuse  { background: #f8d7da; color: #c00; border-color: #c00; }
+
+        /* Résultats -->
+        .resultats-bloc {
+            display: flex;
+            gap: 3mm;
+            margin: 2mm 0;
+            font-family: Arial, sans-serif;
+        }
+        .res-item {
+            flex: 1;
+            text-align: center;
+            border: 1px solid #c9a84c;
+            padding: 1.5mm;
+            background: #fffbf0;
+        }
+        .res-v { font-size: 13px; font-weight: bold; color: #1a1a4a; }
+        .res-k { font-size: 7px; color: #666; text-transform: uppercase; margin-top: 0.5mm; }
+
+        /* ===== DATE & LIEU ===== */
+        .date-lieu {
+            font-family: Arial, sans-serif;
+            font-size: 8.5px;
+            text-align: center;
+            color: #444;
+            margin: 2mm 0;
+        }
+        .date-lieu strong { color: #1a1a4a; }
+
+        /* ===== SIGNATURES ===== */
+        .signatures {
+            display: flex;
+            gap: 5mm;
+            margin: 2mm 0 0 0;
+            font-family: Arial, sans-serif;
+        }
+        .sig {
+            flex: 1;
+            text-align: center;
+            padding-top: 10mm;
+            border-top: 1px solid #8B6914;
+            font-size: 8px;
+        }
+        .sig strong { font-size: 8px; display: block; color: #1a1a4a; }
+        .sig .sous-sig { font-size: 7px; color: #666; margin-top: 0.5mm; }
+        .sig .sceau-place {
+            width: 14mm; height: 14mm;
+            border: 1px dashed #ccc;
+            border-radius: 50%;
+            margin: 1mm auto 0 auto;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 5.5px; color: #aaa; text-align: center;
+        }
+
+        /* ===== FOOTER ===== */
+        .footer-cert {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 2mm 0 0 0;
+            border-top: 1px solid #c9a84c;
+            margin-top: 1mm;
+            font-family: Arial, sans-serif;
+            font-size: 7px;
+        }
+        .footer-qr { text-align: center; }
+        .qr-mini { width: 15mm; height: 15mm; border: 1px solid #8B6914; display: flex; align-items: center; justify-content: center; margin: 0 auto 0.5mm auto; }
+        .qr-mini img { width: 100%; height: 100%; }
+        .footer-info { flex: 1; text-align: center; color: #666; font-size: 7px; }
+        .num-cert { font-family: monospace; font-size: 8px; font-weight: bold; color: #1a1a4a; }
+
+        /* Watermark -->
         .watermark {
             position: absolute;
-            top: 50%;
-            left: 50%;
+            top: 50%; left: 50%;
             transform: translate(-50%, -50%) rotate(-30deg);
-            font-size: 100px;
-            color: rgba(30, 58, 138, 0.03);
+            font-size: 60px;
             font-weight: bold;
+            color: rgba(0, 135, 81, 0.03);
             text-transform: uppercase;
             pointer-events: none;
-            z-index: 1;
+            white-space: nowrap;
+            font-family: Arial, sans-serif;
         }
-        
+
         @media print {
-            body {
-                background: white;
-                padding: 0;
-            }
-            
-            .certificat-container {
-                box-shadow: none;
-                width: 100%;
-                max-width: none;
-            }
+            body { padding: 0; }
+            @page { size: A4 landscape; margin: 0; }
         }
     </style>
 </head>
 <body>
-    <div class="certificat-container">
-        <!-- Bandes décoratives -->
-        <div class="bande-superieure"></div>
-        <div class="bande-inferieure"></div>
-        
-        <!-- Motifs géométriques -->
-        <div class="motif-circuit">
-            <svg viewBox="0 0 100 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="80" cy="20" r="15" stroke="#1e3a8a" stroke-width="2"/>
-                <path d="M0 40 L30 40 L30 20 L50 20" stroke="#1e3a8a" stroke-width="2" fill="none"/>
-                <circle cx="55" cy="20" r="3" fill="#1e3a8a"/>
-                <path d="M60 20 L100 20" stroke="#1e3a8a" stroke-width="2"/>
-                <path d="M20 40 L20 60 L40 60" stroke="#1e3a8a" stroke-width="2" fill="none"/>
-                <circle cx="45" cy="60" r="3" fill="#1e3a8a"/>
-                <path d="M70 40 L70 55 L85 55" stroke="#1e3a8a" stroke-width="2" fill="none"/>
-                <circle cx="90" cy="55" r="3" fill="#1e3a8a"/>
-            </svg>
+<div class="page">
+    <!-- WATERMARK -->
+    <div class="watermark">BÉNIN ÉDUCATION</div>
+
+    <!-- BORDURES ORNEMENTALES -->
+    <div class="bordure-exterieure"></div>
+    <div class="bordure-interieure"></div>
+
+    <!-- COINS -->
+    <div class="coin coin-tl">
+        <svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+            <path d="M2 2 L38 2 L2 38 Z" fill="#8B6914" opacity="0.3"/>
+            <path d="M2 2 L15 2 L2 15 Z" fill="#8B6914"/>
+            <circle cx="5" cy="5" r="2" fill="#c9a84c"/>
+            <line x1="2" y1="20" x2="20" y2="2" stroke="#c9a84c" stroke-width="0.5"/>
+        </svg>
+    </div>
+    <div class="coin coin-tr">
+        <svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+            <path d="M2 2 L38 2 L2 38 Z" fill="#8B6914" opacity="0.3"/>
+            <path d="M2 2 L15 2 L2 15 Z" fill="#8B6914"/>
+            <circle cx="5" cy="5" r="2" fill="#c9a84c"/>
+            <line x1="2" y1="20" x2="20" y2="2" stroke="#c9a84c" stroke-width="0.5"/>
+        </svg>
+    </div>
+    <div class="coin coin-bl">
+        <svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+            <path d="M2 2 L38 2 L2 38 Z" fill="#8B6914" opacity="0.3"/>
+            <path d="M2 2 L15 2 L2 15 Z" fill="#8B6914"/>
+            <circle cx="5" cy="5" r="2" fill="#c9a84c"/>
+            <line x1="2" y1="20" x2="20" y2="2" stroke="#c9a84c" stroke-width="0.5"/>
+        </svg>
+    </div>
+    <div class="coin coin-br">
+        <svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+            <path d="M2 2 L38 2 L2 38 Z" fill="#8B6914" opacity="0.3"/>
+            <path d="M2 2 L15 2 L2 15 Z" fill="#8B6914"/>
+            <circle cx="5" cy="5" r="2" fill="#c9a84c"/>
+            <line x1="2" y1="20" x2="20" y2="2" stroke="#c9a84c" stroke-width="0.5"/>
+        </svg>
+    </div>
+
+    <!-- BANDES DRAPEAU LATÉRALES -->
+    <div class="bande-gauche">
+        <div class="seg-vert"></div>
+        <div class="seg-jaune"></div>
+        <div class="seg-rouge"></div>
+    </div>
+    <div class="bande-droite">
+        <div class="seg-rouge"></div>
+        <div class="seg-jaune"></div>
+        <div class="seg-vert"></div>
+    </div>
+
+    <!-- CONTENU PRINCIPAL -->
+    <div class="content">
+        <!-- HEADER OFFICIEL -->
+        <div class="header">
+            <div class="logo-zone">
+                <div class="logo-cert">
+                    <svg viewBox="0 0 120 140" xmlns="http://www.w3.org/2000/svg">
+                        <ellipse cx="60" cy="70" rx="55" ry="65" fill="#008751" stroke="#8B6914" stroke-width="2"/>
+                        <text x="60" y="45" text-anchor="middle" fill="#FCD116" font-size="14" font-weight="bold" font-family="Arial">ANI</text>
+                        <text x="60" y="63" text-anchor="middle" fill="#fff" font-size="9" font-family="Arial">ACADÉMIE</text>
+                        <text x="60" y="78" text-anchor="middle" fill="#fff" font-size="9" font-family="Arial">NUMÉRIQUE</text>
+                        <text x="60" y="98" text-anchor="middle" fill="#FCD116" font-size="8" font-family="Arial">BÉNIN</text>
+                    </svg>
+                </div>
+                <div class="logo-label">ACADÉMIE NUMÉRIQUE</div>
+            </div>
+
+            <div class="header-center">
+                <p class="rep">République du Bénin</p>
+                <p class="devise">Fraternité — Justice — Travail</p>
+                <p class="min">Ministère des Enseignements Secondaires, Technique et de la Formation Professionnelle</p>
+                <p class="ecole">{{ etablissement_nom|default:"Académie Numérique Intelligente" }}</p>
+                <p class="ecole-sub">Cotonou, Bénin | Année Scolaire : {{ certificat.annee_scolaire|default:"2025-2026" }}</p>
+            </div>
+
+            <div class="logo-zone">
+                <div class="logo-cert">
+                    <svg viewBox="0 0 120 140" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M60 5 L110 25 L110 80 Q110 120 60 135 Q10 120 10 80 L10 25 Z" fill="none" stroke="#8B6914" stroke-width="2"/>
+                        <path d="M60 5 L10 25 L10 80 Q10 120 60 135 Z" fill="#008751"/>
+                        <path d="M60 5 L110 25 L110 57 L60 57 Z" fill="#E8112D"/>
+                        <path d="M60 57 L110 57 L110 80 Q110 120 60 135 Z" fill="#FCD116"/>
+                        <text x="80" y="48" text-anchor="middle" fill="#1a1a1a" font-size="16">★</text>
+                        <rect x="18" y="65" width="30" height="25" fill="none" stroke="#FCD116" stroke-width="1.5"/>
+                        <rect x="22" y="58" width="8" height="12" fill="none" stroke="#FCD116" stroke-width="1.5"/>
+                        <rect x="33" y="58" width="8" height="12" fill="none" stroke="#FCD116" stroke-width="1.5"/>
+                        <text x="60" y="125" text-anchor="middle" fill="#1a1a1a" font-size="6" font-weight="bold" font-family="Arial">BÉNIN</text>
+                    </svg>
+                </div>
+                <div class="logo-label">ARMOIRIES DU BÉNIN</div>
+            </div>
         </div>
-        
-        <div class="motif-circuit-gauche">
-            <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="50" cy="50" r="40" stroke="#1e3a8a" stroke-width="1" stroke-dasharray="5,5"/>
-                <circle cx="50" cy="50" r="25" stroke="#1e3a8a" stroke-width="1"/>
-                <circle cx="50" cy="50" r="10" fill="#1e3a8a"/>
-                <line x1="10" y1="50" x2="30" y2="50" stroke="#1e3a8a" stroke-width="1"/>
-                <line x1="70" y1="50" x2="90" y2="50" stroke="#1e3a8a" stroke-width="1"/>
-                <line x1="50" y1="10" x2="50" y2="30" stroke="#1e3a8a" stroke-width="1"/>
-                <line x1="50" y1="70" x2="50" y2="90" stroke="#1e3a8a" stroke-width="1"/>
-            </svg>
+
+        <!-- TITRE -->
+        <div class="titre-section">
+            <div class="titre-line"></div>
+            <div class="titre-cert">
+                {{ type_certificat_nom|default:"Certificat de Réussite" }}
+            </div>
+            {% if sous_titre_cert %}
+            <div class="sous-titre-cert">{{ sous_titre_cert }}</div>
+            {% endif %}
+            <div class="titre-line" style="margin-top:2mm;margin-bottom:0;"></div>
         </div>
-        
-        <!-- Watermark -->
-        <div class="watermark">{{ etablissement.nom }}</div>
-        
-        <!-- Logo institution -->
-        <div class="logo-institution">
-            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 3L1 9L12 15L21 10.09V17H23V9L12 3ZM5 13.18V17.18L12 21L19 17.18V13.18L12 17L5 13.18Z"/>
-                <path d="M12 2L2 7L12 12L22 7L12 2Z" opacity="0.5"/>
-            </svg>
-        </div>
-        
-        <!-- Contenu principal -->
-        <div class="contenu">
-            <h1 class="titre-principal">Certificat de Réussite</h1>
-            <p class="sous-titre">{{ etablissement.nom }}</p>
-            
-            <!-- Section bénéficiaire avec photo -->
-            <div class="section-beneficiaire">
-                <div class="photo-container">
-                    {% if eleve.avatar %}
-                        <img src="{{ eleve.avatar.url }}" alt="Photo de {{ eleve.get_full_name }}">
+
+        <!-- CORPS -->
+        <div class="corps">
+            <!-- Photo & Sceau -->
+            <div class="photo-zone">
+                <div class="photo-cadre">
+                    {% if eleve.avatar and eleve.avatar.name %}
+                    <img src="{{ eleve.avatar.url }}" alt="Photo de {{ eleve.get_full_name }}">
                     {% else %}
-                        <div class="photo-placeholder">Photo</div>
+                    <span>PHOTO<br>D'IDENTITÉ</span>
                     {% endif %}
                 </div>
-                
-                <div class="texte-attribution">
-                    <p class="certifie-que">Ce certificat est décerné à</p>
-                    <h2 class="nom-beneficiaire">{{ eleve.get_full_name|upper }}</h2>
-                    
-                    <div class="info-complementaire">
-                        <p><strong>Né(e) le :</strong> {{ eleve.date_naissance|date:"d/m/Y"|default:"---" }}</p>
-                        <p><strong>À :</strong> {{ eleve.lieu_naissance|default:"---" }}</p>
-                        <p><strong>Classe :</strong> {{ classe.nom }}</p>
-                        <p><strong>Année scolaire :</strong> {{ certificat.annee_scolaire }}</p>
-                    </div>
-                    
-                    <p class="programme-texte">
-                        pour avoir complété avec succès le programme<br>
-                        <strong>{{ type_certificat.nom }}</strong>
-                    </p>
+                <div class="photo-seal">
+                    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="50" cy="50" r="45" fill="none" stroke="#8B6914" stroke-width="2"/>
+                        <circle cx="50" cy="50" r="38" fill="none" stroke="#c9a84c" stroke-width="1"/>
+                        <text x="50" y="40" text-anchor="middle" fill="#8B6914" font-size="10" font-weight="bold" font-family="Arial">SCEAU</text>
+                        <text x="50" y="56" text-anchor="middle" fill="#8B6914" font-size="8" font-family="Arial">OFFICIEL</text>
+                        <text x="50" y="70" text-anchor="middle" fill="#008751" font-size="8" font-family="Arial">BÉNIN</text>
+                    </svg>
                 </div>
             </div>
-            
-            <!-- Mention statut -->
-            {% if certificat.statut == 'admis' %}
-                <div class="mention-statut mention-admis">
-                    {{ type_certificat.mention_reussite }}
+
+            <!-- Texte principal -->
+            <div class="texte-principal">
+                <p class="certifie-phrase">Nous soussignés, autorités compétentes de l'Académie Numérique Intelligente, certifions que</p>
+
+                <div class="nom-certifie">{{ eleve.get_full_name|upper }}</div>
+
+                <div class="infos-eleve">
+                    {% if eleve.profile.birth_date %}<span>Né(e) le :</span> {{ eleve.profile.birth_date|date:"d/m/Y" }}{% if eleve.profile.birth_place %} à {{ eleve.profile.birth_place }}{% endif %}<br>{% endif %}
+                    <span>Classe :</span> {{ classe.nom|default:eleve.classe|default:"N/A" }}
+                    {% if serie %}— <span>Série :</span> {{ serie|upper }}{% endif %}
+                    — <span>Matricule :</span> {{ eleve.matricule|default:"N/A" }}<br>
+                    <span>N° d'inscription :</span> {{ inscription.numero_inscription|default:"N/A" }}
+                    — <span>Établissement :</span> {{ etablissement_nom|default:"Académie Numérique Intelligente" }}
                 </div>
-            {% elif certificat.statut == 'refuse' %}
-                <div class="mention-statut mention-refuse">
-                    {{ type_certificat.mention_echec }}
-                </div>
-            {% else %}
-                <div class="mention-statut mention-attente">
-                    EN ATTENTE
-                </div>
-            {% endif %}
-            
-            <!-- Résultats -->
-            {% if certificat.moyenne_generale %}
-            <div class="resultats-container">
-                <div class="resultats-grid">
-                    <div class="resultat-item">
-                        <div class="resultat-label">Moyenne Générale</div>
-                        <div class="resultat-valeur">{{ certificat.moyenne_generale }}/{{ certificat.note_maximale }}</div>
-                    </div>
-                    <div class="resultat-item">
-                        <div class="resultat-label">Session</div>
-                        <div class="resultat-valeur">{{ certificat.session }}</div>
-                    </div>
-                    <div class="resultat-item">
-                        <div class="resultat-label">Numéro d'inscription</div>
-                        <div class="resultat-valeur" style="font-size: 14px;">{{ inscription.numero_inscription|default:"---" }}</div>
-                    </div>
-                </div>
-            </div>
-            {% endif %}
-            
-            <!-- Date et lieu -->
-            <div class="date-lieu-section">
-                <div class="date-lieu-item">
-                    <span class="date-lieu-label">Date :</span>
-                    <span>{{ certificat.date_delivrance|date:"d/m/Y"|default:"---" }}</span>
-                </div>
-                <div class="date-lieu-item">
-                    <span class="date-lieu-label">Lieu :</span>
-                    <span>{{ certificat.lieu_delivrance }}</span>
-                </div>
-            </div>
-            
-            <!-- Signatures -->
-            <div class="signatures-container">
-                <div class="signature-item">
-                    <div class="signature-ligne"></div>
-                    <p class="signature-titre">{{ type_certificat.titre_signataire_1 }}</p>
-                    {% if certificat.signataire_1 %}
-                        <p style="font-size: 12px; color: #64748b; margin-top: 5px;">{{ certificat.signataire_1.get_full_name }}</p>
+
+                <p class="motif-phrase">
+                    a complété avec succès le programme scolaire et a satisfait à toutes les exigences académiques de
+                </p>
+                <div class="motif-programme">{{ motif|default:"L'Année Scolaire 2025-2026" }}</div>
+
+                <!-- Statut / Mention -->
+                <div class="statut-bloc">
+                    {% if certificat.statut == 'admis' or certificat.statut == 'admitted' %}
+                    <span class="statut-badge st-admis">{{ type_certificat.mention_reussite|default:"ADMIS(E)" }}</span>
+                    {% elif certificat.statut == 'mention' %}
+                    <span class="statut-badge st-mention">AVEC MENTION</span>
+                    {% elif certificat.statut == 'excellent' %}
+                    <span class="statut-badge st-excellent">AVEC EXCELLENCE</span>
+                    {% elif certificat.statut == 'tableau_honneur' %}
+                    <span class="statut-badge st-honneur">TABLEAU D'HONNEUR</span>
+                    {% elif certificat.statut == 'refuse' %}
+                    <span class="statut-badge st-refuse">{{ type_certificat.mention_echec|default:"AJOURNÉ(E)" }}</span>
+                    {% else %}
+                    <span class="statut-badge st-admis">VALIDÉ(E)</span>
                     {% endif %}
                 </div>
-                <div class="signature-item">
-                    <div class="signature-ligne"></div>
-                    <p class="signature-titre">{{ type_certificat.titre_signataire_2 }}</p>
-                    {% if certificat.signataire_2 %}
-                        <p style="font-size: 12px; color: #64748b; margin-top: 5px;">{{ certificat.signataire_2.get_full_name }}</p>
-                    {% endif %}
+
+                <!-- Résultats -->
+                {% if certificat.moyenne_generale %}
+                <div class="resultats-bloc">
+                    <div class="res-item">
+                        <div class="res-v">{{ certificat.moyenne_generale }}/{{ certificat.note_maximale|default:"20" }}</div>
+                        <div class="res-k">Moyenne Générale</div>
+                    </div>
+                    {% if rang %}<div class="res-item">
+                        <div class="res-v">{{ rang }}/{{ effectif }}</div>
+                        <div class="res-k">Rang / Effectif</div>
+                    </div>{% endif %}
+                    <div class="res-item">
+                        <div class="res-v">{{ certificat.session|default:certificat.annee_scolaire|default:"2025-2026" }}</div>
+                        <div class="res-k">Session</div>
+                    </div>
+                    {% if mention %}<div class="res-item">
+                        <div class="res-v" style="font-size:10px;">{{ mention }}</div>
+                        <div class="res-k">Mention</div>
+                    </div>{% endif %}
                 </div>
+                {% endif %}
             </div>
         </div>
-        
-        <!-- QR Code et vérification -->
-        <div class="verification-section">
-            {% if certificat.qr_code %}
-                <div class="qr-code">
-                    <img src="{{ certificat.qr_code.url }}" alt="QR Code">
+
+        <!-- DATE & LIEU -->
+        <div class="date-lieu">
+            Fait à <strong>{{ certificat.lieu_delivrance|default:"Cotonou" }}</strong>,
+            le <strong>{{ certificat.date_delivrance|date:"d/m/Y"|default:"{% now 'd/m/Y' %}" }}</strong>
+        </div>
+
+        <!-- SIGNATURES -->
+        <div class="signatures">
+            <div class="sig">
+                <strong>{{ type_certificat.titre_signataire_1|default:"Le Professeur Principal" }}</strong>
+                {% if certificat.signataire_1 %}<div class="sous-sig">{{ certificat.signataire_1.get_full_name }}</div>{% endif %}
+                <div class="sceau-place">CACHET</div>
+            </div>
+            <div class="sig">
+                <strong>Le Censeur / CPE</strong>
+                <div class="sous-sig">{{ censeur|default:"" }}</div>
+                <div class="sceau-place">CACHET</div>
+            </div>
+            <div class="sig">
+                <strong>{{ type_certificat.titre_signataire_2|default:"Le Chef d'Établissement" }}</strong>
+                {% if certificat.signataire_2 %}<div class="sous-sig">{{ certificat.signataire_2.get_full_name }}</div>{% endif %}
+                <div class="sceau-place">CACHET</div>
+            </div>
+            <div class="sig">
+                <strong>L'Inspecteur de l'Enseignement</strong>
+                <div class="sous-sig">Direction Dép. du Littoral</div>
+                <div class="sceau-place">CACHET</div>
+            </div>
+        </div>
+
+        <!-- FOOTER -->
+        <div class="footer-cert">
+            <div class="footer-qr">
+                <div class="qr-mini">
+                    {% if certificat.qr_code %}<img src="{{ certificat.qr_code.url }}" alt="QR">
+                    {% else %}<span style="font-size:5px;color:#999;text-align:center;">QR CODE</span>{% endif %}
                 </div>
-            {% endif %}
-            <p class="code-verification">Code: {{ certificat.code_verification }}</p>
-        </div>
-        
-        <!-- Numéro de certificat -->
-        <div class="numero-certificat">
-            <span class="numero-label">N° Certificat :</span> {{ certificat.numero_certificat }}
-        </div>
-        
-        <!-- Logo footer -->
-        <div class="logo-footer">
-            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 3L1 9L12 15L21 10.09V17H23V9L12 3ZM5 13.18V17.18L12 21L19 17.18V13.18L12 17L5 13.18Z"/>
-            </svg>
-            <span class="logo-footer-text">Académie Numérique</span>
+                <div style="font-size:6px;color:#666;text-align:center;">Vérifier</div>
+            </div>
+            <div class="footer-info">
+                <div class="num-cert">N° Certificat : {{ certificat.numero_certificat|default:"ANI-CERT-2026-001" }}</div>
+                <div>Code de vérification : {{ certificat.code_verification|default:"N/A" }}</div>
+                <div style="font-style:italic;font-size:6px;color:#999;margin-top:0.5mm;">Document officiel de la République du Bénin — Toute falsification est un délit pénal.</div>
+            </div>
+            <div class="footer-qr">
+                <div class="qr-mini">
+                    {% if certificat.qr_code %}<img src="{{ certificat.qr_code.url }}" alt="QR">
+                    {% else %}<span style="font-size:5px;color:#999;text-align:center;">SCAN PDF</span>{% endif %}
+                </div>
+                <div style="font-size:6px;color:#666;text-align:center;">Télécharger</div>
+            </div>
         </div>
     </div>
+</div>
 </body>
 </html>

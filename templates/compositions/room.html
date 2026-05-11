@@ -21,7 +21,7 @@
             </div>
         </div>
         
-        <!-- Timer IA RÉEL -->
+        <!-- Timer -->
         <div class="hidden md:flex items-center gap-6 glass px-6 py-2.5 rounded-2xl border border-border-standard">
             <div class="flex items-center gap-2 text-warning">
                 <i class="fa-solid fa-clock animate-pulse"></i>
@@ -52,46 +52,56 @@
             <div class="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none"></div>
             
             <div class="max-w-3xl mx-auto space-y-6 relative z-10">
-                <!-- En-tête Sujet -->
-                <div class="glass rounded-2xl p-6 border border-border-standard flex items-center justify-between">
-                    <div>
-                        <h2 class="text-xl font-black">{{ exam.matiere.nom }}</h2>
-                        <p class="text-xs text-text-muted mt-1 uppercase tracking-widest">{{ exam.get_type_exam_display }} Officiel</p>
-                    </div>
-                    <div class="w-12 h-12 rounded-xl bg-bg-tertiary/30 flex items-center justify-center text-text-muted">
-                        <i class="fa-solid fa-file-pdf text-xl"></i>
+                <!-- En-titre -->
+                <div class="flex items-center justify-between">
+                    <h2 class="text-xl font-black text-white flex items-center gap-2">
+                        <i class="fa-solid fa-file-lines text-accent"></i>
+                        {{ exam.matiere.nom|default:"Français" }}
+                    </h2>
+                    <div class="text-[10px] text-text-muted uppercase tracking-widest font-black">
+                        Durée: {{ exam.duree_minutes }}min
                     </div>
                 </div>
 
-                <!-- Contenu Sujet -->
-                <div class="bg-bg-card rounded-[1.5rem] p-2 md:p-4 shadow-2xl min-h-[600px] md:min-h-[800px] relative overflow-hidden group">
-                    <!-- Watermark -->
-                    <div class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.03] rotate-[-45deg] select-none">
-                        <span class="text-6xl font-black text-text-muted whitespace-nowrap">{{ user.matricule|default:user.email }}</span>
-                    </div>
-
-                    <div class="prose prose-slate max-w-none h-full">
-                        {% if files %}
-                            {% for f in files %}
-                                {% if f.fichier %}
-                                    <iframe src="{{ f.fichier.url }}#toolbar=0" class="w-full h-[600px] md:h-[800px] rounded-xl border-0 bg-bg-tertiary"></iframe>
-                                {% endif %}
-                            {% endfor %}
+                <!-- Sujet -->
+                <div class="glass rounded-2xl p-6 border border-border-standard">
+                    <h3 class="text-lg font-black text-white mb-4">Sujet</h3>
+                    <div class="prose prose-invert max-w-none text-text-secondary">
+                        {% if exam.description %}
+                            {{ exam.description|safe }}
                         {% else %}
-                            <div class="p-8 text-text-primary">
-                                <h3 class="text-xl font-bold mb-6 border-b-2 border-border-standard pb-4">Sujet :</h3>
-                                <p class="leading-relaxed whitespace-pre-line text-lg">{{ exam.description|default:"Aucun sujet texte ou fichier fourni pour cette épreuve." }}</p>
-                            </div>
+                            <p class="text-text-muted">Aucun sujet spécifié pour cette composition.</p>
                         {% endif %}
                     </div>
                 </div>
+
+                <!-- Fichiers joints -->
+                {% if files %}
+                    <div class="glass rounded-2xl p-6 border border-border-standard">
+                        <h3 class="text-lg font-black text-white mb-4">Documents</h3>
+                        <div class="space-y-3">
+                            {% for f in files %}
+                                <div class="flex items-center justify-between p-3 bg-bg-secondary/50 rounded-xl border border-border-standard hover:border-accent/50 transition-colors">
+                                    <div class="flex items-center gap-3">
+                                        <i class="fa-solid fa-file-pdf text-danger text-lg"></i>
+                                        <div>
+                                            <p class="text-sm font-medium text-white">{{ f.nom_original }}</p>
+                                            <p class="text-[10px] text-text-muted">{{ f.type_fichier|title }}</p>
+                                        </div>
+                                    </div>
+                                    <iframe src="{% url 'serve_exam_file' f.id %}" class="w-full h-96 rounded-lg border border-border-standard"></iframe>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
             </div>
         </div>
 
-        <!-- Zone de Réponse / Caméra -->
+        <!-- Zone de Réponse -->
         <div class="w-full lg:w-1/2 p-4 md:p-8 flex flex-col gap-6 bg-bg-secondary overflow-y-auto">
             
-            <!-- Feedback Caméra (Anti-Cheat RÉEL) -->
+            <!-- Feedback Caméra -->
             <div class="h-48 md:h-64 glass rounded-2xl border border-border-standard relative overflow-hidden group flex-shrink-0">
                 <video id="webcam" autoplay playsinline muted class="absolute inset-0 w-full h-full object-cover opacity-50 grayscale transition group-hover:grayscale-0"></video>
                 <div class="absolute inset-0 bg-gradient-to-t from-bg-primary/80 via-transparent to-transparent"></div>
@@ -104,48 +114,54 @@
                 <div class="absolute bottom-4 left-4 bg-success/20 backdrop-blur-md px-4 py-2 rounded-xl border border-success/30 flex items-center gap-3">
                     <span class="live-dot"></span>
                     <div>
-                        <p class="text-[10px] font-black uppercase tracking-widest text-success leading-none">Surveillance IA : Active</p>
+                        <p class="text-[10px] font-black uppercase tracking-widest text-success leading-none">Surveillance : Active</p>
                         <p class="text-[8px] text-success/80 mt-1 uppercase tracking-widest">Visage détecté</p>
                     </div>
                 </div>
             </div>
 
-            <!-- Zone de Soumission RÉELLE -->
-            <form action="{% url 'submit_paper' session.id %}" method="POST" enctype="multipart/form-data" class="flex-grow flex flex-col gap-4" id="exam-form">
+            <!-- Zone de Composition -->
+            <form action="{% url 'submit_paper' session.id %}" method="POST" enctype="multipart/form-data" class="flex-grow flex flex-col gap-4">
                 {% csrf_token %}
                 <div class="flex items-center justify-between">
                     <h3 class="text-lg font-black flex items-center gap-2">
                         <i class="fa-solid fa-pen-nib text-accent"></i> Espace de Composition
                     </h3>
-                </div>
-                
-                <!-- TinyMCE Rich Text Editor -->
-                <div class="flex-grow rounded-xl overflow-hidden border border-border-standard shadow-inner bg-bg-card">
-                    <textarea id="tinymce-editor" name="reponse_texte" class="w-full h-full min-h-[300px] hidden" placeholder="Rédigez votre composition ici..."></textarea>
-                </div>
-                
-                <div class="flex items-center gap-2 text-xs text-text-muted mb-2">
-                    <i class="fa-solid fa-circle-info"></i> Ou scannez votre copie physique :
+                    <div class="text-[10px] text-text-muted uppercase tracking-widest font-black">
+                        {{ exam.duree_minutes }}min restantes
+                    </div>
                 </div>
 
-                <div x-data="{ files: 0 }" class="grid grid-cols-1 md:grid-cols-2 gap-4 flex-shrink-0">
-                    <label class="relative glass border border-border-standard py-4 px-4 rounded-xl flex items-center justify-center gap-3 hover:bg-bg-tertiary/30 transition cursor-pointer group">
-                        <div class="w-10 h-10 rounded-lg bg-bg-tertiary flex items-center justify-center group-hover:scale-110 transition-transform">
-                            <i class="fa-solid fa-camera text-lg text-text-muted group-hover:text-white transition-colors"></i>
+                <!-- Textarea -->
+                <div class="flex-grow">
+                    <textarea 
+                        id="composition-textarea" 
+                        name="reponse_texte"
+                        placeholder="Rédigez votre composition ici..."
+                        class="w-full h-full p-4 bg-bg-primary/50 border border-border-standard rounded-xl text-white placeholder-text-muted resize-none focus:border-accent/50 focus:outline-none focus:ring-2 focus:ring-accent/20 transition-all"
+                    ></textarea>
+                </div>
+
+                <!-- Upload de copie -->
+                <div class="glass rounded-2xl p-4 border border-border-standard">
+                    <label class="flex items-center justify-between cursor-pointer group">
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-camera text-accent group-hover:scale-110 transition-transform"></i>
+                            <div>
+                                <p class="text-sm font-medium text-white">Scanner votre copie</p>
+                                <span class="text-[9px] text-text-muted">Photo (JPG/PNG) ou PDF</span>
+                            </div>
                         </div>
-                        <div class="flex-1 text-left">
-                            <span class="text-xs font-black uppercase tracking-widest block">Uploader copie physique</span>
-                            <span class="text-[9px] text-text-muted" x-text="files > 0 ? files + ' fichier(s) sélectionné(s)' : 'Photo (JPG/PNG) ou PDF'"></span>
-                        </div>
-                        <input type="file" name="copies" multiple accept="image/*,.pdf" class="hidden" @change="files = $event.target.files.length">
+                        <input type="file" name="copies" multiple accept="image/*,.pdf" class="hidden">
                     </label>
-
-                    <button type="button" onclick="confirmSubmit()" class="relative bg-button-gradient py-4 px-4 rounded-xl text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-primary/20 hover:scale-[1.02] hover:shadow-primary/40 transition flex items-center justify-center gap-2 overflow-hidden group">
-                        <span class="absolute inset-0 bg-bg-tertiary/30 translate-y-full group-hover:translate-y-0 transition-transform"></span>
-                        <i class="fa-solid fa-paper-plane relative z-10"></i>
-                        <span class="relative z-10">Soumettre l'examen</span>
-                    </button>
                 </div>
+
+                <!-- Bouton Soumettre -->
+                <button type="button" onclick="confirmSubmit()" class="relative bg-button-gradient py-4 px-4 rounded-xl text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-primary/20 hover:scale-[1.02] hover:shadow-primary/40 transition flex items-center justify-center gap-2 overflow-hidden group">
+                    <span class="absolute inset-0 bg-bg-tertiary/30 translate-y-full group-hover:translate-y-0 transition-transform"></span>
+                    <i class="fa-solid fa-paper-plane relative z-10"></i>
+                    <span class="relative z-10">Soumettre l'examen</span>
+                </button>
             </form>
         </div>
     </div>
@@ -161,481 +177,457 @@
         <p class="text-sm text-text-muted text-center mb-6">Vous êtes sur le point de soumettre définitivement votre copie. Cette action est irréversible.</p>
         <div class="flex gap-3">
             <button onclick="closeModal()" class="flex-1 py-3 rounded-xl glass border border-border-standard text-xs font-bold hover:bg-bg-tertiary/30 transition">Annuler</button>
-            <button onclick="submitWithTinyMCE()" class="flex-1 py-3 rounded-xl bg-primary hover:bg-primary/80 text-white text-xs font-bold transition shadow-lg shadow-primary/30">Confirmer</button>
+            <button onclick="submitForm()" class="flex-1 py-3 rounded-xl bg-primary hover:bg-primary/80 text-white text-xs font-bold transition shadow-lg shadow-primary/30">Confirmer</button>
         </div>
     </div>
 </div>
 
-<!-- html2canvas CDN (Screenshot périodique) -->
-<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-<!-- face-api.js CDN (Détection de visage) -->
-<script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/dist/face-api.min.js"></script>
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- OVERLAY ALERTE ANTI-TRICHE                                 -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div id="cheat-alert-overlay" class="fixed inset-0 z-[300] pointer-events-none opacity-0 transition-opacity duration-300" aria-live="assertive" aria-atomic="true">
+    <!-- Halo rouge pulsant sur tout l'écran -->
+    <div class="absolute inset-0 bg-red-600/10 animate-pulse pointer-events-none"></div>
+    <!-- Bordure rouge vive -->
+    <div class="absolute inset-0 border-[6px] border-red-600 animate-pulse pointer-events-none"></div>
 
-<!-- TinyMCE CDN -->
-<script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+    <!-- Bannière centrale -->
+    <div id="cheat-banner" class="absolute top-24 left-1/2 -translate-x-1/2 w-full max-w-xl px-4 pointer-events-auto">
+        <div class="bg-red-950 border-2 border-red-500 rounded-2xl shadow-[0_0_60px_rgba(220,38,38,0.8)] overflow-hidden">
+            <!-- Header clignotant -->
+            <div class="bg-red-600 px-6 py-3 flex items-center gap-4 animate-pulse">
+                <i class="fa-solid fa-triangle-exclamation text-white text-xl"></i>
+                <span class="text-white text-xs font-black uppercase tracking-[0.3em]">⚠ SYSTÈME ANTI-TRICHE — ALERTE DÉTECTÉE ⚠</span>
+                <i class="fa-solid fa-triangle-exclamation text-white text-xl"></i>
+            </div>
+            <!-- Corps -->
+            <div class="px-8 py-6 text-center">
+                <p id="alert-message" class="text-red-200 text-base font-semibold mb-5">Tentative de tricherie détectée</p>
+                <!-- Barre de progression violations -->
+                <div class="flex items-center justify-center gap-3 mb-4">
+                    <span class="text-red-400 text-xs font-bold uppercase tracking-widest">Violations</span>
+                    <span id="alert-count" class="text-white text-3xl font-black tabular-nums">0</span>
+                    <span class="text-red-400 text-sm font-bold">/ 10</span>
+                </div>
+                <div class="w-full bg-red-900/60 rounded-full h-3 mb-2 border border-red-800">
+                    <div id="alert-progress-bar" class="h-3 bg-red-500 rounded-full transition-all duration-500 shadow-[0_0_10px_#ef4444]" style="width:0%"></div>
+                </div>
+                <p class="text-red-400 text-[11px] mt-3 font-medium">À 10 violations → exclusion définitive et notification au professeur</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- ÉCRAN DE BANNISSEMENT                                       -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div id="ban-screen" class="fixed inset-0 z-[500] bg-gray-950 hidden items-center justify-center">
+    <div class="text-center max-w-lg mx-auto px-6">
+        <!-- Icône animée -->
+        <div class="relative mx-auto mb-10 w-40 h-40">
+            <div class="absolute inset-0 rounded-full border-4 border-red-700 animate-[ping_1.5s_ease-out_infinite] opacity-40"></div>
+            <div class="absolute inset-0 rounded-full border-4 border-red-600 animate-[ping_1.5s_ease-out_0.75s_infinite] opacity-20"></div>
+            <div class="relative w-full h-full rounded-full bg-red-950 border-4 border-red-600 flex items-center justify-center">
+                <i class="fa-solid fa-ban text-red-500 text-6xl"></i>
+            </div>
+        </div>
+        <div class="text-[10px] text-red-500 font-black uppercase tracking-[0.4em] mb-3">Académie Numérique — Anti-Triche</div>
+        <h1 class="text-5xl md:text-7xl font-black text-red-500 mb-4 tracking-tight">BANNI</h1>
+        <p class="text-xl text-white font-bold mb-3">Vous avez été exclu de cette composition</p>
+        <p class="text-gray-400 text-sm mb-8 leading-relaxed">Des violations répétées ont été détectées. Votre session a été clôturée et votre professeur a été notifié automatiquement.</p>
+        <!-- Motif -->
+        <div class="bg-red-950/60 border border-red-900 rounded-xl p-4 mb-8 font-mono text-left">
+            <p class="text-red-400 text-[11px]">MOTIF D'EXCLUSION</p>
+            <p id="ban-reason-text" class="text-white text-sm mt-1">VIOLATION_ANTI_TRICHE_REPETEE</p>
+        </div>
+        <p class="text-gray-500 text-sm">Redirection dans <span id="ban-countdown" class="text-white font-bold text-lg">10</span> secondes…</p>
+    </div>
+</div>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
 <script>
-    // ═══════════════════════════════════════════════════════════
-    // SYSTÈME ANTI-TRICHE PROFESSIONNEL — ACADÉMIE NUMÉRIQUE IA
-    // ═══════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════
+// SALLE DE COMPOSITION — SYSTÈME COMPLET
+// ════════════════════════════════════════════════════════════
 
-    const sessionId = '{{ session.id }}';
-    const examDuration = parseInt('{{ exam.duree_minutes }}') * 60;
-    let cheatScore = 0;
-    let cameraActive = false;
-    let fullscreenActive = false;
-    let videoStream = null;
-    let cameraCheckInterval = null;
+const sessionId = '{{ session.id }}';
+const examDuration = parseInt('{{ exam.duree_minutes }}') * 60;
+const csrfToken = () => document.querySelector('[name=csrfmiddlewaretoken]').value;
 
-    // ─── CONFIGURATION TINY MCE ───
-    tinymce.init({
-        selector: '#tinymce-editor',
-        height: 400,
-        menubar: false,
-        plugins: [
-            'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
-            'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-            'insertdatetime', 'media', 'table', 'help', 'wordcount', 'codesample'
-        ],
-        toolbar: 'undo redo | blocks | ' +
-            'bold italic backcolor | alignleft aligncenter ' +
-            'alignright alignjustify | bullist numlist outdent indent | ' +
-            'table codesample | removeformat | help',
-        content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }',
-        setup: function (editor) {
-            editor.on('change', function () { editor.save(); });
-        }
-    });
+let cameraActive = false;
+let fullscreenActive = false;
+let videoStream = null;
+let cameraCheckInterval = null;
+let screenshotInterval = null;
+let mainCountdown = null;
+let alertVisible = false;
+let alertDismissTimeout = null;
+let sessionBanned = false;
 
-    function submitWithTinyMCE() {
-        tinymce.triggerSave();
-        document.getElementById('exam-form').submit();
-    }
+// ════════════════════════════════════════════════════════════
+// TIMER
+// ════════════════════════════════════════════════════════════
+const timerDesktop = document.getElementById('exam-timer');
+const timerMobile  = document.getElementById('exam-timer-mobile');
+let duration = examDuration;
 
-    // ─── FONCTION D'ENVOI DES LOGS ANTI-TRICHE ───
-    function sendCheatLog(eventType, description, severity = 'low') {
-        fetch('/compositions/api/log-cheat/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-            },
-            body: JSON.stringify({
-                session_id: sessionId,
-                event_type: eventType,
-                description: description,
-                severity: severity
-            })
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.status === 'excluded') {
-                alert('⛔ EXCLUSION : ' + data.message);
-                window.location.href = '{% url "dashboard" %}';
-            } else if (data.warning_level) {
-                showCheatWarning(data.warning_level, data.message);
-            }
-        })
-        .catch(err => console.error('AntiCheat log error:', err));
-    }
+function formatTime(s, mobile) {
+    const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
+    if (mobile && h === 0) return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+    return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+}
 
-    function showCheatWarning(level, message) {
-        const cheatStatus = document.getElementById('cheat-status');
-        cheatStatus.textContent = '⚠ ' + message;
-        cheatStatus.style.background = level === 'final_warning' ? '#dc2626' : level === 'warning' ? '#d97706' : '#2563eb';
-        cheatStatus.style.color = '#fff';
-        setTimeout(() => {
-            cheatStatus.textContent = 'NORMAL';
-            cheatStatus.style.background = '';
-            cheatStatus.style.color = '';
-        }, 5000);
-    }
-
-    // ─── TIMER SYNCHRONISÉ ───
-    const timerDisplays = [document.getElementById('exam-timer'), document.getElementById('exam-timer-mobile')];
-    let duration = examDuration;
-
-    const formatTime = (seconds, isMobile) => {
-        const h = Math.floor(seconds / 3600);
-        const m = Math.floor((seconds % 3600) / 60);
-        const s = seconds % 60;
-        if (isMobile && h === 0) return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-        return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-    };
-
-    const countdown = setInterval(() => {
-        timerDisplays[0].textContent = formatTime(duration, false);
-        if (timerDisplays[1]) timerDisplays[1].textContent = formatTime(duration, true);
-
-        // Alertes progressives
-        if (duration === 600) showTimeAlert('10 minutes');
-        if (duration === 300) showTimeAlert('5 minutes');
-        if (duration === 60) showTimeAlert('1 minute');
-
-        if (duration-- <= 0) {
-            clearInterval(countdown);
-            alert('⏰ Temps écoulé ! Votre composition est soumise automatiquement.');
-            submitWithTinyMCE();
-        }
-    }, 1000);
-
-    function showTimeAlert(remaining) {
-        timerDisplays.forEach(el => {
-            if (el) {
-                el.parentElement.classList.add('animate-pulse');
-                el.style.color = '#dc2626';
-            }
+mainCountdown = setInterval(() => {
+    if (timerDesktop) timerDesktop.textContent = formatTime(duration, false);
+    if (timerMobile)  timerMobile.textContent  = formatTime(duration, true);
+    if (duration === 600 || duration === 300 || duration === 60) {
+        [timerDesktop, timerMobile].forEach(el => {
+            if (el) { el.style.color = '#dc2626'; el.parentElement.classList.add('animate-pulse'); }
         });
+        const mins = duration === 600 ? '10 minutes' : duration === 300 ? '5 minutes' : '1 minute';
+        if (duration === 60) speakAlert(`Attention, il vous reste ${mins} pour terminer votre composition.`);
     }
+    if (duration <= 0) { clearInterval(mainCountdown); submitForm(); }
+    duration--;
+}, 1000);
 
-    // ─── CAMÉRA AVEC VÉRIFICATION ───
-    async function initCamera() {
-        const video = document.getElementById('webcam');
-        try {
-            videoStream = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }
-            });
-            video.srcObject = videoStream;
-            cameraActive = true;
-            updateCameraStatus(true);
+// ════════════════════════════════════════════════════════════
+// ALERTE VOCALE (Web Speech API)
+// ════════════════════════════════════════════════════════════
+function speakAlert(text) {
+    if (!('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.lang = 'fr-FR';
+    utter.rate = 0.88;
+    utter.pitch = 1.15;
+    utter.volume = 1.0;
+    window.speechSynthesis.speak(utter);
+}
 
-            // Vérification périodique de la caméra
-            cameraCheckInterval = setInterval(checkCamera, 30000);
-        } catch (err) {
-            console.error('Camera error:', err);
-            cameraActive = false;
-            updateCameraStatus(false);
-            sendCheatLog('camera_off', 'Caméra non disponible ou refusée', 'medium');
-        }
+// ════════════════════════════════════════════════════════════
+// OVERLAY ALERTE DRAMATIQUE
+// ════════════════════════════════════════════════════════════
+function triggerAlertOverlay(cheatCount, message, isFinal = false) {
+    if (sessionBanned || alertVisible) return;
+    alertVisible = true;
+
+    const overlay  = document.getElementById('cheat-alert-overlay');
+    const msgEl    = document.getElementById('alert-message');
+    const countEl  = document.getElementById('alert-count');
+    const bar      = document.getElementById('alert-progress-bar');
+
+    msgEl.textContent = message || 'Tentative de tricherie détectée';
+    countEl.textContent = cheatCount;
+    const pct = Math.min((cheatCount / 10) * 100, 100);
+    bar.style.width = pct + '%';
+    bar.style.boxShadow = cheatCount >= 7
+        ? '0 0 20px #ef4444, 0 0 40px #ef4444'
+        : '0 0 10px #ef4444';
+
+    overlay.classList.remove('opacity-0');
+    overlay.classList.add('opacity-100');
+    overlay.style.pointerEvents = 'none';
+
+    // Voix — message différent selon niveau
+    const voiceText = isFinal
+        ? `ALERTE FINALE. ${cheatCount} violations détectées sur 10. La prochaine violation entraînera votre exclusion définitive de cette composition.`
+        : `Alerte. Tentative de tricherie détectée. ${cheatCount} violation${cheatCount > 1 ? 's' : ''} sur 10. Vous risquez d'être banni de cette composition.`;
+    speakAlert(voiceText);
+
+    // Mise à jour du badge
+    updateStatusBadge(cheatCount);
+
+    // Auto-fermeture après 7s
+    if (alertDismissTimeout) clearTimeout(alertDismissTimeout);
+    alertDismissTimeout = setTimeout(() => {
+        overlay.classList.remove('opacity-100');
+        overlay.classList.add('opacity-0');
+        alertVisible = false;
+    }, 7000);
+}
+
+function updateStatusBadge(count) {
+    const badge = document.getElementById('cheat-status');
+    if (!badge) return;
+    if (count === 0) {
+        badge.textContent = 'NORMAL'; badge.style.background = ''; badge.style.color = '';
+    } else if (count < 4) {
+        badge.textContent = `⚠ ${count} alerte`; badge.style.background = '#2563eb'; badge.style.color = '#fff';
+    } else if (count < 7) {
+        badge.textContent = `⚠ ${count}/10`; badge.style.background = '#d97706'; badge.style.color = '#fff';
+    } else {
+        badge.textContent = `🚨 ${count}/10`; badge.style.background = '#dc2626'; badge.style.color = '#fff';
     }
+}
 
-    function checkCamera() {
-        const video = document.getElementById('webcam');
-        if (!video.srcObject || !cameraActive) {
-            sendCheatLog('camera_off', 'Caméra détectée comme inactive', 'high');
-        }
-    }
+// ════════════════════════════════════════════════════════════
+// ÉCRAN DE BANNISSEMENT
+// ════════════════════════════════════════════════════════════
+function triggerBanScreen(reason) {
+    if (sessionBanned) return;
+    sessionBanned = true;
 
-    function updateCameraStatus(active) {
-        const statusEl = document.querySelector('.bg-success\\/20');
-        if (statusEl) {
-            if (active) {
-                statusEl.className = 'absolute bottom-4 left-4 bg-success/20 backdrop-blur-md px-4 py-2 rounded-xl border border-success/30 flex items-center gap-3';
-                statusEl.innerHTML = '<span class="live-dot"></span><div><p class="text-[10px] font-black uppercase tracking-widest text-success leading-none">Surveillance IA : Active</p><p class="text-[8px] text-success/80 mt-1 uppercase tracking-widest">Visage détecté</p></div>';
-            } else {
-                statusEl.className = 'absolute bottom-4 left-4 bg-danger/20 backdrop-blur-md px-4 py-2 rounded-xl border border-danger/30 flex items-center gap-3';
-                statusEl.innerHTML = '<i class="fa-solid fa-video-slash text-danger"></i><div><p class="text-[10px] font-black uppercase tracking-widest text-danger leading-none">CAMÉRA INACTIVE</p><p class="text-[8px] text-danger/80 mt-1 uppercase tracking-widest">Risque d\'exclusion</p></div>';
-            }
-        }
-    }
+    // Stopper tous les intervalles
+    clearInterval(mainCountdown);
+    clearInterval(screenshotInterval);
+    clearInterval(cameraCheckInterval);
 
-    // Désactiver sélection texte
-    document.body.style.userSelect = 'none';
-    document.body.style.webkitUserSelect = 'none';
-    document.body.style.mozUserSelect = 'none';
+    // Afficher l'écran
+    const ban = document.getElementById('ban-screen');
+    ban.style.display = 'flex';
+    if (reason) document.getElementById('ban-reason-text').textContent = reason;
 
-    // ─── OVERLAY DE VIOLATION (nouveau) ───
-    function showViolationOverlay(message) {
-        let overlay = document.getElementById('violation-overlay');
-        if (!overlay) {
-            overlay = document.createElement('div');
-            overlay.id = 'violation-overlay';
-            overlay.style.cssText = 'position:fixed;inset:0;background:rgba(220,38,38,0.15);z-index:9999;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0;transition:opacity 0.3s;';
-            overlay.innerHTML = '<div style="background:rgba(220,38,38,0.9);color:white;padding:20px 40px;border-radius:16px;font-size:24px;font-weight:900;text-transform:uppercase;letter-spacing:0.1em;text-align:center;box-shadow:0 0 60px rgba(220,38,38,0.5);">' +
-                '<i class="fa-solid fa-triangle-exclamation" style="font-size:48px;display:block;margin-bottom:12px;"></i>' +
-                '<span id="violation-text"></span></div>';
-            document.body.appendChild(overlay);
-        }
-        document.getElementById('violation-text').textContent = message;
-        overlay.style.opacity = '1';
-        setTimeout(() => { overlay.style.opacity = '0'; }, 3000);
-    }
+    // Masquer l'overlay d'alerte
+    const overlay = document.getElementById('cheat-alert-overlay');
+    overlay.classList.add('opacity-0');
 
-    // ─── FULLSCREEN RENFORCÉ AVEC RETRIES ───
-    let fullscreenRetries = 0;
-    const MAX_FULLSCREEN_RETRIES = 5;
+    // Annonce vocale solennelle
+    speakAlert('Attention. Vous avez été banni de cette composition pour tentatives de tricherie répétées. Votre professeur sera notifié immédiatement. Vous serez redirigé dans dix secondes.');
 
-    async function requestFullscreen() {
-        try {
-            if (!document.fullscreenElement) {
-                await document.documentElement.requestFullscreen();
-                fullscreenActive = true;
-                fullscreenRetries = 0;
-            }
-        } catch (err) {
-            console.warn('Fullscreen non supporté ou refusé:', err);
-        }
-    }
-
-    document.addEventListener('fullscreenchange', () => {
-        fullscreenActive = document.fullscreenElement !== null;
-        if (!fullscreenActive && document.getElementById('webcam').srcObject) {
-            sendCheatLog('fullscreen_exit', 'Sortie du mode plein écran', 'medium');
-            cheatScore++;
-            showViolationOverlay('SORTIE DU PLEIN ÉCRAN');
-            // Tenter de restaurer le fullscreen (max 5 fois)
-            if (fullscreenRetries < MAX_FULLSCREEN_RETRIES) {
-                fullscreenRetries++;
-                setTimeout(() => requestFullscreen(), 2000);
-            }
-        }
-    });
-
-    // ─── DÉTECTION MULTI-TABS (BroadcastChannel) ───
-    const channel = new BroadcastChannel('exam_channel_' + sessionId);
-    let tabCount = 0;
-
-    channel.postMessage({ type: 'tab_open', tabId: Date.now() });
-    channel.onmessage = (event) => {
-        if (event.data.type === 'tab_open') {
-            tabCount++;
-            channel.postMessage({ type: 'tab_ack', tabId: Date.now() });
-            if (tabCount > 0) {
-                sendCheatLog('multi_tab', 'Multiples onglets détectés', 'high');
-            }
-        }
-    };
-
-    window.addEventListener('beforeunload', () => {
-        channel.postMessage({ type: 'tab_close' });
-    });
-
-    // ─── PROTECTIONS ANTI-TRICHE ───
-    // Visibility API
-    document.addEventListener('visibilitychange', () => {
-        if (document.hidden) {
-            sendCheatLog('tab_change', 'Changement d\'onglet détecté', 'medium');
-            cheatScore++;
-            showViolationOverlay('CHANGEMENT D\'ONGLET DÉTECTÉ');
-        }
-    });
-
-    // ─── BLUR / PERTE DE FOCUS (nouveau) ───
-    let blurCount = 0;
-    window.addEventListener('blur', () => {
-        blurCount++;
-        sendCheatLog('fullscreen_exit', `Perte de focus détectée (${blurCount})`, blurCount >= 3 ? 'high' : 'medium');
-        cheatScore++;
-        showViolationOverlay(`PERTE DE FOCUS (${blurCount}/3)`);
-        if (blurCount >= 3) {
-            alert('⛔ Exclusion : trop de pertes de focus détectées.');
+    // Compte à rebours de redirection
+    let sec = 10;
+    const cdEl = document.getElementById('ban-countdown');
+    const banTimer = setInterval(() => {
+        sec--;
+        if (cdEl) cdEl.textContent = sec;
+        if (sec <= 0) {
+            clearInterval(banTimer);
             window.location.href = '{% url "dashboard" %}';
         }
-    });
+    }, 1000);
+}
 
-    // ─── BLOCAGE TOUCHES RENFORCÉ ───
-    document.addEventListener('keydown', e => {
-        // F11 (toggle fullscreen)
-        if (e.key === 'F11') {
-            e.preventDefault();
-            sendCheatLog('fullscreen_exit', 'Touche F11 bloquée', 'medium');
-        }
-        // Meta/Windows key
-        if (e.key === 'Meta' || e.key === 'OS') {
-            e.preventDefault();
-            sendCheatLog('tab_change', 'Touche Windows/Meta bloquée', 'medium');
-        }
-        // Alt+Tab, Alt+F4
-        if (e.altKey && (e.key === 'Tab' || e.key === 'F4')) {
-            e.preventDefault();
-            sendCheatLog('tab_change', 'Alt+Tab/Alt+F4 bloqué', 'high');
-        }
-        // Ctrl+W (close tab)
-        if (e.ctrlKey && e.key === 'w') {
-            e.preventDefault();
-            sendCheatLog('tab_change', 'Fermeture d\'onglet bloquée', 'high');
-        }
-        if ((e.ctrlKey && (e.key === 'p' || e.key === 'P')) || e.key === 'PrintScreen') {
-            e.preventDefault();
-            sendCheatLog('print_attempt', 'Tentative d\'impression bloquée', 'medium');
-        }
-        // DevTools
-        if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I') || (e.ctrlKey && e.key === 'U')) {
-            e.preventDefault();
-            sendCheatLog('devtools_attempt', 'Tentative d\'ouverture DevTools bloquée', 'medium');
-        }
-    });
-
-    // ─── NAVIGATION ARRIÈRE BLOQUÉE ───
-    history.pushState(null, '', location.href);
-    window.addEventListener('popstate', () => {
-        history.pushState(null, '', location.href);
-        sendCheatLog('tab_change', 'Tentative de navigation arrière bloquée', 'high');
-    });
-    window.addEventListener('beforeunload', e => {
-        e.preventDefault();
-        e.returnValue = 'Êtes-vous sûr de vouloir quitter l\'examen ?';
-        return 'Êtes-vous sûr de vouloir quitter l\'examen ?';
-    });
-
-    // Clipboard
-    document.addEventListener('copy', e => {
-        e.preventDefault();
-        sendCheatLog('copy_paste', 'Tentative de copie bloquée', 'low');
-        cheatScore++;
-    });
-    document.addEventListener('paste', e => {
-        e.preventDefault();
-        sendCheatLog('copy_paste', 'Tentative de collage bloquée', 'low');
-        cheatScore++;
-    });
-    document.addEventListener('cut', e => {
-        e.preventDefault();
-        sendCheatLog('copy_paste', 'Tentative de coupure bloquée', 'low');
-    });
-
-    // Clic droit
-    document.addEventListener('contextmenu', e => {
-        e.preventDefault();
-        sendCheatLog('right_click', 'Clic droit détecté', 'low');
-    });
-
-    // Impression
-    document.addEventListener('keydown', e => {
-        if ((e.ctrlKey && (e.key === 'p' || e.key === 'P')) || e.key === 'PrintScreen') {
-            e.preventDefault();
-            sendCheatLog('print_attempt', 'Tentative d\'impression bloquée', 'medium');
-        }
-        // DevTools
-        if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I') || (e.ctrlKey && e.key === 'U')) {
-            e.preventDefault();
-            sendCheatLog('devtools_attempt', 'Tentative d\'ouverture DevTools bloquée', 'medium');
-        }
-    });
-
-    // Détection DevTools via debugger
-    setInterval(() => {
-        const before = new Date();
-        debugger;
-        const after = new Date();
-        if (after - before > 100) {
-            sendCheatLog('devtools_open', 'DevTools détectée via timing', 'high');
-        }
-    }, 10000);
-
-    // ═══════════════════════════════════════════════════════
-    // FONCTIONNALITÉS AVANCÉES ANTI-TRICHE
-    // ═══════════════════════════════════════════════════════
-
-    // ─── SCREENSHOT PÉRIODIQUE (toutes les 15s) ───
-    let screenshotInterval = null;
-    async function captureScreenshot() {
-        try {
-            const canvas = await html2canvas(document.querySelector('.flex-grow.lg\\:flex-row'), {
-                useCORS: true,
-                allowTaint: false,
-                scale: 0.5,
-                logging: false,
-            });
-            canvas.toBlob(async (blob) => {
-                if (!blob) return;
-                const formData = new FormData();
-                formData.append('screenshot', blob, 'screenshot.png');
-                formData.append('session_id', sessionId);
-                const csrf = document.querySelector('[name=csrfmiddlewaretoken]');
-                formData.append('csrfmiddlewaretoken', csrf ? csrf.value : '');
-
-                const res = await fetch('/compositions/api/upload-screenshot/', {
-                    method: 'POST',
-                    body: formData,
-                });
-                const data = await res.json();
-                if (data.status === 'error') {
-                    console.warn('Screenshot upload failed:', data.message);
-                }
-            }, 'image/png');
-        } catch (err) {
-            console.warn('Screenshot capture failed:', err);
-        }
-    }
-
-    // ─── DÉTECTION DE VISAGE MULTIPLE (face-api.js) ───
-    let faceDetectionInterval = null;
-    let faceDetectionActive = false;
-    let modelsLoaded = false;
-
-    async function initFaceDetection() {
-        if (typeof faceapi === 'undefined') {
-            console.warn('face-api.js non chargé, détection de visage désactivée');
+// ════════════════════════════════════════════════════════════
+// LOG ANTI-TRICHE → BACKEND
+// ════════════════════════════════════════════════════════════
+function sendCheatLog(eventType, description, severity = 'low') {
+    if (sessionBanned) return;
+    fetch('/compositions/api/log-cheat/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken() },
+        body: JSON.stringify({ session_id: sessionId, event_type: eventType, description, severity })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.status === 'excluded') {
+            triggerBanScreen(data.message || 'Violations anti-triche répétées');
             return;
         }
-        try {
-            const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@latest/model/';
-            await Promise.all([
-                faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
-            ]);
-            modelsLoaded = true;
-            console.log('face-api.js modèles chargés');
-        } catch (err) {
-            console.error('Erreur chargement face-api.js:', err);
+        if (!data.cheat_count) return;
+        updateStatusBadge(data.cheat_count);
+        if (data.warning_level === 'warning' || data.warning_level === 'final_warning') {
+            triggerAlertOverlay(data.cheat_count, data.message, data.warning_level === 'final_warning');
         }
+    })
+    .catch(() => {});
+}
+
+// ════════════════════════════════════════════════════════════
+// PLEIN ÉCRAN + DÉTECTION SORTIE
+// ════════════════════════════════════════════════════════════
+function requestFullscreen() {
+    const el = document.documentElement;
+    try {
+        if (el.requestFullscreen) el.requestFullscreen();
+        else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+        else if (el.msRequestFullscreen) el.msRequestFullscreen();
+        fullscreenActive = true;
+    } catch(e) {}
+}
+
+function handleFullscreenChange() {
+    const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement);
+    if (!isFs && fullscreenActive && !sessionBanned) {
+        fullscreenActive = false;
+        sendCheatLog('fullscreen_exit', 'Sortie du mode plein écran', 'medium');
+        setTimeout(requestFullscreen, 2500);
+    } else {
+        fullscreenActive = isFs;
     }
+}
+document.addEventListener('fullscreenchange', handleFullscreenChange);
+document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+document.addEventListener('mozfullscreenchange', handleFullscreenChange);
 
-    async function checkFaces() {
-        const video = document.getElementById('webcam');
-        if (!video || !video.srcObject || !modelsLoaded) return;
-
-        try {
-            const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({ scoreThreshold: 0.4 }));
-            if (detections.length > 1) {
-                sendCheatLog('multiple_faces', `${detections.length} visages détectés`, 'high');
-                showViolationOverlay(`${detections.length} VISAGES DÉTECTÉS`);
-                // Pause detection for 30s to avoid spam
-                clearInterval(faceDetectionInterval);
-                setTimeout(() => {
-                    faceDetectionInterval = setInterval(checkFaces, 5000);
-                }, 30000);
-            } else if (detections.length === 0 && cameraActive) {
-                // Aucun visage alors que caméra est active
-                sendCheatLog('camera_off', 'Aucun visage détecté devant la caméra', 'medium');
-            }
-        } catch (err) {
-            console.warn('Face detection error:', err);
-        }
+// ════════════════════════════════════════════════════════════
+// RACCOURCIS CLAVIER BLOQUÉS
+// ════════════════════════════════════════════════════════════
+document.addEventListener('keydown', e => {
+    if (sessionBanned) return;
+    if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && ['I','i','J','j','C','c'].includes(e.key)) || (e.ctrlKey && e.key === 'U')) {
+        e.preventDefault();
+        sendCheatLog('devtools_attempt', 'Tentative ouverture DevTools', 'medium');
     }
+    if ((e.ctrlKey && ['p','P'].includes(e.key)) || e.key === 'PrintScreen') {
+        e.preventDefault();
+        sendCheatLog('print_attempt', 'Tentative impression', 'medium');
+    }
+    if ((e.ctrlKey || e.metaKey) && ['c','v','x','C','V','X'].includes(e.key)) {
+        e.preventDefault();
+        sendCheatLog('copy_paste', 'Tentative copier/coller', 'medium');
+    }
+    if (e.key === 'Escape') {
+        e.preventDefault();
+    }
+});
 
-    // ─── INITIALISATION DES FONCTIONNALITÉS AVANCÉES ───
-    function initAdvancedProctoring() {
-        // Screenshot toutes les 15s
-        screenshotInterval = setInterval(captureScreenshot, 15000);
+document.addEventListener('contextmenu', e => {
+    e.preventDefault();
+    // Clic droit : log seulement, pas d'alerte (trop fréquent par erreur)
+    if (sessionBanned) return;
+    sendCheatLog('right_click', 'Clic droit', 'low');
+});
 
-        // Face detection après chargement des modèles
-        initFaceDetection().then(() => {
-            if (modelsLoaded) {
-                faceDetectionActive = true;
-                faceDetectionInterval = setInterval(checkFaces, 5000);
-            }
+document.addEventListener('selectstart', e => {
+    if (e.target.tagName !== 'TEXTAREA' && e.target.tagName !== 'INPUT') {
+        e.preventDefault();
+    }
+});
+
+// Détecter changement d'onglet / fenêtre cachée
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden && !sessionBanned) {
+        sendCheatLog('tab_change', 'Onglet caché ou changement de fenêtre', 'high');
+    }
+});
+
+// ════════════════════════════════════════════════════════════
+// CAMÉRA
+// ════════════════════════════════════════════════════════════
+async function initCamera() {
+    const video = document.getElementById('webcam');
+    try {
+        videoStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }
         });
+        video.srcObject = videoStream;
+        cameraActive = true;
+        updateCameraStatus(true);
+        cameraCheckInterval = setInterval(checkCamera, 30000);
+    } catch (err) {
+        cameraActive = false;
+        updateCameraStatus(false);
+        sendCheatLog('camera_off', 'Caméra inaccessible au démarrage', 'medium');
     }
+}
 
-    // ─── MODAL DE CONFIRMATION ───
-    const modal = document.getElementById('submit-modal');
-    const modalContent = document.getElementById('submit-modal-content');
-
-    function confirmSubmit() {
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
-        setTimeout(() => {
-            modal.classList.remove('opacity-0');
-            modalContent.classList.remove('scale-95');
-        }, 10);
+function checkCamera() {
+    const video = document.getElementById('webcam');
+    if (!video.srcObject || !cameraActive) {
+        sendCheatLog('camera_off', 'Caméra inactive détectée', 'medium');
     }
+}
 
-    function closeModal() {
-        modal.classList.add('opacity-0');
-        modalContent.classList.add('scale-95');
-        setTimeout(() => {
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-        }, 300);
+function updateCameraStatus(active) {
+    const el = document.querySelector('.bg-success\\/20') || document.querySelector('.bg-danger\\/20');
+    if (!el) return;
+    if (active) {
+        el.className = 'absolute bottom-4 left-4 bg-success/20 backdrop-blur-md px-4 py-2 rounded-xl border border-success/30 flex items-center gap-3';
+        el.innerHTML = '<span class="live-dot"></span><div><p class="text-[10px] font-black uppercase tracking-widest text-success leading-none">Surveillance : Active</p><p class="text-[8px] text-success/80 mt-1 uppercase tracking-widest">Visage détecté</p></div>';
+    } else {
+        el.className = 'absolute bottom-4 left-4 bg-danger/20 backdrop-blur-md px-4 py-2 rounded-xl border border-danger/30 flex items-center gap-3';
+        el.innerHTML = '<i class="fa-solid fa-video-slash text-danger"></i><div><p class="text-[10px] font-black uppercase tracking-widest text-danger leading-none">CAMÉRA INACTIVE</p><p class="text-[8px] text-danger/80 mt-1 uppercase tracking-widest">Risque d\'exclusion</p></div>';
     }
+}
 
-    // ─── INITIALISATION ───
-    window.addEventListener('DOMContentLoaded', () => {
-        initCamera();
-        requestFullscreen();
-        initAdvancedProctoring();
-    });
+// ════════════════════════════════════════════════════════════
+// SCREENSHOTS PÉRIODIQUES
+// ════════════════════════════════════════════════════════════
+async function captureScreenshot() {
+    if (sessionBanned) return;
+    try {
+        const canvas = await html2canvas(document.querySelector('.flex-grow') || document.body, {
+            useCORS: true, allowTaint: false, scale: 0.5, logging: false,
+        });
+        canvas.toBlob(blob => {
+            if (!blob) return;
+            const fd = new FormData();
+            fd.append('screenshot', blob, 'screenshot.png');
+            fd.append('session_id', sessionId);
+            fd.append('csrfmiddlewaretoken', csrfToken());
+            fetch('/compositions/api/upload-screenshot/', { method: 'POST', body: fd }).catch(() => {});
+        }, 'image/png');
+    } catch (e) {}
+}
+
+// ════════════════════════════════════════════════════════════
+// NEMOTRON IA — ANALYSE INTELLIGENTE
+// ════════════════════════════════════════════════════════════
+async function analyzeWithNemotron() {
+    if (sessionBanned) return;
+    try {
+        const canvas = await html2canvas(document.body, {
+            useCORS: true, allowTaint: false, scale: 0.7, logging: false,
+        });
+        canvas.toBlob(async blob => {
+            if (!blob) return;
+            const fd = new FormData();
+            fd.append('screenshot', blob, 'nemotron.jpg');
+            fd.append('session_id', sessionId);
+            fd.append('csrfmiddlewaretoken', csrfToken());
+
+            const res  = await fetch('/compositions/api/nemotron-analyze/', { method: 'POST', body: fd });
+            const data = await res.json();
+            if (!data.success) return;
+
+            // Badge de risque
+            const badge = document.getElementById('cheat-status');
+            const risk  = (data.analysis || {}).risk_level || 'low';
+            const riskLabels = { critical: ['🚨 CRITIQUE', '#7f1d1d'], high: ['⚠ SUSPECT', '#dc2626'], medium: ['👁 SURVEILLANCE', '#d97706'], low: ['✅ NORMAL', '#059669'] };
+            if (badge && riskLabels[risk]) {
+                badge.textContent = riskLabels[risk][0];
+                badge.style.background = riskLabels[risk][1];
+            }
+
+            if (data.banned) {
+                triggerBanScreen(data.ban_reason || 'Triche détectée par IA');
+                return;
+            }
+
+            if (data.warning) {
+                const violations = Math.ceil(data.violation_count || 0);
+                triggerAlertOverlay(violations, data.warning, violations >= 5);
+            }
+        }, 'image/jpeg', 0.7);
+    } catch (e) {}
+}
+
+// ════════════════════════════════════════════════════════════
+// SOUMISSION
+// ════════════════════════════════════════════════════════════
+function submitForm() {
+    clearInterval(mainCountdown);
+    document.querySelector('form').submit();
+}
+
+const modal = document.getElementById('submit-modal');
+const modalContent = document.getElementById('submit-modal-content');
+
+function confirmSubmit() {
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    setTimeout(() => { modal.classList.remove('opacity-0'); modalContent.classList.remove('scale-95'); }, 10);
+}
+
+function closeModal() {
+    modal.classList.add('opacity-0');
+    modalContent.classList.add('scale-95');
+    setTimeout(() => { modal.classList.add('hidden'); modal.classList.remove('flex'); }, 300);
+}
+
+// ════════════════════════════════════════════════════════════
+// INITIALISATION
+// ════════════════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+    initCamera();
+    requestFullscreen();
+    screenshotInterval = setInterval(captureScreenshot, 15000);
+    setInterval(analyzeWithNemotron, 30000);
+    setTimeout(analyzeWithNemotron, 12000);
+});
 </script>
 
 <style>
@@ -645,7 +637,21 @@
         90% { opacity: 1; }
         100% { top: 100%; opacity: 0; }
     }
-    /* Désactiver sélection texte dans le room */
-    .prose, #tinymce-editor { user-select: text !important; }
+    
+    /* Permettre la sélection dans le textarea uniquement */
+    textarea { 
+        user-select: text !important; 
+        -webkit-user-select: text !important;
+        -moz-user-select: text !important;
+        -ms-user-select: text !important;
+    }
+    
+    /* Bloquer la sélection ailleurs */
+    *:not(textarea):not(input):not([contenteditable]) {
+        user-select: none !important;
+        -webkit-user-select: none !important;
+        -moz-user-select: none !important;
+        -ms-user-select: none !important;
+    }
 </style>
 {% endblock %}

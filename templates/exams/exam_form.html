@@ -113,17 +113,24 @@
         </div>
 
         <!-- Corrigé -->
-        <div x-data="{ name: '' }">
-          <label class="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Corrigé type (pour IA)</label>
-          <label class="relative block w-full h-36 border-2 border-dashed rounded-xl flex flex-col items-center justify-center cursor-pointer transition
-            border-border-standard hover:border-success/40 bg-bg-secondary hover:bg-success/5">
-            <i class="fa-solid fa-shield-check text-3xl text-text-muted mb-2"></i>
-            <p class="text-xs text-text-muted font-bold" x-text="name || 'Corrigé type (optionnel)'"></p>
-            <p class="text-[9px] text-text-muted mt-1">Utilisé par l'IA pour corriger</p>
-            <input type="file" name="file_corrige" accept=".pdf,.jpg,.jpeg,.png"
-              class="absolute inset-0 opacity-0 cursor-pointer"
-              @change="name = $event.target.files[0]?.name || ''">
+        <div x-data="{ name: '', valid: false }">
+          <label class="block text-[10px] font-black uppercase tracking-widest mb-2 flex items-center gap-2">
+            <span class="text-text-muted">Corrigé type</span>
+            <span class="bg-danger/20 text-danger border border-danger/40 text-[9px] px-2 py-0.5 rounded-full font-black">OBLIGATOIRE POUR L'IA</span>
           </label>
+          <label :class="valid ? 'border-success/60 bg-success/5' : 'border-warning/50 bg-warning/5'"
+            class="relative block w-full h-36 border-2 border-dashed rounded-xl flex flex-col items-center justify-center cursor-pointer transition">
+            <i :class="valid ? 'fa-solid fa-shield-check text-success' : 'fa-solid fa-triangle-exclamation text-warning'" class="text-3xl mb-2"></i>
+            <p class="text-xs font-bold" :class="valid ? 'text-success' : 'text-warning'" x-text="name || 'Corrigé type obligatoire'"></p>
+            <p class="text-[9px] text-text-muted mt-1">L'IA refuse de corriger sans ce fichier</p>
+            <input type="file" name="file_corrige" accept=".pdf,.jpg,.jpeg,.png" required
+              class="absolute inset-0 opacity-0 cursor-pointer"
+              @change="name = $event.target.files[0]?.name || ''; valid = !!$event.target.files[0]">
+          </label>
+          <p x-show="!valid" class="text-warning text-[10px] mt-1 flex items-center gap-1">
+            <i class="fa-solid fa-circle-exclamation"></i>
+            Sans corrigé type, l'IA attribuera automatiquement la note 0 à tous les élèves.
+          </p>
         </div>
       </div>
     </div>

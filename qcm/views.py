@@ -348,11 +348,67 @@ def download_qcm_bulletin(request, resultat_id):
     """Télécharger le bulletin PDF d'un résultat QCM."""
     from .models import QCMResultat
     from django.http import FileResponse, Http404
+    from bulletins.services import BulletinService
+    from bulletins.models import Bulletin, BulletinLigne
+    from bulletins.coefficients_benin import get_coefficient
+    from django.utils import timezone
+    from django.db import transaction
 
     resultat = get_object_or_404(QCMResultat, id=resultat_id, eleve=request.user)
 
-    if not resultat.bulletin or not resultat.bulletin.file_pdf:
-        raise Http404("Bulletin non disponible")
+    # Créer le bulletin s'il n'existe pas
+    if not resultat.bulletin:
+        try:
+            with transaction.atomic():
+                # Récupérer la série
+                serie = BulletinService._extract_serial(resultat.classe)
+                coefficient = get_coefficient(resultat.matiere, serie)
+
+                # Créer le bulletin
+                annee_scolaire = timezone.now().strftime('%Y-%Y')
+                bulletin = Bulletin.objects.create(
+                    eleve=resultat.eleve,
+                    classe=resultat.classe,
+                    annee_scolaire=annee_scolaire,
+                    periode=Bulletin.Periode.QCM,
+                    type_bulletin=Bulletin.TypeBulletin.QCM,
+                    moyenne_generale=resultat.note_sur_20,
+                    rang=1,
+                    effectif_total=1,
+                    appreciation_ia=resultat.feedback_ia.get('appreciation', '') or resultat.feedback_ia.get('remediation', ''),
+                    decision_conseil='Évaluation QCM complétée',
+                )
+
+                # Créer la ligne du bulletin
+                BulletinLigne.objects.create(
+                    bulletin=bulletin,
+                    matiere=resultat.matiere,
+                    note=resultat.note_sur_20,
+                    note_max=20,
+                    coefficient=coefficient,
+                    moyenne_classe=resultat.note_sur_20,
+                    appreciation=resultat.feedback_ia.get('remediation', ''),
+                )
+
+                # Lier le bulletin au résultat QCM
+                resultat.bulletin = bulletin
+                resultat.save()
+
+                logger.info(f"Bulletin QCM créé pour {resultat.eleve.email}: {bulletin.id}")
+        except Exception as e:
+            logger.error(f"Erreur création bulletin QCM: {e}")
+            raise Http404("Erreur lors de la création du bulletin")
+
+    # Régénérer le PDF si le fichier n'existe pas
+    if not resultat.bulletin.file_pdf:
+        try:
+            BulletinService.generate_bulletin_qcm_pdf(resultat.bulletin)
+            if not resultat.bulletin.file_pdf:
+                logger.error(f"PDF généré mais file_pdf est vide pour bulletin {resultat.bulletin.id}")
+                raise Http404("Erreur lors de la génération du PDF")
+        except Exception as e:
+            logger.error(f"Erreur régénération PDF bulletin QCM: {e}", exc_info=True)
+            raise Http404(f"Erreur lors de la génération du PDF: {str(e)}")
 
     return FileResponse(
         resultat.bulletin.file_pdf.open('rb'),

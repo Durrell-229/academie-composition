@@ -2,222 +2,561 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
+    <title>Relevé de Composition — {{ resultat.session.exam.titre|default:"Évaluation" }}</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: Arial, Helvetica, sans-serif;
-            background-color: #fff;
-            padding: 0;
+        html, body { background: #fff; }
+        body { font-family: Arial, Helvetica, sans-serif; font-size: 9px; color: #000; }
+
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            background: white;
+            display: flex;
+            flex-direction: column;
         }
-        .page-a4 { width: 210mm; min-height: 297mm; background: white; display: flex; flex-direction: column; }
-        .page-content { flex: 1; display: flex; flex-direction: column; padding: 8mm; }
 
-        .drapeau-top { width: 100%; height: 8mm; display: flex; margin-bottom: 5mm; }
-        .drapeau-top .rouge { flex: 1; background-color: #CE1126; }
-        .drapeau-top .jaune { flex: 1; background-color: #FCD116; }
-        .drapeau-top .vert  { flex: 1; background-color: #007A5E; }
+        /* ===== DRAPEAU BÉNIN ===== */
+        .drapeau { width: 100%; height: 9mm; display: flex; }
+        .drapeau .vert  { flex: 0 0 33.33%; background: #008751; }
+        .drapeau .jaune { flex: 1; background: #FCD116; }
+        .drapeau .rouge { flex: 1; background: #E8112D; }
 
-        .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4mm; padding-bottom: 3mm; border-bottom: 2px solid #000; }
-        .logo-left, .logo-right { width: 14mm; height: 14mm; border: 1px solid #000; display: flex; align-items: center; justify-content: center; font-size: 7px; font-weight: bold; text-align: center; overflow: hidden; flex-shrink: 0; }
-        .logo-left img, .logo-right img { width: 100%; height: 100%; object-fit: contain; }
-        .header-center { text-align: center; flex: 1; }
-        .header-center p { margin: 0.5mm 0; line-height: 1.2; }
-        .ministere    { font-size: 8px; font-weight: bold; }
-        .nom-ecole    { font-size: 11px; font-weight: bold; text-transform: uppercase; color: #007A5E; }
-        .devise-ecole { font-size: 8.5px; font-style: italic; }
-        .localisation { font-size: 8px; }
+        /* ===== EN-TÊTE ===== */
+        .header { padding: 4mm 8mm 3mm 8mm; border-bottom: 2px solid #000; }
+        .header-row { display: flex; align-items: center; justify-content: space-between; }
+        .header-logo { width: 22mm; height: 26mm; border: 1px solid #000; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .header-logo svg { width: 100%; height: 100%; }
+        .header-center { flex: 1; text-align: center; padding: 0 4mm; }
+        .rep { font-size: 9px; font-weight: bold; text-transform: uppercase; }
+        .devise { font-size: 8px; font-style: italic; }
+        .min { font-size: 7.5px; font-weight: bold; margin: 1mm 0; }
+        .ecole { font-size: 13px; font-weight: bold; color: #008751; text-transform: uppercase; }
+        .ecole-info { font-size: 7.5px; color: #444; margin-top: 0.5mm; }
+        .num-ordre { font-size: 7.5px; margin-top: 1mm; border: 1px solid #999; padding: 0.5mm 2mm; display: inline-block; }
 
-        .eleve-info { display: flex; flex-wrap: wrap; gap: 2mm 4mm; margin-bottom: 3mm; font-size: 8.5px; padding: 3mm; border: 1px solid #000; background: #fafafa; }
-        .info-item { display: flex; align-items: center; gap: 2mm; }
-        .info-item label { font-weight: bold; white-space: nowrap; font-size: 8px; }
-        .info-item .value { border-bottom: 1px solid #000; min-width: 18mm; padding: 0 2mm; min-height: 4mm; font-size: 8.5px; }
+        /* ===== TITRE ===== */
+        .titre-wrapper { padding: 2mm 8mm; }
+        .titre-compo {
+            text-align: center;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 2.5mm 4mm;
+            background: #e0e0e0;
+            border: 1.5px solid #000;
+        }
+        .sous-titre {
+            text-align: center;
+            font-size: 9px;
+            color: #333;
+            margin-top: 1.5mm;
+        }
 
-        .titre-bulletin { text-align: center; font-weight: bold; font-size: 12px; margin: 3mm 0; padding: 3mm; background: #d3d3d3; border: 1px solid #000; text-transform: uppercase; letter-spacing: 1px; }
+        .content { padding: 0 8mm; flex: 1; }
 
-        .tableau-notes { width: 100%; border-collapse: collapse; font-size: 8px; margin-bottom: 3mm; }
-        .tableau-notes thead { background: #e8e8e8; }
-        .tableau-notes th { border: 1px solid #000; padding: 2mm 1mm; text-align: center; font-weight: bold; font-size: 7px; }
-        .tableau-notes td { border: 1px solid #000; padding: 1.5mm 1mm; text-align: center; }
-        .tableau-notes .matiere { text-align: left; padding-left: 3mm; font-weight: 500; }
-        .tableau-notes tfoot td { background: #e8e8e8; font-weight: bold; }
+        /* ===== IDENTITÉ ÉLÈVE ===== */
+        .identite {
+            display: flex;
+            border: 1px solid #000;
+            margin-bottom: 2.5mm;
+        }
+        .photo-bloc {
+            flex: 0 0 22mm;
+            border-right: 1px solid #000;
+            padding: 2mm;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .photo-cadre {
+            width: 18mm; height: 22mm;
+            border: 1px solid #000;
+            background: #f0f0f0;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 6px; color: #999; text-align: center;
+            overflow: hidden;
+        }
+        .photo-cadre img { width: 100%; height: 100%; object-fit: cover; }
 
-        .resultat-final { margin: 3mm 0; padding: 3mm; border: 2px solid #000; text-align: center; background: #f8f8f8; }
-        .moyenne-g { font-size: 14pt; font-weight: bold; }
-        .mention   { font-size: 10pt; font-weight: bold; margin-top: 2mm; }
-        .rang      { font-size: 9pt; margin-top: 1mm; }
+        .infos-bloc { flex: 1; display: flex; flex-wrap: wrap; padding: 2mm 3mm; gap: 1.5mm 5mm; align-content: flex-start; }
+        .info-l { display: flex; align-items: center; gap: 1.5mm; min-width: 45%; }
+        .info-l.full { min-width: 95%; }
+        .lbl { font-weight: bold; font-size: 8px; white-space: nowrap; }
+        .val { border-bottom: 1px solid #555; padding: 0 1mm; min-height: 4mm; font-size: 8.5px; flex: 1; }
 
-        .appreciation-box { margin: 3mm 0; padding: 3mm; border-left: 3px solid #007A5E; background: #f5f5f5; font-size: 8px; font-style: italic; }
+        /* ===== DÉTAILS EXAMEN ===== */
+        .exam-details {
+            border: 1px solid #000;
+            margin-bottom: 2.5mm;
+        }
+        .exam-details h5 {
+            background: #d0d0d0;
+            border-bottom: 1px solid #000;
+            padding: 1.5mm 3mm;
+            font-size: 8px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .exam-details-grid {
+            display: flex;
+            flex-wrap: wrap;
+            padding: 2mm 3mm;
+            gap: 1.5mm 6mm;
+        }
+        .exam-info-item { display: flex; align-items: center; gap: 1.5mm; min-width: 30%; }
 
-        .signatures { display: flex; gap: 5mm; margin: 3mm 0; font-size: 8px; }
-        .sig-box { flex: 1; text-align: center; border-top: 1px solid #000; padding-top: 12mm; min-height: 15mm; }
-        .sig-box strong { font-size: 8px; }
+        /* ===== RÉSULTAT PRINCIPAL ===== */
+        .resultat-main {
+            border: 2px solid #000;
+            margin-bottom: 2.5mm;
+            text-align: center;
+            background: linear-gradient(to bottom, #f8f8f8, #fff);
+        }
+        .res-header {
+            background: #333;
+            color: #fff;
+            padding: 1.5mm;
+            font-size: 8px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .res-body { display: flex; }
+        .res-note-bloc {
+            flex: 0 0 45mm;
+            border-right: 2px solid #000;
+            padding: 3mm;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .note-label { font-size: 7.5px; font-weight: bold; text-transform: uppercase; color: #555; }
+        .note-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #008751;
+            line-height: 1;
+            margin: 1.5mm 0;
+        }
+        .note-value.rouge { color: #cc0000; }
+        .note-sur { font-size: 9px; color: #444; }
 
-        .qr-date { display: flex; justify-content: space-between; align-items: flex-end; gap: 5mm; font-size: 8px; margin-bottom: 3mm; }
-        .qr-item { text-align: center; flex: 0 0 15mm; }
-        .qr-item p { margin: 1mm 0; font-size: 7px; font-weight: bold; text-transform: uppercase; }
-        .qr-box { width: 15mm; height: 15mm; border: 1px solid #000; background: #f0f0f0; display: flex; align-items: center; justify-content: center; margin: 1mm auto 0 auto; }
-        .qr-box svg { width: 100%; height: 100%; }
-        .date-item { flex: 1; text-align: center; }
-        .date-item p { margin: 1mm 0; font-size: 8px; }
+        .res-stats { flex: 1; padding: 2mm 3mm; }
+        .stat-row { display: flex; justify-content: space-between; padding: 1mm 0; border-bottom: 1px dotted #ccc; font-size: 8px; }
+        .stat-row:last-child { border-bottom: none; }
+        .stat-key { color: #444; }
+        .stat-val { font-weight: bold; }
+
+        .mention-centrale {
+            display: inline-block;
+            padding: 2mm 6mm;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin: 2mm 0;
+            border-radius: 2px;
+        }
+        .m-excellent   { background: #006600; color: #fff; }
+        .m-tres-bien   { background: #0055aa; color: #fff; }
+        .m-bien        { background: #007a1a; color: #fff; }
+        .m-assez-bien  { background: #cc6600; color: #fff; }
+        .m-passable    { background: #cc9900; color: #000; }
+        .m-mediocre    { background: #cc4400; color: #fff; }
+        .m-insuffisant { background: #cc0000; color: #fff; }
+
+        /* ===== CORRECTION DÉTAILLÉE ===== */
+        .correction-detail {
+            border: 1px solid #000;
+            margin-bottom: 2.5mm;
+        }
+        .correction-detail h5 {
+            background: #d0d0d0;
+            border-bottom: 1px solid #000;
+            padding: 1.5mm 3mm;
+            font-size: 8px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .detail-table { width: 100%; border-collapse: collapse; font-size: 8px; }
+        .detail-table th { background: #e8e8e8; border: 1px solid #000; padding: 1.5mm 2mm; font-size: 7.5px; font-weight: bold; }
+        .detail-table td { border: 1px solid #ccc; padding: 1.5mm 2mm; vertical-align: top; }
+        .detail-table td.partie { font-weight: bold; }
+        .detail-table .pts-ok { color: #007a1a; font-weight: bold; }
+        .detail-table .pts-nok { color: #cc0000; font-weight: bold; }
+
+        /* ===== APPRÉCIATIONS ===== */
+        .apprec-grid { display: flex; gap: 3mm; margin-bottom: 2.5mm; }
+        .apprec-bloc { flex: 1; border: 1px solid #000; }
+        .apprec-bloc h5 {
+            background: #d0d0d0;
+            border-bottom: 1px solid #000;
+            padding: 1.5mm 3mm;
+            font-size: 8px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .apprec-text { padding: 2mm 3mm; font-size: 8px; line-height: 1.5; min-height: 12mm; }
+        .apprec-text .pf { color: #006600; }
+        .apprec-text .aa { color: #cc5500; }
+
+        /* ===== BARÈME OFFICIEL ===== */
+        .bareme {
+            border: 1px solid #ccc;
+            margin-bottom: 2.5mm;
+            padding: 2mm 3mm;
+            background: #fafafa;
+        }
+        .bareme h6 { font-size: 7.5px; font-weight: bold; text-transform: uppercase; margin-bottom: 1.5mm; color: #555; }
+        .bareme-items { display: flex; flex-wrap: wrap; gap: 1.5mm 4mm; }
+        .bareme-item { font-size: 7px; }
+        .bareme-item .badge { display: inline-block; padding: 0.5mm 2mm; border-radius: 2px; font-weight: bold; font-size: 7px; margin-right: 1mm; }
+
+        /* ===== SIGNATURES ===== */
+        .sigs { display: flex; gap: 3mm; margin-bottom: 2.5mm; }
+        .sig { flex: 1; text-align: center; padding-top: 10mm; border-top: 1px solid #000; font-size: 7.5px; }
+        .sig strong { font-size: 7.5px; display: block; }
+        .sig .ai-label { font-size: 6.5px; color: #008751; font-style: italic; margin-top: 0.5mm; }
+
+        /* ===== QR & FOOTER ===== */
+        .qr-footer {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            padding: 2mm 8mm;
+            font-size: 7px;
+            border-top: 1px solid #ccc;
+        }
+        .qr-z { text-align: center; }
+        .qr-img { width: 18mm; height: 18mm; border: 1px solid #000; margin: 0 auto 1mm auto; display: flex; align-items: center; justify-content: center; background: #fff; }
+        .qr-img img { width: 100%; height: 100%; }
+        .qr-lbl { font-size: 6px; font-weight: bold; text-transform: uppercase; }
+        .qr-ref { font-size: 5.5px; font-family: monospace; color: #666; }
+        .footer-c { flex: 1; text-align: center; padding: 0 5mm; font-size: 7px; color: #555; }
 
         .drapeau-bottom { width: 100%; height: 8mm; display: flex; margin-top: auto; }
-        .drapeau-bottom .rouge { flex: 1; background-color: #CE1126; }
-        .drapeau-bottom .jaune { flex: 1; background-color: #FCD116; }
-        .drapeau-bottom .vert  { flex: 1; background-color: #007A5E; }
-        .footer-legal { text-align: center; font-size: 6px; color: #666; margin: 2mm 0 1mm 0; }
+        .drapeau-bottom .vert  { flex: 0 0 33.33%; background: #008751; }
+        .drapeau-bottom .jaune { flex: 1; background: #FCD116; }
+        .drapeau-bottom .rouge { flex: 1; background: #E8112D; }
+
+        @media print {
+            body { padding: 0; }
+            @page { size: A4; margin: 0; }
+        }
     </style>
 </head>
 <body>
-    <div class="page-a4">
-        <div class="page-content">
-            <div class="drapeau-top">
-                <div class="rouge"></div><div class="jaune"></div><div class="vert"></div>
-            </div>
+<div class="page">
+    <!-- DRAPEAU -->
+    <div class="drapeau">
+        <div class="vert"></div><div class="jaune"></div><div class="rouge"></div>
+    </div>
 
-            <div class="header">
-                <div class="logo-left">
-                    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="50" cy="50" r="45" fill="#007A5E" stroke="#000" stroke-width="2"/>
-                        <text x="50" y="38" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">AN</text>
-                        <text x="50" y="55" text-anchor="middle" fill="#FCD116" font-size="10" font-weight="bold">IA</text>
-                        <text x="50" y="70" text-anchor="middle" fill="#fff" font-size="8">BÉNIN</text>
-                    </svg>
-                </div>
-                <div class="header-center">
-                    <p class="ministere">RÉPUBLIQUE DU BÉNIN</p>
-                    <p class="ministere">MINISTÈRE DE L'ENSEIGNEMENT SECONDAIRE,<br>TECHNIQUE ET DE LA FORMATION PROFESSIONNELLE</p>
-                    <p class="nom-ecole">ACADÉMIE NUMÉRIQUE INTELLIGENTE</p>
-                    <p class="devise-ecole">Fraternité — Justice — Travail</p>
-                    <p class="localisation">Cotonou, Bénin — Année Scolaire : {{ annee_scolaire|default:"2025-2026" }}</p>
-                </div>
-                <div class="logo-right">
-                    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                        <rect x="10" y="5" width="80" height="90" rx="5" fill="#fff" stroke="#000" stroke-width="2"/>
-                        <rect x="15" y="10" width="70" height="25" fill="#CE1126"/>
-                        <rect x="15" y="35" width="70" height="25" fill="#FCD116"/>
-                        <rect x="15" y="60" width="70" height="25" fill="#007A5E"/>
-                        <circle cx="50" cy="72" r="7" fill="#000"/>
-                        <text x="50" y="82" text-anchor="middle" font-size="5" fill="#fff" font-weight="bold">BÉNIN</text>
-                    </svg>
-                </div>
+    <!-- EN-TÊTE -->
+    <div class="header">
+        <div class="header-row">
+            <div class="header-logo">
+                <svg viewBox="0 0 120 140" xmlns="http://www.w3.org/2000/svg">
+                    <ellipse cx="60" cy="70" rx="55" ry="65" fill="#008751" stroke="#000" stroke-width="2"/>
+                    <text x="60" y="45" text-anchor="middle" fill="#FCD116" font-size="16" font-weight="bold" font-family="Arial">ANI</text>
+                    <text x="60" y="65" text-anchor="middle" fill="#fff" font-size="9" font-family="Arial">ACADÉMIE</text>
+                    <text x="60" y="80" text-anchor="middle" fill="#fff" font-size="9" font-family="Arial">NUMÉRIQUE</text>
+                    <text x="60" y="100" text-anchor="middle" fill="#FCD116" font-size="8" font-family="Arial">BÉNIN</text>
+                </svg>
             </div>
+            <div class="header-center">
+                <p class="rep">République du Bénin</p>
+                <p class="devise">Fraternité — Justice — Travail</p>
+                <p class="min">Ministère des Enseignements Secondaires, Technique et de la Formation Professionnelle</p>
+                <p class="ecole">{{ etablissement_nom|default:"Académie Numérique Intelligente" }}</p>
+                <p class="ecole-info">Cotonou, Bénin — Tél : {{ etablissement_tel|default:"(+229) XX XX XX XX" }}</p>
+                <p class="num-ordre">N° d'Ordre : {{ num_ordre|default:"ANI-{% now 'Y' %}-001" }}</p>
+            </div>
+            <div class="header-logo">
+                <svg viewBox="0 0 120 140" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M60 5 L110 25 L110 80 Q110 120 60 135 Q10 120 10 80 L10 25 Z" fill="none" stroke="#000" stroke-width="2"/>
+                    <path d="M60 5 L10 25 L10 80 Q10 120 60 135 Z" fill="#008751"/>
+                    <path d="M60 5 L110 25 L110 57 L60 57 Z" fill="#E8112D"/>
+                    <path d="M60 57 L110 57 L110 80 Q110 120 60 135 Z" fill="#FCD116"/>
+                    <text x="80" y="48" text-anchor="middle" fill="#000" font-size="16">★</text>
+                    <rect x="18" y="65" width="30" height="25" fill="none" stroke="#FCD116" stroke-width="1.5"/>
+                    <rect x="22" y="58" width="8" height="12" fill="none" stroke="#FCD116" stroke-width="1.5"/>
+                    <rect x="33" y="58" width="8" height="12" fill="none" stroke="#FCD116" stroke-width="1.5"/>
+                    <text x="60" y="125" text-anchor="middle" fill="#000" font-size="7" font-weight="bold" font-family="Arial">BÉNIN</text>
+                </svg>
+            </div>
+        </div>
+    </div>
 
-            <div class="eleve-info">
-                <div style="width:18mm;flex:0 0 18mm;align-items:flex-start;">
+    <!-- TITRE -->
+    <div class="titre-wrapper">
+        <div class="titre-compo">
+            RELEVÉ DE COMPOSITION — {{ resultat.session.exam.titre|default:"Épreuve" }}
+        </div>
+        <div class="sous-titre">
+            {{ resultat.session.exam.matiere.nom|default:"Matière" }} — Classe : {{ resultat.session.eleve.classe|default:"N/A" }}
+            {% if serie %} — Série {{ serie|upper }}{% endif %}
+            — Année Scolaire : {{ annee_scolaire|default:"2025-2026" }}
+        </div>
+    </div>
+
+    <div class="content">
+        <!-- IDENTITÉ ÉLÈVE -->
+        <div class="identite">
+            <div class="photo-bloc">
+                <div class="photo-cadre">
                     {% if resultat.session.eleve.avatar and resultat.session.eleve.avatar.name %}
-                    <img src="{{ resultat.session.eleve.avatar.url }}" style="width:16mm;height:20mm;object-fit:cover;border:1px solid #000;" onerror="this.style.display:none;this.nextElementSibling.style.display:flex;">
-                    <div style="width:16mm;height:20mm;border:1px solid #000;display:none;align-items:center;justify-content:center;background:#f0f0f0;font-size:6px;text-align:center;color:#666;">Photo</div>
-                    {% else %}
-                    <div style="width:16mm;height:20mm;border:1px solid #000;display:flex;align-items:center;justify-content:center;background:#f0f0f0;font-size:6px;text-align:center;color:#666;">Photo</div>
-                    {% endif %}
+                    <img src="{{ resultat.session.eleve.avatar.url }}" alt="Photo">
+                    {% else %}PHOTO<br>ID{% endif %}
                 </div>
-                <div style="flex:1;display:flex;flex-wrap:wrap;gap:2mm 4mm;">
-                <div class="info-item"><label>NOM :</label><div class="value">{{ resultat.session.eleve.last_name|upper|default:"N/A" }}</div></div>
-                <div class="info-item"><label>PRÉNOM(S) :</label><div class="value">{{ resultat.session.eleve.first_name|default:"N/A" }}</div></div>
-                <div class="info-item"><label>SEXE :</label><div class="value">{{ resultat.session.eleve.sexe|default:"N/A" }}</div></div>
-                <div class="info-item"><label>MATRICULE :</label><div class="value">{{ resultat.session.eleve.matricule|default:"N/A" }}</div></div>
-                <div class="info-item"><label>CLASSE :</label><div class="value">{{ resultat.session.eleve.classe|default:"N/A" }}</div></div>
-                <div class="info-item"><label>TÉLÉPHONE :</label><div class="value">{{ resultat.session.eleve.phone|default:"N/A" }}</div></div>
-                <div class="info-item"><label>ÉCOLE :</label><div class="value">Académie Numérique Intelligente</div></div>
-                <div class="info-item"><label>ANNÉE SCOLAIRE :</label><div class="value">{{ annee_scolaire|default:"2025-2026" }}</div></div>
-                <div class="info-item"><label>ÉVALUATION :</label><div class="value">{{ resultat.session.exam.titre|default:"Composition" }}</div></div>
-                <div class="info-item"><label>MOYENNE :</label><div class="value" style="font-weight:bold;font-size:9.5px;">{{ resultat.note }}/{{ resultat.note_sur|floatformat:0 }}</div></div>
+                <div style="font-size:6px;text-align:center;margin-top:1mm;font-weight:bold;">PHOTO</div>
+            </div>
+            <div class="infos-bloc">
+                <div class="info-l">
+                    <span class="lbl">NOM :</span>
+                    <span class="val">{{ resultat.session.eleve.last_name|upper|default:"N/A" }}</span>
+                </div>
+                <div class="info-l">
+                    <span class="lbl">PRÉNOM(S) :</span>
+                    <span class="val">{{ resultat.session.eleve.first_name|default:"N/A" }}</span>
+                </div>
+                <div class="info-l">
+                    <span class="lbl">SEXE :</span>
+                    <span class="val">{{ resultat.session.eleve.sexe|default:"N/A" }}</span>
+                </div>
+                <div class="info-l">
+                    <span class="lbl">MATRICULE :</span>
+                    <span class="val">{{ resultat.session.eleve.matricule|default:"N/A" }}</span>
+                </div>
+                <div class="info-l">
+                    <span class="lbl">CLASSE :</span>
+                    <span class="val">{{ resultat.session.eleve.classe|default:"N/A" }}</span>
+                </div>
+                <div class="info-l">
+                    <span class="lbl">N° INSCRIPTION :</span>
+                    <span class="val">{{ resultat.session.eleve.matricule|default:"N/A" }}</span>
+                </div>
+                <div class="info-l">
+                    <span class="lbl">DATE COMPO :</span>
+                    <span class="val">{{ resultat.session.submitted_at|date:"d/m/Y H:i"|default:"N/A" }}</span>
+                </div>
+                <div class="info-l">
+                    <span class="lbl">MODE :</span>
+                    <span class="val">{{ resultat.session.get_mode_display|default:"En ligne" }}</span>
                 </div>
             </div>
+        </div>
 
-            <div class="titre-bulletin">RELEVÉ DE NOTE — {{ resultat.session.exam.matiere.nom|default:"Évaluation" }} {% if serie and serie != "bepc" %}— Série {{ serie|upper }}{% endif %}</div>
+        <!-- DÉTAILS EXAMEN -->
+        <div class="exam-details">
+            <h5>Informations sur l'Épreuve</h5>
+            <div class="exam-details-grid">
+                <div class="exam-info-item">
+                    <span class="lbl">Épreuve :</span>
+                    <span class="val">{{ resultat.session.exam.titre|default:"N/A" }}</span>
+                </div>
+                <div class="exam-info-item">
+                    <span class="lbl">Matière :</span>
+                    <span class="val">{{ resultat.session.exam.matiere.nom|default:"N/A" }}</span>
+                </div>
+                <div class="exam-info-item">
+                    <span class="lbl">Coef. Officiel :</span>
+                    <span class="val">{{ coefficient_officiel|default:resultat.session.exam.coefficient|default:"1" }}</span>
+                </div>
+                <div class="exam-info-item">
+                    <span class="lbl">Durée :</span>
+                    <span class="val">{{ resultat.session.exam.duree_minutes|default:"N/A" }} min</span>
+                </div>
+                <div class="exam-info-item">
+                    <span class="lbl">Barème :</span>
+                    <span class="val">/{{ resultat.note_sur|floatformat:0|default:"20" }} points</span>
+                </div>
+                <div class="exam-info-item">
+                    <span class="lbl">Correcteur :</span>
+                    <span class="val">{% if resultat.corrige_par_ia %}Système IA (Académie Numérique){% else %}{{ resultat.corrigeur.get_full_name|default:"N/A" }}{% endif %}</span>
+                </div>
+            </div>
+        </div>
 
-            <table class="tableau-notes">
+        <!-- RÉSULTAT PRINCIPAL -->
+        <div class="resultat-main">
+            <div class="res-header">Résultat de la Composition</div>
+            <div class="res-body">
+                <div class="res-note-bloc">
+                    <div class="note-label">Note obtenue</div>
+                    <div class="note-value {% if resultat.note < 10 %}rouge{% endif %}">
+                        {{ resultat.note }}
+                    </div>
+                    <div class="note-sur">sur {{ resultat.note_sur|floatformat:0|default:"20" }}</div>
+                    <div style="margin-top:2mm;">
+                        {% if resultat.note >= 16 %}<span class="mention-centrale m-excellent">Excellent</span>
+                        {% elif resultat.note >= 14 %}<span class="mention-centrale m-tres-bien">Très Bien</span>
+                        {% elif resultat.note >= 12 %}<span class="mention-centrale m-bien">Bien</span>
+                        {% elif resultat.note >= 10 %}<span class="mention-centrale m-assez-bien">Assez Bien</span>
+                        {% elif resultat.note >= 8 %}<span class="mention-centrale m-passable">Passable</span>
+                        {% elif resultat.note >= 5 %}<span class="mention-centrale m-mediocre">Médiocre</span>
+                        {% else %}<span class="mention-centrale m-insuffisant">Insuffisant</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="res-stats">
+                    <div class="stat-row">
+                        <span class="stat-key">Note brute</span>
+                        <span class="stat-val">{{ resultat.note }} / {{ resultat.note_sur|floatformat:0 }}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-key">Note × Coefficient</span>
+                        <span class="stat-val">{{ resultat.note_moy_coeff|default:"--" }}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-key">Rang / Effectif classe</span>
+                        <span class="stat-val">{% if resultat.classement > 0 %}{{ resultat.classement }}{% else %}N/A{% endif %} / {{ resultat.total_participants|default:"N/A" }}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-key">Temps passé</span>
+                        <span class="stat-val">{% if resultat.session.time_spent_seconds %}{{ temps_minutes|default:"N/A" }} min{% else %}N/A{% endif %}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-key">Niveau de maîtrise</span>
+                        <span class="stat-val">{{ resultat.details_correction.niveau_maitrise|default:"--" }}</span>
+                    </div>
+                    <div class="stat-row" style="border-top:1px solid #000;font-size:9px;">
+                        <span class="stat-key" style="font-weight:bold;">DÉCISION</span>
+                        <span class="stat-val" style="color:{% if resultat.note >= 10 %}#006600{% else %}#cc0000{% endif %}">
+                            {% if resultat.note >= 10 %}VALIDÉ{% else %}NON VALIDÉ{% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CORRECTION DÉTAILLÉE PAR QUESTION -->
+        {% if resultat.details_correction.details %}
+        <div class="correction-detail">
+            <h5>Correction Détaillée par Question</h5>
+            <table class="detail-table">
                 <thead>
                     <tr>
-                        <th style="width:30%;">DISCIPLINE</th>
-                        <th style="width:10%;">COEFF OFFICIEL</th>
-                        <th style="width:15%;">NOTE OBTENUE</th>
-                        <th style="width:15%;">NOTE DÉFINITIVE</th>
-                        <th style="width:10%;">RANG</th>
-                        <th style="width:20%;">MENTION</th>
+                        <th style="width:28%;">Question / Partie</th>
+                        <th style="width:10%;">Points</th>
+                        <th style="width:10%;">Max</th>
+                        <th style="width:52%;">Commentaire du Correcteur</th>
                     </tr>
                 </thead>
                 <tbody>
+                    {% for d in resultat.details_correction.details %}
                     <tr>
-                        <td class="matiere">{{ resultat.session.exam.matiere.nom|default:"Évaluation" }}</td>
-                        <td style="font-weight:bold;">{{ coefficient_officiel|default:1 }}</td>
-                        <td style="font-size:11pt;font-weight:bold;">{{ resultat.note }}/{{ resultat.note_sur|floatformat:0 }}</td>
-                        <td style="font-weight:bold;">{{ resultat.note_moy_coeff|default:"-" }}</td>
-                        <td>{% if resultat.classement > 0 %}{{ resultat.classement }}{% else %}N/A{% endif %} / {{ resultat.total_participants|default:"N/A" }}</td>
-                        <td>{{ resultat.get_mention_display|default:"-" }}</td>
+                        <td class="partie">{{ d.question|default:"--" }}</td>
+                        <td {% if d.points and d.max_points %}{% if d.points >= d.max_points|div:2 %}class="pts-ok"{% else %}class="pts-nok"{% endif %}{% endif %}>
+                            {{ d.points|default:"0" }}
+                        </td>
+                        <td>{{ d.max_points|default:"--" }}</td>
+                        <td style="font-size:7.5px;line-height:1.4;">{{ d.commentaire|default:"-" }}</td>
                     </tr>
+                    {% endfor %}
                 </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="1" style="text-align:right;font-weight:bold;padding-right:2mm;">TOTAL :</td>
+                        <td style="font-weight:bold;color:#008751;">{{ resultat.note }}</td>
+                        <td>{{ resultat.note_sur|floatformat:0 }}</td>
+                        <td></td>
+                    </tr>
+                </tfoot>
             </table>
+        </div>
+        {% endif %}
 
-            <div class="resultat-final">
-                <div class="moyenne-g">MOYENNE : {{ resultat.note }} / {{ resultat.note_sur|floatformat:0 }}</div>
-                {% if resultat.note >= 16 %}<div class="mention" style="color:#006600;">EXCELLENT</div>
-                {% elif resultat.note >= 14 %}<div class="mention" style="color:#0066cc;">TRÈS BIEN</div>
-                {% elif resultat.note >= 12 %}<div class="mention" style="color:#009900;">BIEN</div>
-                {% elif resultat.note >= 10 %}<div class="mention" style="color:#cc6600;">ASSEZ BIEN</div>
-                {% else %}<div class="mention" style="color:#cc0000;">INSUFFISANT</div>{% endif %}
-                <div class="rang">Rang : {{ resultat.classement|default:"-" }} / {{ resultat.total_participants|default:"N/A" }}</div>
-            </div>
-
+        <!-- APPRÉCIATIONS IA -->
+        {% if resultat.appreciation or resultat.details_correction.points_forts_global or resultat.details_correction.axes_amelioration %}
+        <div class="apprec-grid">
             {% if resultat.appreciation %}
-            <div class="appreciation-box">
-                <strong style="font-style:normal;">APPRÉCIATION DU CORRECTEUR :</strong><br>
-                {{ resultat.appreciation }}
+            <div class="apprec-bloc" style="flex:2;">
+                <h5>Appréciation du Correcteur</h5>
+                <div class="apprec-text">{{ resultat.appreciation }}</div>
             </div>
             {% endif %}
-
-            {% if resultat.details_correction.points_forts %}
-            <div class="appreciation-box" style="border-left-color:#006600;">
-                <strong style="font-style:normal;">POINTS FORTS :</strong><br>
-                {{ resultat.details_correction.points_forts }}
+            <div class="apprec-bloc">
+                <h5>Points Forts</h5>
+                <div class="apprec-text pf">{{ resultat.details_correction.points_forts_global|default:"—" }}</div>
             </div>
-            {% endif %}
-
-            {% if resultat.details_correction.axes_amelioration %}
-            <div class="appreciation-box" style="border-left-color:#cc6600;">
-                <strong style="font-style:normal;">AXES D'AMÉLIORATION :</strong><br>
-                {{ resultat.details_correction.axes_amelioration }}
+            <div class="apprec-bloc">
+                <h5>Axes d'Amélioration</h5>
+                <div class="apprec-text aa">{{ resultat.details_correction.axes_amelioration|default:"—" }}</div>
             </div>
-            {% endif %}
+        </div>
+        {% endif %}
 
-            <div class="signatures">
-                <div class="sig-box"><strong>L'IA Évaluatrice<br><em>{% if resultat.corrige_par_ia %}Système IA{% else %}{{ resultat.corrigeur.full_name|default:"" }}{% endif %}</em></strong></div>
-                <div class="sig-box"><strong>Le Chef d'Établissement</strong></div>
+        {% if resultat.details_correction.recommandations %}
+        <div style="border:1px solid #c8a000;background:#fffbea;padding:2mm 3mm;margin-bottom:2.5mm;font-size:8px;">
+            <strong style="color:#8a6000;">Recommandations personnalisées :</strong> {{ resultat.details_correction.recommandations }}
+        </div>
+        {% endif %}
+
+        <!-- BARÈME OFFICIEL -->
+        <div class="bareme">
+            <h6>Barème de Mention Officiel (Système Béninois)</h6>
+            <div class="bareme-items">
+                <div class="bareme-item"><span class="badge" style="background:#006600;color:#fff;">Excellent</span>16 à 20/20</div>
+                <div class="bareme-item"><span class="badge" style="background:#0055aa;color:#fff;">Très Bien</span>14 à 15,99/20</div>
+                <div class="bareme-item"><span class="badge" style="background:#007a1a;color:#fff;">Bien</span>12 à 13,99/20</div>
+                <div class="bareme-item"><span class="badge" style="background:#cc6600;color:#fff;">Assez Bien</span>10 à 11,99/20</div>
+                <div class="bareme-item"><span class="badge" style="background:#cc9900;color:#000;">Passable</span>8 à 9,99/20</div>
+                <div class="bareme-item"><span class="badge" style="background:#cc4400;color:#fff;">Médiocre</span>5 à 7,99/20</div>
+                <div class="bareme-item"><span class="badge" style="background:#cc0000;color:#fff;">Insuffisant</span>0 à 4,99/20</div>
             </div>
-
-            <div class="qr-date">
-                <div class="qr-item">
-                    <p>CODE SÉCURITÉ</p>
-                    <div class="qr-box">
-                        {% if qr_data_uri %}
-                        <img src="{{ qr_data_uri }}" style="width:15mm;height:15mm;">
-                        {% else %}
-                        <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:5px;color:#999;">QR</div>
-                        {% endif %}
-                    </div>
-                    <p style="font-size:6px;">{{ resultat.id.hex|slice:":8"|upper }}</p>
-                </div>
-                <div class="date-item"><p><strong>DATE D'ÉTABLISSEMENT</strong></p><p>Cotonou, le {% now "d/m/Y" %}</p></div>
-                <div class="qr-item">
-                    <p>SCAN POUR TÉLÉCHARGER</p>
-                    <div class="qr-box">
-                        {% if qr_data_uri %}
-                        <img src="{{ qr_data_uri }}" style="width:15mm;height:15mm;">
-                        {% else %}
-                        <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:5px;color:#999;">QR</div>
-                        {% endif %}
-                    </div>
-                    <p style="font-size:6px;">BULLETIN PDF</p>
-                </div>
-            </div>
-
-            <p class="footer-legal">N.B. : Ce relevé est délivré grâce aux TICE. Toute demande de duplicata pourra faire l'objet d'un contrôle rigoureux.</p>
         </div>
 
-        <div class="drapeau-bottom">
-            <div class="rouge"></div><div class="jaune"></div><div class="vert"></div>
+        <!-- SIGNATURES -->
+        <div class="sigs">
+            <div class="sig">
+                <strong>{% if resultat.corrige_par_ia %}Système IA Académie Numérique{% else %}{{ resultat.corrigeur.get_full_name|default:"Le Correcteur" }}{% endif %}</strong>
+                {% if resultat.corrige_par_ia %}<div class="ai-label">✓ Corrigé et validé par intelligence artificielle</div>{% endif %}
+            </div>
+            <div class="sig">
+                <strong>Le Professeur de Matière</strong>
+            </div>
+            <div class="sig">
+                <strong>Le Chef d'Établissement</strong>
+            </div>
+            <div class="sig">
+                <strong>Visa des Parents / Tuteurs</strong>
+                <div style="font-size:6.5px;color:#666;margin-top:0.5mm;">Signature et date</div>
+            </div>
         </div>
     </div>
+
+    <!-- FOOTER QR -->
+    <div class="qr-footer">
+        <div class="qr-z">
+            <div class="qr-lbl">Vérification</div>
+            <div class="qr-img">
+                {% if qr_data_uri %}<img src="{{ qr_data_uri }}" alt="QR">{% else %}<span style="font-size:6px;color:#999;">QR</span>{% endif %}
+            </div>
+            <div class="qr-ref">{{ resultat.id.hex|default:""|slice:":12"|upper }}</div>
+        </div>
+        <div class="footer-c">
+            <p>Délivré à Cotonou, le {% now "d/m/Y" %} — Document officiel de l'Académie Numérique Intelligente</p>
+            <p style="font-style:italic;color:#777;font-size:6.5px;">Ce relevé est généré automatiquement et sécurisé. Toute falsification est un délit passible de sanctions pénales.</p>
+        </div>
+        <div class="qr-z">
+            <div class="qr-lbl">Télécharger</div>
+            <div class="qr-img">
+                {% if qr_data_uri %}<img src="{{ qr_data_uri }}" alt="QR">{% else %}<span style="font-size:6px;color:#999;">QR</span>{% endif %}
+            </div>
+            <div class="qr-ref">BULLETIN PDF</div>
+        </div>
+    </div>
+
+    <!-- BANDE BAS -->
+    <div class="drapeau-bottom">
+        <div class="vert"></div><div class="jaune"></div><div class="rouge"></div>
+    </div>
+</div>
 </body>
 </html>

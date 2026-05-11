@@ -13,7 +13,7 @@ class AnnouncementOut(Schema):
     message: str
     type_alerte: str
 
-@router.get("/latest-announcement", response=Optional[AnnouncementOut])
+@router.get("/latest-announcement", response=Optional[AnnouncementOut], auth=None)
 def get_latest_announcement(request):
     """
     Récupère la notification globale active.

@@ -151,12 +151,12 @@ INFORMATIONS DE L'EXAMEN :
 
 CORRIGÉ TYPE (référence absolue pour la correction) — ID: {corrige_doc_id}:
 ---
-{corrige_type_text[:5000]}
+{corrige_type_text}
 ---
 
-COPIE DE L'ÉLÈVE — IDs: {', '.join(copie_doc_ids) if copie_doc_ids else 'Réponses texte'}:
+COPIE DE L'ÉLÈVE — IDs: {', '.join(copie_doc_ids) if copie_doc_ids else 'Réponses texte directes'}:
 ---
-{copie_text[:5000]}
+{copie_text if copie_text.strip() else '[COPIE VIDE — attribuer 0 si aucun contenu détectable]'}
 ---
 
 INSTRUCTIONS CRITIQUES DE CORRECTION :

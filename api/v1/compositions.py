@@ -1,12 +1,29 @@
+import logging
+import uuid
+from typing import List
 from ninja import Router, Schema, File, Form
 from ninja.files import UploadedFile
+from ninja.pagination import paginate, PageNumberPagination
 from compositions.models import CompositionSession, StudentSubmissionFile, StudentAnswer
 from exams.models import Exam
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-import uuid
 
+logger = logging.getLogger(__name__)
 router = Router()
+
+
+class SessionOut(Schema):
+    id: uuid.UUID
+    statut: str
+
+
+@router.get("/my-sessions", response=List[SessionOut])
+@paginate(PageNumberPagination, page_size=25)
+def list_my_sessions(request):
+    return CompositionSession.objects.filter(
+        eleve=request.user
+    ).select_related('exam').order_by('-created_at')
 
 class AnswerSchema(Schema):
     question_number: int
@@ -74,7 +91,8 @@ def upload_page(
             "filename": file.name
         }
     except Exception as e:
-        return {"error": f"Erreur lors de l'enregistrement : {str(e)}"}, 500
+        logger.error(f"upload_page session={session_id} page={page_number}: {e}", exc_info=True)
+        return {"error": "Erreur lors de l'enregistrement de la page."}, 500
 
 @router.post("/submit/{session_id}")
 def submit_composition(request, session_id: uuid.UUID):

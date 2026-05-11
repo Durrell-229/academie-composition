@@ -355,23 +355,29 @@ def dashboard_view(request):
             unread_notifs = 0
 
         # Analytics avancées
-        # 1. Taux de réussite par matière
+        # 1. Taux de réussite par matière — 1 seule query avec annotation
         try:
-            from exams.models import Matiere
-            subject_stats = []
-            for matiere in Matiere.objects.all()[:8]:
-                mat_results = CorrectionCopie.objects.filter(exam__matiere=matiere, status='approved')
-                if mat_results.exists():
-                    avg = mat_results.aggregate(Avg('grade'))['grade__avg'] or 0
-                    total = mat_results.count()
-                    passed = mat_results.filter(grade__gte=10).count()
-                    success_rate = round((passed / total * 100), 1) if total > 0 else 0
-                    subject_stats.append({
-                        'nom': matiere.nom,
-                        'avg': round(float(avg), 1),
-                        'total': total,
-                        'success_rate': success_rate,
-                    })
+            from django.db.models import Q as DQ
+            subject_stats = list(
+                CorrectionCopie.objects
+                .filter(status='approved', exam__matiere__isnull=False)
+                .values('exam__matiere__nom')
+                .annotate(
+                    avg=Avg('grade'),
+                    total=Count('id'),
+                    passed=Count('id', filter=DQ(grade__gte=10)),
+                )
+                .order_by('-avg')[:8]
+            )
+            subject_stats = [
+                {
+                    'nom': s['exam__matiere__nom'],
+                    'avg': round(float(s['avg'] or 0), 1),
+                    'total': s['total'],
+                    'success_rate': round((s['passed'] / s['total'] * 100), 1) if s['total'] else 0,
+                }
+                for s in subject_stats
+            ]
         except Exception:
             subject_stats = []
 

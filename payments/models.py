@@ -124,7 +124,7 @@ class Paiement(models.Model):
         ordering = ['-date_paiement']
     
     def __str__(self):
-        return f"{self.numero_paiement} - {self.eleve.get_full_name}"
+        return f"{self.numero_paiement} - {self.eleve.get_full_name()}"
     
     def save(self, *args, **kwargs):
         if not self.numero_paiement:
@@ -449,7 +449,7 @@ class AbonnementEleve(models.Model):
         verbose_name = _('Abonnement élève')
         verbose_name_plural = _('Abonnements élèves')
         ordering = ['-date_souscription']
-        unique_together = ['eleve', 'plan', 'statut']  # Un seul abonnement actif par plan
+        unique_together = ['eleve', 'plan']
     
     def __str__(self):
         return f"{self.eleve.get_full_name()} - {self.plan.nom} ({self.get_statut_display()})"
