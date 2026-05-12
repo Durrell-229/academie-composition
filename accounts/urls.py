@@ -21,4 +21,10 @@ urlpatterns = [
     path('admin/eleves/<uuid:user_id>/edit/', views.admin_eleve_edit_view, name='admin_eleve_edit'),
     path('admin/eleves/<uuid:user_id>/delete/', views.admin_eleve_delete_view, name='admin_eleve_delete'),
     path('admin/eleves/<uuid:user_id>/', views.admin_eleve_detail_view, name='admin_eleve_detail'),
+
+    # Gestion des utilisateurs (profs, conseillers, admins) par les admins
+    path('admin/users/', views.admin_user_list_view, name='admin_user_list'),
+    path('admin/users/create/', views.admin_user_create_view, name='admin_user_create'),
+    path('admin/users/<uuid:user_id>/edit/', views.admin_user_edit_view, name='admin_user_edit'),
+    path('admin/users/<uuid:user_id>/delete/', views.admin_user_delete_view, name='admin_user_delete'),
 ]

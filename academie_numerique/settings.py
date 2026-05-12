@@ -251,7 +251,7 @@ DEEPSEEK_API_KEY = os.environ.get('DEEPSEEK_API_KEY', '')
 
 # NVIDIA API Configuration
 # Clé API NVIDIA fournie par l'utilisateur
-NVIDIA_API_KEY = os.environ.get('NVIDIA_API_KEY', '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')
+NVIDIA_API_KEY = os.environ.get('NVIDIA_API_KEY', '')
 NVIDIA_API_BASE_URL = os.environ.get('NVIDIA_API_BASE_URL', 'https://integrate.api.nvidia.com/v1')
 NVIDIA_MODEL = os.environ.get('NVIDIA_MODEL', 'nvidia/nemotron-4-340b-instruct')
 
@@ -282,6 +282,26 @@ LARAVEL_API_URL = os.environ.get('LARAVEL_API_URL', 'http://localhost:8000')
 
 # Redis (background task queue — no Celery)
 REDIS_URL = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
+
+try:
+    import django_redis  # noqa: F401
+    CACHES = {
+        'default': {
+            'BACKEND': 'django_redis.cache.RedisCache',
+            'LOCATION': REDIS_URL,
+            'OPTIONS': {
+                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+                'IGNORE_EXCEPTIONS': True,
+            },
+            'TIMEOUT': 300,
+        }
+    }
+except ImportError:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        }
+    }
 
 # Auth backends
 AUTHENTICATION_BACKENDS = [

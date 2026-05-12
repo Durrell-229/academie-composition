@@ -17,7 +17,7 @@ def test_nvidia_api_alternatives():
         import json
         
         # Configuration
-        api_key = "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"
+        api_key = os.environ.get('NVIDIA_API_KEY', '')
         
         # Différents endpoints à tester
         endpoints = [

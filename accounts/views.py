@@ -20,18 +20,46 @@ class ProfileUpdateForm(forms.ModelForm):
 
 
 
+_LOGIN_MAX_ATTEMPTS = 5
+_LOGIN_LOCKOUT_SECONDS = 300  # 5 minutes
+
+
+def _get_client_ip(request):
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        return x_forwarded_for.split(',')[0].strip()
+    return request.META.get('REMOTE_ADDR', '')
+
+
 def login_view(request):
+    from django.core.cache import cache
+
     if request.user.is_authenticated:
         return redirect('dashboard')
+
     if request.method == 'POST':
+        ip = _get_client_ip(request)
+        cache_key = f'login_attempts_{ip}'
+        attempts = cache.get(cache_key, 0)
+
+        if attempts >= _LOGIN_MAX_ATTEMPTS:
+            messages.error(
+                request,
+                f"Trop de tentatives échouées. Réessayez dans {_LOGIN_LOCKOUT_SECONDS // 60} minutes."
+            )
+            return render(request, 'accounts/login.html', {'is_auth_page': True})
+
         email = request.POST.get('email')
         password = request.POST.get('password')
         user = authenticate(request, username=email, password=password)
         if user is not None:
+            cache.delete(cache_key)
             login(request, user)
             return redirect('dashboard')
         else:
+            cache.set(cache_key, attempts + 1, _LOGIN_LOCKOUT_SECONDS)
             messages.error(request, "Email ou mot de passe incorrect.")
+
     return render(request, 'accounts/login.html', {'is_auth_page': True})
 
 
@@ -601,6 +629,26 @@ def profile_edit_view(request):
     if request.method == 'POST':
         form = ProfileUpdateForm(request.POST, request.FILES, instance=request.user)
         if form.is_valid():
+            # ── Validation classe pour les élèves ──────────────────────────────
+            if request.user.role == 'eleve':
+                from core.models import Classe as CoreClasse
+                submitted_classe = request.POST.get('classe', '').strip()
+                if not submitted_classe:
+                    messages.error(request, "Veuillez sélectionner votre classe.")
+                    context = {'form': form, 'classes': CoreClasse.objects.filter(is_active=True).order_by('nom')}
+                    return render(request, 'accounts/profile_edit.html', context)
+                classe_valide = CoreClasse.objects.filter(
+                    is_active=True, nom__iexact=submitted_classe
+                ).exists()
+                if not classe_valide:
+                    messages.error(
+                        request,
+                        f"La classe « {submitted_classe} » n'existe pas ou n'est plus active. "
+                        "Veuillez choisir une classe dans la liste."
+                    )
+                    context = {'form': form, 'classes': CoreClasse.objects.filter(is_active=True).order_by('nom')}
+                    return render(request, 'accounts/profile_edit.html', context)
+            # ──────────────────────────────────────────────────────────────────
             user = form.save(commit=False)
             # Handle avatar upload with predictable filename
             if 'avatar' in request.FILES:
@@ -954,24 +1002,24 @@ def admin_eleve_detail_view(request, user_id):
     if request.user.role != 'admin':
         messages.error(request, "Accès réservé aux administrateurs.")
         return redirect('dashboard')
-    
+
     try:
         eleve = User.objects.get(id=user_id, role='eleve')
-        
+
         # Récupérer les informations supplémentaires
         from .models import Profile
         try:
             profile = eleve.profile
         except Profile.DoesNotExist:
             profile = None
-        
+
         # Statistiques de l'élève
         from exams.models import Exam
         from compositions.models import Composition
-        
+
         exams_count = Exam.objects.filter(classe__nom=eleve.classe).count()
         compositions_count = Composition.objects.filter(eleve=eleve).count()
-        
+
         return render(request, 'admin/eleve_detail.html', {
             'eleve': eleve,
             'profile': profile,
@@ -979,8 +1027,212 @@ def admin_eleve_detail_view(request, user_id):
             'compositions_count': compositions_count,
             'user': request.user,
         })
-        
+
     except User.DoesNotExist:
         messages.error(request, "Élève non trouvé.")
         return redirect('admin_eleve_list')
+
+
+# ===== GESTION DES UTILISATEURS (PROFS, CONSEILLERS, ADMINS) =====
+
+@login_required
+def admin_user_list_view(request):
+    """Liste tous les utilisateurs par rôle, avec filtres — admin seulement."""
+    if request.user.role != 'admin':
+        messages.error(request, "Accès réservé aux administrateurs.")
+        return redirect('dashboard')
+
+    users = User.objects.all().order_by('-date_joined')
+
+    # Filtres
+    role_filter = request.GET.get('role', '')
+    search_filter = request.GET.get('search', '').strip()
+    if role_filter:
+        users = users.filter(role=role_filter)
+    if search_filter:
+        users = users.filter(
+            Q(first_name__icontains=search_filter) |
+            Q(last_name__icontains=search_filter) |
+            Q(email__icontains=search_filter)
+        )
+
+    roles = User.Role.choices
+
+    return render(request, 'admin/user_list.html', {
+        'users': users,
+        'roles': roles,
+        'role_filter': role_filter,
+        'search_filter': search_filter,
+        'user': request.user,
+    })
+
+
+@login_required
+def admin_user_create_view(request):
+    """Créer un utilisateur avec n'importe quel rôle — admin seulement."""
+    if request.user.role != 'admin':
+        messages.error(request, "Accès réservé aux administrateurs.")
+        return redirect('dashboard')
+
+    from core.models import Classe
+    classes = Classe.objects.filter(is_active=True).order_by('nom')
+    roles = User.Role.choices
+    niveaux = User.Niveau.choices
+
+    if request.method == 'POST':
+        try:
+            email = request.POST.get('email', '').strip()
+            password = request.POST.get('password', '')
+            first_name = request.POST.get('first_name', '').strip()
+            last_name = request.POST.get('last_name', '').strip()
+            role = request.POST.get('role', 'eleve')
+            phone = request.POST.get('phone', '')
+            country = request.POST.get('country', 'Bénin')
+            niveau = request.POST.get('niveau', '')
+            classe = request.POST.get('classe', '')
+            sexe = request.POST.get('sexe', '')
+            matricule = request.POST.get('matricule', '').strip()
+
+            if not email or not password or not first_name or not last_name:
+                messages.error(request, "Les champs email, mot de passe, prénom et nom sont requis.")
+            elif User.objects.filter(email=email).exists():
+                messages.error(request, "Cet email est déjà utilisé.")
+            elif matricule and User.objects.filter(matricule=matricule).exists():
+                messages.error(request, "Ce matricule est déjà utilisé.")
+            else:
+                new_user = User.objects.create_user(
+                    email=email,
+                    password=password,
+                    first_name=first_name,
+                    last_name=last_name,
+                    role=role,
+                    phone=phone,
+                    country=country,
+                    niveau=niveau,
+                    classe=classe,
+                    sexe=sexe,
+                    matricule=matricule if matricule else None,
+                )
+                # Créer le profil si disponible
+                try:
+                    from .models import Profile
+                    Profile.objects.create(user=new_user)
+                except Exception:
+                    pass
+
+                messages.success(request, f"L'utilisateur {first_name} {last_name} ({role}) a été créé.")
+                return redirect('admin_user_list')
+
+        except Exception as e:
+            messages.error(request, f"Erreur lors de la création : {str(e)}")
+
+    return render(request, 'admin/user_form.html', {
+        'action': 'create',
+        'classes': classes,
+        'roles': roles,
+        'niveaux': niveaux,
+        'user': request.user,
+    })
+
+
+@login_required
+def admin_user_edit_view(request, user_id):
+    """Modifier un utilisateur existant — admin seulement."""
+    if request.user.role != 'admin':
+        messages.error(request, "Accès réservé aux administrateurs.")
+        return redirect('dashboard')
+
+    try:
+        target_user = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        messages.error(request, "Utilisateur non trouvé.")
+        return redirect('admin_user_list')
+
+    from core.models import Classe
+    classes = Classe.objects.filter(is_active=True).order_by('nom')
+    roles = User.Role.choices
+    niveaux = User.Niveau.choices
+
+    if request.method == 'POST':
+        try:
+            email = request.POST.get('email', '').strip()
+            first_name = request.POST.get('first_name', '').strip()
+            last_name = request.POST.get('last_name', '').strip()
+            role = request.POST.get('role', target_user.role)
+            phone = request.POST.get('phone', '')
+            country = request.POST.get('country', 'Bénin')
+            niveau = request.POST.get('niveau', '')
+            classe = request.POST.get('classe', '')
+            sexe = request.POST.get('sexe', '')
+            matricule = request.POST.get('matricule', '').strip()
+            new_password = request.POST.get('password', '').strip()
+
+            if not email or not first_name or not last_name:
+                messages.error(request, "Les champs email, prénom et nom sont requis.")
+            elif User.objects.filter(email=email).exclude(id=target_user.id).exists():
+                messages.error(request, "Cet email est déjà utilisé.")
+            elif matricule and User.objects.filter(matricule=matricule).exclude(id=target_user.id).exists():
+                messages.error(request, "Ce matricule est déjà utilisé.")
+            else:
+                target_user.email = email
+                target_user.first_name = first_name
+                target_user.last_name = last_name
+                target_user.role = role
+                target_user.phone = phone
+                target_user.country = country
+                target_user.niveau = niveau
+                target_user.classe = classe
+                target_user.sexe = sexe
+                target_user.matricule = matricule if matricule else None
+                if new_password:
+                    target_user.set_password(new_password)
+                target_user.save()
+
+                messages.success(request, f"L'utilisateur {first_name} {last_name} a été mis à jour.")
+                return redirect('admin_user_list')
+
+        except Exception as e:
+            messages.error(request, f"Erreur lors de la mise à jour : {str(e)}")
+
+    return render(request, 'admin/user_form.html', {
+        'action': 'edit',
+        'target_user': target_user,
+        'classes': classes,
+        'roles': roles,
+        'niveaux': niveaux,
+        'user': request.user,
+    })
+
+
+@login_required
+def admin_user_delete_view(request, user_id):
+    """Supprimer un utilisateur (non-élève) — admin seulement."""
+    if request.user.role != 'admin':
+        messages.error(request, "Accès réservé aux administrateurs.")
+        return redirect('dashboard')
+
+    try:
+        target_user = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        messages.error(request, "Utilisateur non trouvé.")
+        return redirect('admin_user_list')
+
+    # Empêcher l'admin de se supprimer lui-même
+    if target_user.id == request.user.id:
+        messages.error(request, "Vous ne pouvez pas supprimer votre propre compte.")
+        return redirect('admin_user_list')
+
+    if request.method == 'POST':
+        try:
+            nom_complet = f"{target_user.first_name} {target_user.last_name}"
+            target_user.delete()
+            messages.success(request, f"L'utilisateur {nom_complet} a été supprimé.")
+            return redirect('admin_user_list')
+        except Exception as e:
+            messages.error(request, f"Erreur lors de la suppression : {str(e)}")
+
+    return render(request, 'admin/user_delete_confirm.html', {
+        'target_user': target_user,
+        'user': request.user,
+    })
 

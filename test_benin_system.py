@@ -136,8 +136,9 @@ def test_benin_system():
         print("\n⚙️ Test des coefficients...")
         
         try:
+            import json
             param_coeff = Parametre.objects.get(cle="coefficients_benin")
-            coefficients = eval(param_coeff.valeur)
+            coefficients = json.loads(param_coeff.valeur)
             
             # Vérifier quelques coefficients clés
             key_coeffs = {
@@ -164,7 +165,7 @@ def test_benin_system():
         
         try:
             param_bulletin = Parametre.objects.get(cle="bulletin_benin_config")
-            bulletin_config = eval(param_bulletin.valeur)
+            bulletin_config = json.loads(param_bulletin.valeur)
             
             # Vérifier les sections clés
             sections = [s["titre"] for s in bulletin_config["sections"]]

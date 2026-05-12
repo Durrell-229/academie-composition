@@ -4,6 +4,22 @@ from django.http import HttpResponseForbidden, HttpResponse
 from django.utils import timezone
 from .models import CompositionSession, Resultat
 from exams.models import Exam, ExamAssignment
+import threading
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+def _run_correction_async(session_id):
+    """Lance la correction IA dans un thread daemon — pas besoin de worker Redis."""
+    from django.db import connection
+    try:
+        from .tasks import process_ia_correction
+        process_ia_correction(session_id)
+    except Exception as e:
+        logger.error(f"[Thread] Erreur correction session {session_id}: {e}")
+    finally:
+        connection.close()
 
 
 @login_required
@@ -18,14 +34,22 @@ def composition_room_view(request, exam_id):
         exam=exam, eleve=request.user
     ).exists()
 
-    # Comparer par nom de classe (user.classe est un CharField, pas un UUID)
+    # Via ExamAssignment de classe
+    user_classe = (request.user.classe or '').strip()
     assigned_by_class = ExamAssignment.objects.filter(
         exam=exam,
-        classe__nom=request.user.classe,
+        classe__nom__iexact=user_classe,
         eleve__isnull=True
-    ).exists()
+    ).exists() if user_classe else False
 
-    if not assigned_individual and not assigned_by_class and not exam.est_public:
+    # Via exam.classe (chemin principal : prof crée un examen et sélectionne une classe)
+    assigned_by_exam_classe = (
+        exam.classe is not None and
+        bool(user_classe) and
+        exam.classe.nom.strip().lower() == user_classe.lower()
+    )
+
+    if not assigned_individual and not assigned_by_class and not assigned_by_exam_classe and not exam.est_public:
         return HttpResponseForbidden("Vous n'êtes pas assigné à cette épreuve.")
 
     session, created = CompositionSession.objects.get_or_create(
@@ -112,11 +136,11 @@ def submit_paper_view(request, session_id):
         
         # Submit the session
         session.submit()
-        
-        # Correction IA asynchrone via Redis
-        from .tasks import process_ia_correction
-        process_ia_correction.delay(str(session.id))
-        
+
+        # Correction IA en thread daemon (pas besoin de Redis worker)
+        thread = threading.Thread(target=_run_correction_async, args=(str(session.id),), daemon=True)
+        thread.start()
+
         messages.success(request, "Votre composition a été soumise avec succès. La correction IA est en cours.")
         return redirect('result_detail', session_id=session.id)
 
@@ -217,10 +241,10 @@ def log_cheat_event(request):
 
         if cheat_count >= 7:
             warning_level = 'final_warning'
-            message = f'⚠ Dernier avertissement ! {cheat_count}/10 violations — prochaine exclusion'
-        elif cheat_count >= 4:
+            message = f'🚨 Dernier avertissement ! {cheat_count}/10 violations — exclusion imminente'
+        elif cheat_count >= 1:
             warning_level = 'warning'
-            message = f'Avertissement : {cheat_count}/10 violations détectées'
+            message = f'⚠ Alerte : {cheat_count}/10 violations enregistrées'
         else:
             warning_level = 'info'
             message = 'Comportement noté'
@@ -347,11 +371,11 @@ def nemotron_analyze_screenshot(request):
             # 3 violations HIGH/CRITICAL = BAN
             if session.cheat_count >= 3 and risk_level in ['high', 'critical']:
                 should_ban = True
-                ban_reason = f"Triche répétée détectée ({session.cheat_count:.1f} violations)"
+                ban_reason = f"Triche répétée détectée ({session.cheat_count} violations)"
             # 8 violations accumulées = BAN
             elif session.cheat_count >= 8:
                 should_ban = True
-                ban_reason = f"Nombreuses anomalies ({session.cheat_count:.1f} violations)"
+                ban_reason = f"Nombreuses anomalies ({session.cheat_count} violations)"
 
             if should_ban:
                 session.statut = CompositionSession.Statut.EXCLU
@@ -362,13 +386,13 @@ def nemotron_analyze_screenshot(request):
                 result['banned'] = False
                 # Avertissements progressifs
                 if session.cheat_count >= 2:
-                    result['warning'] = f"⚠️ Avertissement: comportement suspect ({session.cheat_count:.0f}/8 avant exclusion)"
+                    result['warning'] = f"⚠️ Avertissement: comportement suspect ({session.cheat_count}/8 avant exclusion)"
                 if session.cheat_count >= 5:
-                    result['warning'] = f"🚨 DERNIER AVERTISSEMENT: ({session.cheat_count:.0f}/8 avant exclusion)"
+                    result['warning'] = f"🚨 DERNIER AVERTISSEMENT: ({session.cheat_count}/8 avant exclusion)"
 
             session.save()
 
-            logger.info(f"👁️ Nemotron [{risk_level}] pour {request.user.email} - Action: {action} - Violations: {session.cheat_count:.1f}")
+            logger.info(f"👁️ Nemotron [{risk_level}] pour {request.user.email} - Action: {action} - Violations: {session.cheat_count}")
 
         return JsonResponse(result)
 
@@ -424,11 +448,11 @@ def submit_from_room(request):
         
         # Submit the session
         session.submit()
-        
-        # Correction IA asynchrone
-        from .tasks import process_ia_correction
-        process_ia_correction.delay(str(session.id))
-        
+
+        # Correction IA en thread daemon
+        thread = threading.Thread(target=_run_correction_async, args=(str(session.id),), daemon=True)
+        thread.start()
+
         return JsonResponse({
             'success': True,
             'message': 'Composition soumise avec succès',

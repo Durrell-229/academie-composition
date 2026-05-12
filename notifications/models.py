@@ -38,6 +38,15 @@ class EmailQueue(models.Model):
     sent_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        verbose_name = 'Email en attente'
+        verbose_name_plural = 'Emails en attente'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"[{self.statut}] {self.sujet} → {self.destinataire}"
+
+
 class GlobalAnnouncement(models.Model):
     titre = models.CharField(max_length=255)
     message = models.TextField()
@@ -45,3 +54,11 @@ class GlobalAnnouncement(models.Model):
     est_actif = models.BooleanField(default=True)
     date_expiration = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Annonce globale'
+        verbose_name_plural = 'Annonces globales'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.titre} ({'actif' if self.est_actif else 'inactif'})"

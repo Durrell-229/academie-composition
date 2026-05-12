@@ -12,4 +12,5 @@ urlpatterns = [
     path('<uuid:exam_id>/publish/', views.exam_publish_view, name='exam_publish'),
 
     path('<uuid:exam_id>/', views.exam_detail_view, name='exam_detail'),
+    path('<uuid:exam_id>/assigner/', views.exam_assign_view, name='exam_assign'),
 ]

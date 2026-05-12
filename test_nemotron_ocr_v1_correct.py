@@ -16,7 +16,7 @@ def test_nemotron_ocr_v1_correct():
         import requests
         import base64
         
-        api_key = "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"
+        api_key = os.environ.get('NVIDIA_API_KEY', '')
         invoke_url = "https://ai.api.nvidia.com/v1/cv/nvidia/nemotron-ocr-v1"
         
         print(f"\n🔑 Clé API: {api_key[:20]}...")

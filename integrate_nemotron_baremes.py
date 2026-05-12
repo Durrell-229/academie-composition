@@ -16,7 +16,7 @@ def integrate_nemotron_baremes_bulletins():
         # 1. Configurer la clé API NVIDIA Nemotron
         print("🔑 Configuration clé API NVIDIA Nemotron...")
         
-        nvidia_key = "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"
+        nvidia_key = os.environ.get('NVIDIA_API_KEY', '')
         
         # Mettre à jour .env
         try:

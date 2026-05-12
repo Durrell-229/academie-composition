@@ -19,12 +19,30 @@ def exam_list_view(request):
     
     # Filter exams based on user role
     if request.user.role == 'eleve':
-        # Students only see exams for their class that are published or in progress
-        # Chercher dans les classes où le nom correspond exactement à la classe de l'élève
-        exams = Exam.objects.filter(
-            classe__nom__iexact=request.user.classe.strip(),
-            statut__in=['publie', 'en_cours']
-        ).distinct() if request.user.classe and request.user.classe.strip() else Exam.objects.none()
+        from .models import ExamAssignment
+        user_classe = (request.user.classe or '').strip()
+        statuts_visibles = ['publie', 'en_cours']
+
+        if user_classe:
+            # Exams créés directement pour la classe de l'élève
+            par_classe = Exam.objects.filter(
+                classe__nom__iexact=user_classe,
+                statut__in=statuts_visibles,
+            )
+            # Exams assignés individuellement à l'élève
+            par_individuel = Exam.objects.filter(
+                assignments__eleve=request.user,
+                statut__in=statuts_visibles,
+            )
+            # Exams assignés à la classe via ExamAssignment
+            par_assignment_classe = Exam.objects.filter(
+                assignments__classe__nom__iexact=user_classe,
+                assignments__eleve__isnull=True,
+                statut__in=statuts_visibles,
+            )
+            exams = (par_classe | par_individuel | par_assignment_classe).distinct()
+        else:
+            exams = Exam.objects.none()
     elif request.user.role in ['professeur', 'conseiller']:
         # Profs/conseillers see their own exams + all published
         exams = Exam.objects.filter(
@@ -290,5 +308,73 @@ def exam_publish_view(request, exam_id):
         
         messages.success(request, f"L'épreuve '{exam.titre}' a été publiée avec succès.")
         logger.info(f"Examen {exam_id} publié par {request.user.email}")
-    
+
     return redirect('exam_detail', exam_id=exam_id)
+
+
+# ═══════════════════════════════════════════════════════════════
+# VUE D'ASSIGNATION D'EXAMEN À DES CLASSES
+# ═══════════════════════════════════════════════════════════════
+
+@login_required
+def exam_assign_view(request, exam_id):
+    """Assigner un examen à une ou plusieurs classes (admin/prof)."""
+    if request.user.role not in ['admin', 'professeur']:
+        messages.error(request, "Accès refusé.")
+        return redirect('dashboard')
+
+    exam = get_object_or_404(Exam, id=exam_id)
+
+    # Seul l'admin ou le créateur peut assigner l'exam
+    if request.user.role != 'admin' and exam.createur != request.user:
+        messages.error(request, "Vous ne pouvez assigner que vos propres épreuves.")
+        return redirect('exam_detail', exam_id=exam_id)
+
+    from .models import ExamAssignment
+
+    classes = Classe.objects.filter(is_active=True).order_by('nom')
+    # Récupérer les classes déjà assignées
+    existing_assignments = ExamAssignment.objects.filter(
+        exam=exam, eleve__isnull=True, classe__isnull=False
+    ).values_list('classe_id', flat=True)
+
+    if request.method == 'POST':
+        classe_ids = request.POST.getlist('classes')
+        if not classe_ids:
+            messages.error(request, "Sélectionnez au moins une classe.")
+        else:
+            assigned_count = 0
+            skipped_count = 0
+            for cid in classe_ids:
+                try:
+                    classe_obj = Classe.objects.get(id=cid)
+                    _, created = ExamAssignment.objects.get_or_create(
+                        exam=exam,
+                        classe=classe_obj,
+                        eleve=None,
+                        defaults={'assigned_by': request.user},
+                    )
+                    if created:
+                        assigned_count += 1
+                    else:
+                        skipped_count += 1
+                except Classe.DoesNotExist:
+                    pass
+
+            if assigned_count:
+                messages.success(
+                    request,
+                    f"Épreuve assignée à {assigned_count} classe(s)."
+                    + (f" ({skipped_count} déjà assignée(s) ignorée(s))" if skipped_count else "")
+                )
+            else:
+                messages.info(request, "Toutes les classes sélectionnées avaient déjà cette épreuve assignée.")
+
+            return redirect('exam_detail', exam_id=exam_id)
+
+    return render(request, 'exams/exam_assign.html', {
+        'exam': exam,
+        'classes': classes,
+        'existing_assignments': list(existing_assignments),
+        'user': request.user,
+    })

@@ -17,7 +17,7 @@ def test_nvidia_api():
         import json
         
         # Configuration
-        api_key = "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"
+        api_key = os.environ.get('NVIDIA_API_KEY', '')
         base_url = "https://integrate.api.nvidia.com/v1/chat/completions"
         model_name = "nvidia/nemotron-4-340b-instruct"
         

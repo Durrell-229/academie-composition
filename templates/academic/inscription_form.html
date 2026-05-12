@@ -1,0 +1,195 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }} | Académie Numérique{% endblock %}
+{% block breadcrumb %}
+  <a href="{% url 'academic:inscription_list' %}" class="hover:text-primary">Inscriptions</a>
+  <span class="mx-2 text-text-muted">/</span>
+  <span class="text-text-primary">{{ title }}</span>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto space-y-6">
+  <div class="bg-bg-card rounded-2xl border border-border-standard p-6">
+    <h1 class="text-2xl font-black mb-6">{{ title }}</h1>
+
+    {% if messages %}
+      {% for msg in messages %}
+        <div class="mb-4 px-4 py-3 rounded-lg text-sm font-medium
+          {% if msg.tags == 'error' %}bg-danger/10 text-danger{% else %}bg-success/10 text-success{% endif %}">
+          {{ msg }}
+        </div>
+      {% endfor %}
+    {% endif %}
+
+    {% if inscription %}
+      {# UPDATE form #}
+      <form method="post">
+        {% csrf_token %}
+        <div class="space-y-4">
+
+          <div>
+            <label class="block text-sm font-bold text-text-secondary mb-1">Élève</label>
+            <p class="text-text-primary font-medium">{{ inscription.eleve.get_full_name }}</p>
+          </div>
+
+          <div>
+            <label class="block text-sm font-bold text-text-secondary mb-1">Classe</label>
+            <p class="text-text-primary font-medium">{{ inscription.classe.nom }}</p>
+          </div>
+
+          <div>
+            <label for="statut" class="block text-sm font-bold text-text-secondary mb-1">Statut</label>
+            <select name="statut" id="statut"
+              class="w-full rounded-xl bg-bg-tertiary border border-border-standard text-text-primary px-4 py-2.5 text-sm focus:outline-none focus:border-primary">
+              {% for value, label in statuts %}
+                <option value="{{ value }}" {% if inscription.statut == value %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" name="frais_inscription_payes" class="rounded accent-primary"
+                {% if inscription.frais_inscription_payes %}checked{% endif %}>
+              <span class="text-sm text-text-secondary">Frais d'inscription payés</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" name="frais_scolarite_payes" class="rounded accent-primary"
+                {% if inscription.frais_scolarite_payes %}checked{% endif %}>
+              <span class="text-sm text-text-secondary">Frais de scolarité payés</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" name="est_boursier" class="rounded accent-primary"
+                {% if inscription.est_boursier %}checked{% endif %}>
+              <span class="text-sm text-text-secondary">Boursier</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" name="dossier_complet" class="rounded accent-primary"
+                {% if inscription.dossier_complet %}checked{% endif %}>
+              <span class="text-sm text-text-secondary">Dossier complet</span>
+            </label>
+          </div>
+
+          <div>
+            <label for="solde_du" class="block text-sm font-bold text-text-secondary mb-1">Solde dû (FCFA)</label>
+            <input type="number" name="solde_du" id="solde_du" step="0.01" min="0"
+              value="{{ inscription.solde_du }}"
+              class="w-full rounded-xl bg-bg-tertiary border border-border-standard text-text-primary px-4 py-2.5 text-sm focus:outline-none focus:border-primary">
+          </div>
+
+          <div>
+            <label for="type_bourse" class="block text-sm font-bold text-text-secondary mb-1">Type de bourse</label>
+            <input type="text" name="type_bourse" id="type_bourse" value="{{ inscription.type_bourse }}"
+              class="w-full rounded-xl bg-bg-tertiary border border-border-standard text-text-primary px-4 py-2.5 text-sm focus:outline-none focus:border-primary"
+              placeholder="Ex: Bourse nationale, Bourse CEDEAO...">
+          </div>
+
+          <div>
+            <label for="documents_manquants" class="block text-sm font-bold text-text-secondary mb-1">Documents manquants</label>
+            <textarea name="documents_manquants" id="documents_manquants" rows="2"
+              class="w-full rounded-xl bg-bg-tertiary border border-border-standard text-text-primary px-4 py-2.5 text-sm focus:outline-none focus:border-primary resize-none"
+              placeholder="Ex: Acte de naissance, Photo d'identité...">{{ inscription.documents_manquants }}</textarea>
+          </div>
+
+          <div>
+            <label for="appreciation" class="block text-sm font-bold text-text-secondary mb-1">Appréciation</label>
+            <textarea name="appreciation" id="appreciation" rows="2"
+              class="w-full rounded-xl bg-bg-tertiary border border-border-standard text-text-primary px-4 py-2.5 text-sm focus:outline-none focus:border-primary resize-none"
+              placeholder="Appréciation générale de l'élève...">{{ inscription.appreciation }}</textarea>
+          </div>
+
+          <div>
+            <label for="observations" class="block text-sm font-bold text-text-secondary mb-1">Observations</label>
+            <textarea name="observations" id="observations" rows="2"
+              class="w-full rounded-xl bg-bg-tertiary border border-border-standard text-text-primary px-4 py-2.5 text-sm focus:outline-none focus:border-primary resize-none"
+              placeholder="Observations particulières...">{{ inscription.observations }}</textarea>
+          </div>
+
+          <div class="flex gap-3 pt-2">
+            <button type="submit"
+              class="flex-1 bg-primary hover:bg-primary/90 text-white font-bold py-2.5 rounded-xl text-sm transition">
+              Enregistrer les modifications
+            </button>
+            <a href="{% url 'academic:inscription_detail' inscription_id=inscription.id %}"
+              class="flex-1 text-center bg-bg-tertiary hover:bg-bg-tertiary/80 text-text-secondary font-bold py-2.5 rounded-xl text-sm transition">
+              Annuler
+            </a>
+          </div>
+        </div>
+      </form>
+
+    {% else %}
+      {# CREATE form #}
+      <form method="post">
+        {% csrf_token %}
+        <div class="space-y-4">
+
+          <div>
+            <label for="eleve" class="block text-sm font-bold text-text-secondary mb-1">Élève <span class="text-danger">*</span></label>
+            <select name="eleve" id="eleve" required
+              class="w-full rounded-xl bg-bg-tertiary border border-border-standard text-text-primary px-4 py-2.5 text-sm focus:outline-none focus:border-primary">
+              <option value="">-- Sélectionner un élève --</option>
+              {% for eleve in eleves %}
+                <option value="{{ eleve.id }}">{{ eleve.get_full_name }} ({{ eleve.email }})</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div>
+            <label for="classe" class="block text-sm font-bold text-text-secondary mb-1">Classe <span class="text-danger">*</span></label>
+            <select name="classe" id="classe" required
+              class="w-full rounded-xl bg-bg-tertiary border border-border-standard text-text-primary px-4 py-2.5 text-sm focus:outline-none focus:border-primary">
+              <option value="">-- Sélectionner une classe --</option>
+              {% for classe in classes %}
+                <option value="{{ classe.id }}">{{ classe.nom }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div>
+            <label for="annee_scolaire" class="block text-sm font-bold text-text-secondary mb-1">Année scolaire <span class="text-danger">*</span></label>
+            <select name="annee_scolaire" id="annee_scolaire" required
+              class="w-full rounded-xl bg-bg-tertiary border border-border-standard text-text-primary px-4 py-2.5 text-sm focus:outline-none focus:border-primary">
+              <option value="">-- Sélectionner une année --</option>
+              {% for annee in annees %}
+                <option value="{{ annee.id }}" {% if annee.est_active %}selected{% endif %}>{{ annee.nom }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div>
+            <label for="promotion" class="block text-sm font-bold text-text-secondary mb-1">Promotion (optionnel)</label>
+            <select name="promotion" id="promotion"
+              class="w-full rounded-xl bg-bg-tertiary border border-border-standard text-text-primary px-4 py-2.5 text-sm focus:outline-none focus:border-primary">
+              <option value="">-- Aucune promotion --</option>
+              {% for promo in promotions %}
+                <option value="{{ promo.id }}">{{ promo.nom }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div>
+            <label for="statut" class="block text-sm font-bold text-text-secondary mb-1">Statut</label>
+            <select name="statut" id="statut"
+              class="w-full rounded-xl bg-bg-tertiary border border-border-standard text-text-primary px-4 py-2.5 text-sm focus:outline-none focus:border-primary">
+              {% for value, label in statuts %}
+                <option value="{{ value }}">{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="flex gap-3 pt-2">
+            <button type="submit"
+              class="flex-1 bg-primary hover:bg-primary/90 text-white font-bold py-2.5 rounded-xl text-sm transition">
+              Créer l'inscription
+            </button>
+            <a href="{% url 'academic:inscription_list' %}"
+              class="flex-1 text-center bg-bg-tertiary hover:bg-bg-tertiary/80 text-text-secondary font-bold py-2.5 rounded-xl text-sm transition">
+              Annuler
+            </a>
+          </div>
+        </div>
+      </form>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -133,49 +133,132 @@
   <!-- ═══ DÉTAILS PAR QUESTION ═══ -->
   {% if resultat.details_correction and resultat.details_correction.details %}
   <div class="animate-in delay-2 glass rounded-2xl border border-border-standard overflow-hidden">
-    <div class="px-6 py-4 border-b border-border-standard">
+    <div class="px-6 py-4 border-b border-border-standard flex items-center justify-between">
       <h3 class="font-black text-sm uppercase tracking-wider flex items-center gap-2">
         <i class="fa-solid fa-list-check text-primary"></i> Correction détaillée par question
       </h3>
+      <span class="text-xs text-text-muted">Évaluation par similarité sémantique</span>
     </div>
     <div class="divide-y divide-border-standard">
       {% for det in resultat.details_correction.details %}
-      <div class="px-6 py-4">
-        <div class="flex items-center justify-between mb-2">
-          <span class="font-bold text-sm">Question {{ det.question }}</span>
-          <span class="px-3 py-1 rounded-lg bg-primary/10 text-primary text-xs font-black">
-            {{ det.note_partielle }} pts
-          </span>
+      {% with sim=det.similarite_pct|default:0 pts=det.points|default:0 max_pts=det.max_points|default:0 %}
+      <div class="px-6 py-5">
+        <!-- En-tête question -->
+        <div class="flex items-start justify-between gap-4 mb-3">
+          <span class="font-bold text-sm flex-1">{{ det.question }}</span>
+          <div class="flex items-center gap-2 flex-shrink-0">
+            <span class="text-xs text-text-muted">{{ pts|floatformat:1 }} / {{ max_pts|floatformat:1 }} pts</span>
+            <span class="px-3 py-1 rounded-lg text-xs font-black
+              {% if sim >= 90 %}bg-success/10 text-success
+              {% elif sim >= 70 %}bg-info/10 text-info
+              {% elif sim >= 50 %}bg-warning/10 text-warning
+              {% elif sim >= 30 %}bg-orange-500/10 text-orange-400
+              {% else %}bg-danger/10 text-danger{% endif %}">
+              {{ sim }}%
+            </span>
+          </div>
         </div>
+
+        <!-- Barre de similarité -->
+        <div class="mb-3">
+          <div class="flex items-center justify-between text-[10px] text-text-muted mb-1">
+            <span class="uppercase tracking-widest">Similarité sémantique</span>
+            <span class="font-bold
+              {% if sim >= 70 %}text-success{% elif sim >= 50 %}text-warning{% else %}text-danger{% endif %}">
+              {% if sim >= 90 %}Réponse complète
+              {% elif sim >= 70 %}Partiellement correcte
+              {% elif sim >= 50 %}Éléments présents
+              {% elif sim >= 30 %}Insuffisant
+              {% else %}Hors sujet / Incorrect{% endif %}
+            </span>
+          </div>
+          <div class="w-full bg-bg-tertiary/40 rounded-full h-2 border border-border-standard">
+            <div class="h-2 rounded-full transition-all duration-700
+              {% if sim >= 90 %}bg-success
+              {% elif sim >= 70 %}bg-info
+              {% elif sim >= 50 %}bg-warning
+              {% elif sim >= 30 %}bg-orange-500
+              {% else %}bg-danger{% endif %}"
+              style="width: {{ sim }}%">
+            </div>
+          </div>
+        </div>
+
+        <!-- Commentaire -->
         {% if det.commentaire %}
-        <p class="text-sm text-text-secondary leading-relaxed">{{ det.commentaire }}</p>
+        <p class="text-sm text-text-secondary leading-relaxed bg-bg-primary/30 rounded-xl px-4 py-3 border border-border-standard/50">
+          {{ det.commentaire }}
+        </p>
         {% endif %}
       </div>
+      {% endwith %}
       {% endfor %}
     </div>
+
+    <!-- Points forts / Axes d'amélioration -->
+    {% if resultat.details_correction.points_forts_global or resultat.details_correction.axes_amelioration %}
+    <div class="px-6 py-5 border-t border-border-standard grid grid-cols-1 md:grid-cols-2 gap-4">
+      {% if resultat.details_correction.points_forts_global %}
+      <div class="bg-success/5 rounded-xl p-4 border border-success/20">
+        <p class="text-xs font-black uppercase tracking-widest text-success mb-2">✓ Points forts</p>
+        <p class="text-sm text-text-secondary leading-relaxed">{{ resultat.details_correction.points_forts_global }}</p>
+      </div>
+      {% endif %}
+      {% if resultat.details_correction.axes_amelioration %}
+      <div class="bg-warning/5 rounded-xl p-4 border border-warning/20">
+        <p class="text-xs font-black uppercase tracking-widest text-warning mb-2">→ À améliorer</p>
+        <p class="text-sm text-text-secondary leading-relaxed">{{ resultat.details_correction.axes_amelioration }}</p>
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
   </div>
   {% endif %}
 
   {% else %}
   <!-- ═══ EN ATTENTE DE CORRECTION ═══ -->
   <div class="animate-in delay-1 glass rounded-2xl border border-border-standard p-12 text-center">
-    <div class="w-16 h-16 rounded-2xl bg-warning/10 flex items-center justify-center mx-auto mb-4">
-      <i class="fa-solid fa-hourglass-half text-2xl text-warning"></i>
+    <div class="relative w-20 h-20 mx-auto mb-6">
+      <svg class="w-20 h-20 -rotate-90 absolute inset-0" viewBox="0 0 80 80">
+        <circle cx="40" cy="40" r="34" fill="none" stroke="rgba(71,85,105,0.2)" stroke-width="6"/>
+        <circle id="progress-ring" cx="40" cy="40" r="34" fill="none" stroke="#6366F1"
+          stroke-width="6" stroke-linecap="round"
+          stroke-dasharray="213" stroke-dashoffset="213"
+          style="transition: stroke-dashoffset 1s linear;"/>
+      </svg>
+      <div class="absolute inset-0 flex items-center justify-center">
+        <i class="fa-solid fa-brain text-2xl text-primary animate-pulse"></i>
+      </div>
     </div>
-    <h2 class="text-xl font-black mb-2">Résultat en attente</h2>
-    <p class="text-sm text-text-muted max-w-sm mx-auto mb-6">
-      Votre copie est en cours de traitement par notre système de correction.
-      Elle sera disponible dans quelques instants.
+    <h2 class="text-xl font-black mb-2">Correction IA en cours…</h2>
+    <p class="text-sm text-text-muted max-w-sm mx-auto mb-2">
+      L'intelligence artificielle analyse votre copie. Actualisation automatique dans
+      <span id="refresh-countdown" class="text-primary font-bold">10</span>s.
     </p>
+    <p class="text-xs text-text-muted/60 mb-6">La correction peut prendre 15 à 60 secondes selon la longueur de la copie.</p>
     <div class="flex items-center justify-center gap-3">
       <a href="{% url 'dashboard' %}" class="px-6 py-2.5 rounded-xl glass border border-border-standard text-sm font-bold hover:bg-bg-tertiary/30 transition">
         Retour au dashboard
       </a>
       <button onclick="location.reload()" class="px-6 py-2.5 rounded-xl bg-button-gradient text-white text-sm font-bold hover:opacity-90 transition">
-        <i class="fa-solid fa-refresh mr-1"></i> Actualiser
+        <i class="fa-solid fa-rotate mr-1"></i> Actualiser maintenant
       </button>
     </div>
   </div>
+  <script>
+  // Auto-refresh toutes les 10 secondes jusqu'à ce que le résultat soit disponible
+  let countdown = 10;
+  const cdEl = document.getElementById('refresh-countdown');
+  const ring = document.getElementById('progress-ring');
+  const circumference = 213;
+  const timer = setInterval(() => {
+    countdown--;
+    if (cdEl) cdEl.textContent = countdown;
+    // Remplir l'anneau progressivement
+    if (ring) ring.style.strokeDashoffset = circumference * (countdown / 10);
+    if (countdown <= 0) { clearInterval(timer); location.reload(); }
+  }, 1000);
+  </script>
   {% endif %}
 
   <!-- ═══ ACTIONS ═══ -->

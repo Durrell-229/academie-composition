@@ -155,16 +155,34 @@ def inscription_detail(request, inscription_id):
 def inscription_update(request, inscription_id):
     """Modification d'une inscription"""
     inscription = get_object_or_404(Inscription, id=inscription_id)
-    
+
     if request.method == 'POST':
-        # Logique de modification
-        messages.success(request, "L'inscription a été mise à jour.")
-        return redirect('academic:inscription_detail', inscription_id=inscription.id)
-    
-    return render(request, 'academic/inscription_form.html', {
-        'title': 'Modifier l\'inscription',
-        'inscription': inscription
-    })
+        try:
+            inscription.statut = request.POST.get('statut', inscription.statut)
+            inscription.frais_inscription_payes = 'frais_inscription_payes' in request.POST
+            inscription.frais_scolarite_payes = 'frais_scolarite_payes' in request.POST
+            inscription.est_boursier = 'est_boursier' in request.POST
+            inscription.dossier_complet = 'dossier_complet' in request.POST
+            solde_du = request.POST.get('solde_du', '').strip()
+            if solde_du:
+                inscription.solde_du = solde_du
+            inscription.type_bourse = request.POST.get('type_bourse', inscription.type_bourse)
+            inscription.documents_manquants = request.POST.get('documents_manquants', inscription.documents_manquants)
+            inscription.appreciation = request.POST.get('appreciation', inscription.appreciation)
+            inscription.observations = request.POST.get('observations', inscription.observations)
+            inscription.save()
+            messages.success(request, "L'inscription a été mise à jour.")
+            return redirect('academic:inscription_detail', inscription_id=inscription.id)
+        except Exception as e:
+            messages.error(request, f"Erreur lors de la mise à jour : {e}")
+
+    from schools.models import AnneeScolaire
+    context = {
+        'title': "Modifier l'inscription",
+        'inscription': inscription,
+        'statuts': Inscription.StatutInscription.choices,
+    }
+    return render(request, 'academic/inscription_form.html', context)
 
 
 @login_required
@@ -296,14 +314,51 @@ def evaluation_detail(request, evaluation_id):
 def evaluation_notes(request, evaluation_id):
     """Gestion des notes d'une évaluation"""
     evaluation = get_object_or_404(Evaluation, id=evaluation_id)
-    
+
+    # Inscriptions actives de la classe pour cette évaluation
+    inscriptions = Inscription.objects.filter(
+        classe=evaluation.classe,
+        annee_scolaire__est_active=True,
+    ).select_related('eleve').order_by('eleve__last_name')
+
     if request.method == 'POST':
-        # Logique de saisie des notes
-        messages.success(request, "Les notes ont été enregistrées.")
+        saved = 0
+        errors = []
+        for inscription in inscriptions:
+            eleve_id = str(inscription.eleve.id)
+            raw_note = request.POST.get(f'note_{eleve_id}', '').strip()
+            if raw_note == '':
+                continue
+            try:
+                note_val = float(raw_note)
+                est_absent = f'absent_{eleve_id}' in request.POST
+                appreciation = request.POST.get(f'appreciation_{eleve_id}', '')
+                Note.objects.update_or_create(
+                    evaluation=evaluation,
+                    eleve=inscription.eleve,
+                    defaults={
+                        'inscription': inscription,
+                        'note': note_val,
+                        'note_sur': evaluation.note_maximale,
+                        'appreciation': appreciation,
+                        'est_absent': est_absent,
+                    }
+                )
+                saved += 1
+            except (ValueError, Exception) as e:
+                errors.append(f"{inscription.eleve.get_full_name()}: {e}")
+
+        if errors:
+            messages.warning(request, f"{saved} note(s) enregistrée(s). Erreurs : {'; '.join(errors)}")
+        else:
+            messages.success(request, f"{saved} note(s) enregistrée(s) avec succès.")
         return redirect('academic:evaluation_detail', evaluation_id=evaluation.id)
-    
+
+    existing_notes = {str(n.eleve_id): n for n in Note.objects.filter(evaluation=evaluation)}
     context = {
         'evaluation': evaluation,
+        'inscriptions': inscriptions,
+        'existing_notes': existing_notes,
     }
     return render(request, 'academic/evaluation_notes_form.html', context)
 

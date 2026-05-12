@@ -16,7 +16,7 @@ def test_nvidia_api_catalog():
         import requests
         import json
         
-        api_key = "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"
+        api_key = os.environ.get('NVIDIA_API_KEY', '')
         
         print(f"\n🔑 Clé API: {api_key[:20]}...")
         
