@@ -1,0 +1,440 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Bulletin Scolaire – {{ eleve.nom_prenoms|default:"Élève" }}</title>
+<style>
+@page { size: A4; margin: 8mm; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Arial, sans-serif; font-size: 10.5px; color: #000; background: #fff; }
+
+/* ===== ENVELOPPE PRINCIPALE ===== */
+.bulletin { width: 100%; max-width: 795px; margin: 0 auto; border: 2px solid #000; padding: 6px 8px; }
+
+/* ===== EN-TÊTE ===== */
+.header { display: table; width: 100%; border-bottom: 1.5px solid #000; padding-bottom: 5px; margin-bottom: 5px; }
+.col-left, .col-center, .col-right { display: table-cell; vertical-align: middle; }
+.col-left  { width: 22%; text-align: center; }
+.col-center{ width: 56%; text-align: center; padding: 0 6px; }
+.col-right { width: 22%; text-align: center; }
+.logo-box  { width: 52px; height: 52px; margin: 0 auto; }
+.logo-box img { width: 100%; height: 100%; object-fit: contain; }
+.logo-placeholder { width: 52px; height: 52px; border: 1px dashed #aaa; display: flex; align-items: center; justify-content: center; font-size: 8px; color: #999; margin: 0 auto; }
+.republique { font-size: 10px; font-weight: bold; line-height: 1.4; }
+.devise     { font-size: 8.5px; font-style: italic; }
+.ecole-nom  { font-size: 13px; font-weight: bold; letter-spacing: 0.5px; }
+.ecole-info { font-size: 8.5px; margin-top: 2px; line-height: 1.5; }
+.ministere  { font-size: 8.5px; line-height: 1.5; }
+
+/* ===== TITRE ===== */
+.titre-principal { text-align: center; font-size: 15px; font-weight: bold; text-decoration: underline; margin: 5px 0 3px; letter-spacing: 0.5px; text-transform: uppercase; }
+
+/* ===== BANDE ANNEE / TRIMESTRE ===== */
+.bande { display: table; width: 100%; font-size: 10.5px; font-weight: bold; border: 1px solid #000; margin-bottom: 5px; }
+.bande-left, .bande-right { display: table-cell; width: 50%; padding: 3px 6px; }
+.bande-right { border-left: 1px solid #000; }
+.trim-num { display: inline-block; border: 1px solid #000; border-radius: 50%; padding: 1px 4px; margin: 0 2px; }
+.trim-num.actif { background: #000; color: #fff; }
+
+/* ===== SECTION TITRE GRIS ===== */
+.section-titre { background: #c8c8c8; border: 1px solid #000; text-align: center; font-weight: bold; font-size: 10.5px; padding: 2px 4px; text-transform: uppercase; letter-spacing: 0.3px; }
+
+/* ===== INFOS ÉLÈVE ===== */
+.info-eleve { border: 1px solid #000; border-top: none; padding: 5px 7px; font-size: 10.5px; }
+.info-row { display: table; width: 100%; margin-bottom: 4px; }
+.info-row:last-child { margin-bottom: 0; }
+.info-cell { display: table-cell; vertical-align: bottom; padding-right: 8px; }
+.champ { border-bottom: 1px solid #000; display: inline-block; padding: 0 3px; vertical-align: bottom; }
+
+/* ===== TABLE NOTES ===== */
+.table-notes { width: 100%; border-collapse: collapse; font-size: 9.5px; margin-top: 4px; }
+.table-notes th, .table-notes td { border: 1px solid #000; padding: 3px 2px; text-align: center; vertical-align: middle; }
+.table-notes .discipline { text-align: left; padding-left: 5px; width: 23%; }
+.col-coef   { width: 5%; }
+.col-note   { width: 5.5%; }
+.col-moy    { width: 6%; }
+.col-rang   { width: 5.5%; }
+.col-apprec { text-align: left; padding-left: 4px; width: 18%; font-size: 8.5px; }
+.entete-vertical { writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap; font-size: 9px; font-weight: bold; }
+.ligne-total { font-weight: bold; background: #f0f0f0; }
+.ligne-moyenne { font-weight: bold; font-size: 10px; }
+
+/* ===== RÉSULTATS GLOBAUX ===== */
+.resultats { border: 1px solid #000; border-top: none; padding: 5px 7px; font-size: 10.5px; }
+.res-row { display: table; width: 100%; margin-bottom: 4px; }
+.res-cell { display: table-cell; width: 50%; }
+.res-cell:last-child { padding-left: 10px; }
+
+/* ===== ABSENCES ===== */
+.absences { border: 1px solid #000; border-top: none; padding: 5px 7px; font-size: 10.5px; }
+.abs-grid { display: table; width: 100%; }
+.abs-col { display: table-cell; width: 25%; text-align: center; border-right: 1px solid #ccc; padding: 2px 4px; }
+.abs-col:last-child { border-right: none; }
+.abs-val { font-size: 14px; font-weight: bold; }
+.abs-label { font-size: 8px; color: #444; }
+
+/* ===== COMPORTEMENT ===== */
+.comportement { border: 1px solid #000; border-top: none; }
+.comport-table { width: 100%; border-collapse: collapse; font-size: 10px; }
+.comport-table th, .comport-table td { border: 1px solid #000; padding: 3px 5px; text-align: center; }
+.comport-table th { background: #e8e8e8; font-size: 9.5px; }
+.comport-table .label-col { text-align: left; font-weight: bold; padding-left: 6px; width: 25%; }
+.tick { font-size: 12px; font-weight: bold; }
+
+/* ===== AVIS CONSEIL ===== */
+.avis { border: 1px solid #000; border-top: none; padding: 5px 7px; font-size: 10.5px; }
+.avis-grid { display: table; width: 100%; }
+.avis-col { display: table-cell; width: 33.33%; padding: 2px 0; vertical-align: middle; }
+.checkbox { display: inline-block; width: 11px; height: 11px; border: 1.5px solid #000; vertical-align: middle; margin-right: 4px; text-align: center; line-height: 10px; font-size: 10px; font-weight: bold; }
+.checkbox.coche::before { content: "✓"; }
+
+/* ===== DÉCISION ===== */
+.decision { border: 1px solid #000; border-top: none; padding: 5px 7px; font-size: 10.5px; }
+.decision-row { display: table; width: 100%; }
+.decision-col { display: table-cell; width: 33.33%; text-align: center; }
+.decision-box { display: inline-block; width: 13px; height: 13px; border: 1.5px solid #000; vertical-align: middle; margin-left: 3px; text-align: center; line-height: 12px; font-weight: bold; }
+.fait-a { text-align: right; margin-top: 4px; font-size: 10.5px; }
+
+/* ===== SIGNATURES ===== */
+.signatures { display: table; width: 100%; margin-top: 5px; }
+.sig-box { display: table-cell; width: 50%; border: 1px solid #000; padding: 5px 6px; text-align: center; vertical-align: top; height: 80px; }
+.sig-box.droite { border-left: none; }
+.sig-titre { font-weight: bold; font-size: 10.5px; }
+.sig-sous  { font-style: italic; font-size: 9px; }
+.cachet-cercle { width: 50px; height: 50px; border: 1.5px solid #1a3a8a; border-radius: 50%; margin: 8px auto 0; }
+
+/* ===== QR CODE ===== */
+.qr-zone { text-align: right; margin-top: 4px; }
+.qr-zone img { width: 40px; height: 40px; }
+
+@media print {
+  body { padding: 0; }
+  .bulletin { border: 2px solid #000; }
+  .no-print { display: none !important; }
+}
+</style>
+</head>
+<body>
+<div class="bulletin">
+
+  <!-- ======== EN-TÊTE ======== -->
+  <div class="header">
+    <div class="col-left">
+      {% if logo_benin %}
+        <div class="logo-box"><img src="{{ logo_benin }}" alt="Armoiries Bénin"></div>
+      {% else %}
+        <div class="logo-placeholder">LOGO</div>
+      {% endif %}
+      <div class="republique">RÉPUBLIQUE DU BÉNIN</div>
+      <div class="devise">Fraternité – Justice – Travail</div>
+    </div>
+    <div class="col-center">
+      <div class="ecole-nom">{{ etablissement.nom|default:"ACADÉMIE NUMÉRIQUE" }}</div>
+      <div class="ecole-info">
+        {% if etablissement.bp %}BP {{ etablissement.bp }} – {% endif %}
+        {% if etablissement.tel %}Tél : {{ etablissement.tel }} – {% endif %}
+        {{ etablissement.ville|default:"Cotonou" }}
+      </div>
+    </div>
+    <div class="col-right">
+      <div class="ministere">
+        MINISTÈRE<br>DES ENSEIGNEMENTS<br>SECONDAIRE ET SUPÉRIEUR<br>
+        <strong>Département de l'Atlantique</strong>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======== TITRE ======== -->
+  <div class="titre-principal">Bulletin Scolaire et de Notes</div>
+
+  <!-- ======== ANNÉE / TRIMESTRE ======== -->
+  <div class="bande">
+    <div class="bande-left">
+      Année Scolaire : 20<span style="border-bottom:1px solid #000;padding:0 3px;">{{ annee.debut|default:"__" }}</span>
+      &nbsp;–&nbsp;
+      20<span style="border-bottom:1px solid #000;padding:0 3px;">{{ annee.fin|default:"__" }}</span>
+    </div>
+    <div class="bande-right">
+      Trimestre :
+      <span class="trim-num {% if trimestre == 1 %}actif{% endif %}">1<sup>er</sup></span>
+      <span class="trim-num {% if trimestre == 2 %}actif{% endif %}">2<sup>ème</sup></span>
+      <span class="trim-num {% if trimestre == 3 %}actif{% endif %}">3<sup>ème</sup></span>
+    </div>
+  </div>
+
+  <!-- ======== INFOS ÉLÈVE ======== -->
+  <div class="section-titre">Identification de l'Élève</div>
+  <div class="info-eleve">
+    <div class="info-row">
+      <div class="info-cell" style="width:100%">
+        Nom et Prénoms :
+        <span class="champ" style="min-width:420px;">{{ eleve.nom_prenoms|default:"" }}</span>
+      </div>
+    </div>
+    <div class="info-row">
+      <div class="info-cell" style="width:45%">
+        Né(e) le :
+        <span class="champ" style="min-width:90px;">{{ eleve.date_naissance|default:"__ / __ / ____" }}</span>
+      </div>
+      <div class="info-cell" style="width:35%">
+        à :
+        <span class="champ" style="min-width:120px;">{{ eleve.lieu_naissance|default:"" }}</span>
+      </div>
+      <div class="info-cell" style="width:20%">
+        Sexe :
+        <strong>{% if eleve.sexe == "M" %}M{% elif eleve.sexe == "F" %}F{% else %}M / F{% endif %}</strong>
+      </div>
+    </div>
+    <div class="info-row">
+      <div class="info-cell" style="width:35%">
+        Classe :
+        <span class="champ" style="min-width:80px;">{{ eleve.classe|default:"" }}</span>
+      </div>
+      <div class="info-cell" style="width:25%">
+        Effectif :
+        <span class="champ" style="min-width:50px;">{{ eleve.effectif|default:"" }}</span>
+      </div>
+      <div class="info-cell" style="width:40%">
+        N° Matricule :
+        <span class="champ" style="min-width:120px;">{{ eleve.matricule|default:"" }}</span>
+      </div>
+    </div>
+    <div class="info-row">
+      <div class="info-cell" style="width:100%">
+        Statut :
+        <strong>{{ eleve.statut|default:"Nouveau" }}</strong>
+        &nbsp;&nbsp;&nbsp;
+        {% if eleve.redoublant %}<strong style="color:#c00;">(REDOUBLANT)</strong>{% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- ======== TABLE DES NOTES ======== -->
+  <div class="section-titre" style="margin-top:5px;">Résultats des Évaluations</div>
+  <table class="table-notes">
+    <thead>
+      <tr>
+        <th class="discipline" rowspan="2">DISCIPLINES</th>
+        <th class="col-coef" rowspan="2">COEF.</th>
+        <th class="col-note"><span class="entete-vertical">INTERRO.</span></th>
+        <th class="col-note"><span class="entete-vertical">DEVOIR 1</span></th>
+        <th class="col-note"><span class="entete-vertical">DEVOIR 2</span></th>
+        <th class="col-note"><span class="entete-vertical">DEVOIR 3</span></th>
+        <th class="col-moy" rowspan="2">MOY.<br>/20</th>
+        <th class="col-moy" rowspan="2">MOY.×<br>COEF.</th>
+        <th class="col-rang" rowspan="2">RANG</th>
+        <th class="col-apprec" rowspan="2">APPRÉCIATIONS ET<br>SIGNATURES PROFS</th>
+      </tr>
+      <tr>
+        <th colspan="4" style="font-size:8px;font-style:italic;">Notes /20</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for mat in matieres %}
+      <tr>
+        <td class="discipline">{{ mat.nom }}</td>
+        <td>{{ mat.coef|default:"" }}</td>
+        <td>{{ mat.interro|default:"" }}</td>
+        <td>{{ mat.dev1|default:"" }}</td>
+        <td>{{ mat.dev2|default:"" }}</td>
+        <td>{{ mat.dev3|default:"" }}</td>
+        <td><strong>{{ mat.moyenne|default:"" }}</strong></td>
+        <td>{{ mat.moy_coef|default:"" }}</td>
+        <td>{{ mat.rang|default:"" }}</td>
+        <td class="col-apprec">{{ mat.appreciation|default:"" }}</td>
+      </tr>
+      {% empty %}
+      {% for mat_vide in matieres_defaut %}
+      <tr>
+        <td class="discipline">{{ mat_vide }}</td>
+        <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="col-apprec"></td>
+      </tr>
+      {% endfor %}
+      {% endfor %}
+      <!-- Total -->
+      <tr class="ligne-total">
+        <td class="discipline" style="text-align:right;font-weight:bold;">TOTAL</td>
+        <td><strong>{{ totaux.coef|default:"" }}</strong></td>
+        <td colspan="5"></td>
+        <td><strong>{{ totaux.moy_coef|default:"" }}</strong></td>
+        <td colspan="2"></td>
+      </tr>
+      <!-- Moyenne -->
+      <tr class="ligne-moyenne">
+        <td class="discipline" colspan="2" style="text-align:center;background:#f5f5f5;font-weight:bold;">MOYENNE DU TRIMESTRE</td>
+        <td colspan="8" style="text-align:center;font-size:12px;font-weight:bold;background:#f5f5f5;">
+          {{ moyenne_trimestre|default:"—" }} / 20
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ======== RÉSULTATS GLOBAUX ======== -->
+  <div class="section-titre" style="margin-top:5px;">Résultats Globaux</div>
+  <div class="resultats">
+    <div class="res-row">
+      <div class="res-cell">
+        Moyenne de l'élève :
+        <span class="champ" style="min-width:60px;font-weight:bold;">{{ resultats.moyenne|default:"" }}</span>
+        / 20
+      </div>
+      <div class="res-cell">
+        Rang :
+        <span class="champ" style="min-width:80px;font-weight:bold;">{{ resultats.rang|default:"" }}</span>
+      </div>
+    </div>
+    <div class="res-row">
+      <div class="res-cell">
+        Plus forte moyenne de la classe :
+        <span class="champ" style="min-width:50px;">{{ resultats.plus_forte|default:"" }}</span>
+      </div>
+      <div class="res-cell">
+        Plus faible moyenne :
+        <span class="champ" style="min-width:50px;">{{ resultats.plus_faible|default:"" }}</span>
+      </div>
+    </div>
+    <div class="res-row">
+      <div class="res-cell">
+        Moyenne de la classe :
+        <span class="champ" style="min-width:50px;">{{ resultats.moyenne_classe|default:"" }}</span>
+      </div>
+      <div class="res-cell">
+        Mention :
+        <span class="champ" style="min-width:130px;font-weight:bold;">{{ resultats.mention|default:"" }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======== ABSENCES & RETARDS ======== -->
+  <div class="section-titre" style="margin-top:5px;">Absences et Retards</div>
+  <div class="absences">
+    <div class="abs-grid">
+      <div class="abs-col">
+        <div class="abs-val">{{ absences.justifiees|default:"0" }}</div>
+        <div class="abs-label">Abs. justifiées (j.)</div>
+      </div>
+      <div class="abs-col">
+        <div class="abs-val">{{ absences.injustifiees|default:"0" }}</div>
+        <div class="abs-label">Abs. injustifiées (j.)</div>
+      </div>
+      <div class="abs-col">
+        <div class="abs-val">{{ absences.heures|default:"0" }}</div>
+        <div class="abs-label">Total heures abs.</div>
+      </div>
+      <div class="abs-col">
+        <div class="abs-val">{{ absences.retards|default:"0" }}</div>
+        <div class="abs-label">Retards</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======== COMPORTEMENT ======== -->
+  <div class="section-titre" style="margin-top:5px;">Comportement de l'Élève</div>
+  <div class="comportement">
+    <table class="comport-table">
+      <thead>
+        <tr>
+          <th class="label-col">Critère</th>
+          <th>Excellent</th>
+          <th>Passable</th>
+          <th>Moyen</th>
+          <th>Mauvais</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in comportements %}
+        <tr>
+          <td class="label-col">{{ c.label }}</td>
+          <td><span class="tick">{% if c.valeur == "Excellent" %}✓{% endif %}</span></td>
+          <td><span class="tick">{% if c.valeur == "Passable" %}✓{% endif %}</span></td>
+          <td><span class="tick">{% if c.valeur == "Moyen" %}✓{% endif %}</span></td>
+          <td><span class="tick">{% if c.valeur == "Mauvais" %}✓{% endif %}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ======== OBSERVATION DU CONSEIL ======== -->
+  {% if observation %}
+  <div class="section-titre" style="margin-top:5px;">Observation du Conseil des Professeurs</div>
+  <div style="border:1px solid #000;border-top:none;padding:5px 7px;font-size:10.5px;min-height:30px;">
+    {{ observation }}
+  </div>
+  {% endif %}
+
+  <!-- ======== AVIS DU CONSEIL ======== -->
+  <div class="section-titre" style="margin-top:5px;">Avis du Conseil des Professeurs</div>
+  <div class="avis">
+    <div class="avis-grid">
+      <div class="avis-col">
+        <span class="checkbox {% if avis.felicitations %}coche{% endif %}"></span>Félicitations
+      </div>
+      <div class="avis-col">
+        <span class="checkbox {% if avis.tableau_honneur %}coche{% endif %}"></span>Tableau d'honneur
+      </div>
+      <div class="avis-col">
+        <span class="checkbox {% if avis.encouragement %}coche{% endif %}"></span>Encouragement
+      </div>
+    </div>
+    <div class="avis-grid" style="margin-top:3px;">
+      <div class="avis-col">
+        <span class="checkbox {% if avis.avertissement %}coche{% endif %}"></span>Avertissement de travail
+      </div>
+      <div class="avis-col">
+        <span class="checkbox {% if avis.blame %}coche{% endif %}"></span>Blâme
+      </div>
+      <div class="avis-col"></div>
+    </div>
+  </div>
+
+  <!-- ======== DÉCISION DU CONSEIL ======== -->
+  <div class="section-titre" style="margin-top:5px;">Décision du Conseil</div>
+  <div class="decision">
+    <div class="decision-row">
+      <div class="decision-col">
+        Passe en classe supérieure
+        <span class="decision-box">{% if decision == "passe" %}✓{% endif %}</span>
+      </div>
+      <div class="decision-col">
+        Redouble
+        <span class="decision-box">{% if decision == "redouble" %}✓{% endif %}</span>
+      </div>
+      <div class="decision-col">
+        Exclu / Renvoyé
+        <span class="decision-box">{% if decision == "exclu" %}✓{% endif %}</span>
+      </div>
+    </div>
+    <div class="fait-a">
+      Fait à
+      <span class="champ" style="min-width:90px;">{{ fait_a|default:"Cotonou" }}</span>
+      , le
+      <span class="champ" style="min-width:80px;">{{ fait_le|default:"__ / __ / ____" }}</span>
+    </div>
+  </div>
+
+  <!-- ======== SIGNATURES ======== -->
+  <div class="signatures">
+    <div class="sig-box">
+      <div class="sig-titre">Le Directeur de l'Établissement</div>
+      <div class="sig-sous">(Signature et Cachet Officiel)</div>
+      <div class="cachet-cercle"></div>
+    </div>
+    <div class="sig-box droite">
+      <div class="sig-titre">Visa des Parents / Tuteurs</div>
+      <div class="sig-sous">(Lu et approuvé)</div>
+    </div>
+  </div>
+
+  <!-- QR Code de vérification -->
+  {% if qr_code_url %}
+  <div class="qr-zone">
+    <img src="{{ qr_code_url }}" alt="QR Vérification">
+    <div style="font-size:7px;color:#666;">Vérifier l'authenticité</div>
+  </div>
+  {% endif %}
+
+</div>
+</body>
+</html>

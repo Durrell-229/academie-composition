@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Assigner l'Épreuve - {{ exam.titre }}{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-bg-primary p-6">
+  <div class="max-w-3xl mx-auto">
+
+    <!-- Header -->
+    <div class="mb-8">
+      <div class="flex items-center mb-4">
+        <a href="{% url 'exam_detail' exam.id %}" class="text-text-muted hover:text-white transition-colors flex items-center gap-2">
+          <i class="fa-solid fa-arrow-left"></i>
+          Retour à l'épreuve
+        </a>
+      </div>
+      <h1 class="text-3xl font-bold text-white mb-2">
+        <i class="fa-solid fa-share-nodes mr-3 text-primary"></i>
+        Assigner l'Épreuve
+      </h1>
+      <p class="text-text-muted">Sélectionnez les classes qui auront accès à cette épreuve</p>
+    </div>
+
+    <!-- Messages -->
+    {% if messages %}
+    <div class="mb-6 space-y-2">
+      {% for message in messages %}
+      <div class="px-5 py-3 rounded-xl text-sm font-medium
+        {% if message.tags == 'success' %}bg-success/10 border border-success/30 text-success
+        {% elif message.tags == 'error' %}bg-danger/10 border border-danger/30 text-red-400
+        {% else %}bg-info/10 border border-info/30 text-info{% endif %}">
+        {{ message }}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Exam Info -->
+    <div class="bg-bg-secondary rounded-xl p-5 mb-6 border border-border-standard">
+      <div class="flex items-start gap-4">
+        <div class="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
+          <i class="fa-solid fa-file-lines text-xl"></i>
+        </div>
+        <div class="flex-1 min-w-0">
+          <h2 class="font-bold text-white text-lg truncate">{{ exam.titre }}</h2>
+          <div class="flex flex-wrap gap-3 mt-2 text-xs text-text-muted">
+            <span><i class="fa-solid fa-book mr-1"></i>{{ exam.matiere.nom|default:"N/A" }}</span>
+            <span><i class="fa-solid fa-clock mr-1"></i>{{ exam.duree_minutes }} min</span>
+            <span><i class="fa-solid fa-tag mr-1"></i>{{ exam.get_type_exam_display }}</span>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full
+              {% if exam.statut == 'publie' or exam.statut == 'en_cours' %}bg-success/10 text-success border border-success/20
+              {% elif exam.statut == 'brouillon' %}bg-warning/10 text-warning border border-warning/20
+              {% else %}bg-bg-tertiary/50 text-text-muted border border-border-standard{% endif %}">
+              {{ exam.get_statut_display }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Form -->
+    <form method="post">
+      {% csrf_token %}
+      <div class="bg-bg-secondary rounded-xl border border-border-standard overflow-hidden">
+        <div class="px-6 py-4 border-b border-border-standard bg-bg-tertiary/30">
+          <div class="flex items-center justify-between">
+            <h3 class="font-bold text-sm uppercase tracking-wider text-text-muted flex items-center gap-2">
+              <i class="fa-solid fa-chalkboard text-primary"></i>
+              Classes disponibles
+            </h3>
+            <span class="text-xs text-text-muted">{{ classes.count }} classe(s)</span>
+          </div>
+        </div>
+
+        <div class="divide-y divide-border-standard">
+          {% for classe in classes %}
+          <label class="flex items-center gap-4 px-6 py-4 hover:bg-bg-tertiary/30 transition-colors cursor-pointer">
+            <input type="checkbox"
+                   name="classes"
+                   value="{{ classe.id }}"
+                   {% if classe.id|stringformat:"s" in existing_assignments|join:"|" %}checked{% endif %}
+                   class="w-4 h-4 rounded accent-primary">
+            <div class="flex-1 min-w-0">
+              <p class="font-medium text-white text-sm">{{ classe.nom }}</p>
+              <p class="text-xs text-text-muted mt-0.5">
+                {{ classe.get_niveau_display }}
+                {% if classe.section %} &bull; {{ classe.section }}{% endif %}
+                &bull; {{ classe.annee_academique }}
+              </p>
+            </div>
+            {% if classe.id|stringformat:"s" in existing_assignments|join:"|" %}
+            <span class="text-xs font-semibold text-success bg-success/10 border border-success/20 px-2 py-0.5 rounded-full flex-shrink-0">
+              Assignée
+            </span>
+            {% endif %}
+          </label>
+          {% empty %}
+          <div class="px-6 py-8 text-center text-text-muted text-sm">
+            <i class="fa-solid fa-chalkboard-user text-3xl mb-3 opacity-40"></i>
+            <p>Aucune classe active disponible.</p>
+            <a href="{% url 'classe_create' %}" class="text-primary hover:underline mt-1 inline-block">Créer une classe</a>
+          </div>
+          {% endfor %}
+        </div>
+
+        {% if classes %}
+        <div class="px-6 py-4 border-t border-border-standard bg-bg-tertiary/20">
+          <div class="flex items-center justify-between">
+            <a href="{% url 'exam_detail' exam.id %}" class="text-text-muted hover:text-white transition-colors text-sm">
+              Annuler
+            </a>
+            <button type="submit"
+                    class="px-6 py-3 bg-primary hover:bg-primary/80 text-white rounded-xl font-semibold transition-colors flex items-center gap-2">
+              <i class="fa-solid fa-share-nodes"></i>
+              Assigner aux classes sélectionnées
+            </button>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </form>
+
+  </div>
+</div>
+{% endblock %}

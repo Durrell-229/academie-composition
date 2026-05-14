@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}
+  {% if action == 'create' %}Créer une Classe{% else %}Modifier la Classe{% endif %} - Administration
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-bg-primary p-6">
+  <div class="max-w-2xl mx-auto">
+
+    <!-- Header -->
+    <div class="mb-8">
+      <div class="flex items-center mb-4">
+        <a href="{% url 'classe_list' %}" class="text-text-muted hover:text-white transition-colors mr-4 flex items-center gap-2">
+          <i class="fa-solid fa-arrow-left"></i>
+          Retour à la liste
+        </a>
+      </div>
+      <h1 class="text-3xl font-bold text-white mb-2">
+        <i class="fa-solid fa-chalkboard mr-3 text-primary"></i>
+        {% if action == 'create' %}Créer une Nouvelle Classe{% else %}Modifier la Classe{% endif %}
+      </h1>
+      <p class="text-text-muted">
+        {% if action == 'create' %}Remplissez les informations pour créer une nouvelle classe
+        {% else %}Modifiez les informations de la classe{% endif %}
+      </p>
+    </div>
+
+    <!-- Messages -->
+    {% if messages %}
+    <div class="mb-6 space-y-2">
+      {% for message in messages %}
+      <div class="px-5 py-3 rounded-xl text-sm font-medium
+        {% if message.tags == 'success' %}bg-success/10 border border-success/30 text-success
+        {% elif message.tags == 'error' %}bg-danger/10 border border-danger/30 text-red-400
+        {% else %}bg-info/10 border border-info/30 text-info{% endif %}">
+        {{ message }}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Formulaire -->
+    <div class="bg-bg-secondary rounded-xl p-8 border border-border-standard">
+      <form method="post" class="space-y-6">
+        {% csrf_token %}
+
+        <div>
+          <label class="block text-sm font-medium text-text-muted mb-2">
+            Nom de la classe <span class="text-red-400">*</span>
+          </label>
+          <input type="text"
+                 name="nom"
+                 value="{{ classe.nom|default:'' }}"
+                 required
+                 placeholder="Ex: Terminale, 3ème, Licence 1..."
+                 class="w-full px-4 py-3 bg-bg-tertiary text-white rounded-lg focus:ring-2 focus:ring-primary focus:outline-none border border-border-standard">
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-text-muted mb-2">
+            Niveau <span class="text-red-400">*</span>
+          </label>
+          <select name="niveau"
+                  required
+                  class="w-full px-4 py-3 bg-bg-tertiary text-white rounded-lg focus:ring-2 focus:ring-primary focus:outline-none border border-border-standard">
+            <option value="">Sélectionner un niveau...</option>
+            {% for nv_val, nv_label in niveaux %}
+            <option value="{{ nv_val }}" {% if classe.niveau == nv_val %}selected{% endif %}>{{ nv_label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-text-muted mb-2">Section / Filière</label>
+          <input type="text"
+                 name="section"
+                 value="{{ classe.section|default:'' }}"
+                 placeholder="Ex: Série D, Filière Informatique..."
+                 class="w-full px-4 py-3 bg-bg-tertiary text-white rounded-lg focus:ring-2 focus:ring-primary focus:outline-none border border-border-standard">
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-text-muted mb-2">
+            Année académique <span class="text-red-400">*</span>
+          </label>
+          <input type="text"
+                 name="annee_academique"
+                 value="{{ classe.annee_academique|default:'2025-2026' }}"
+                 required
+                 placeholder="Ex: 2025-2026"
+                 class="w-full px-4 py-3 bg-bg-tertiary text-white rounded-lg focus:ring-2 focus:ring-primary focus:outline-none border border-border-standard">
+        </div>
+
+        <div class="flex items-center gap-3">
+          <input type="checkbox"
+                 name="is_active"
+                 id="is_active"
+                 {% if action == 'create' or classe.is_active %}checked{% endif %}
+                 class="w-4 h-4 rounded accent-primary">
+          <label for="is_active" class="text-sm font-medium text-text-muted cursor-pointer">
+            Classe active (visible pour les élèves et profs)
+          </label>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex items-center justify-between pt-4 border-t border-border-standard">
+          <a href="{% url 'classe_list' %}" class="text-text-muted hover:text-white transition-colors text-sm">
+            Annuler
+          </a>
+          <button type="submit"
+                  class="px-8 py-3 bg-primary hover:bg-primary/80 text-white rounded-xl font-semibold transition-colors flex items-center gap-2">
+            {% if action == 'create' %}
+              <i class="fa-solid fa-plus"></i> Créer la classe
+            {% else %}
+              <i class="fa-solid fa-save"></i> Enregistrer les modifications
+            {% endif %}
+          </button>
+        </div>
+      </form>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

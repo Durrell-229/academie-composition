@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Gestion des Classes - Administration{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-bg-primary p-6">
+  <div class="max-w-7xl mx-auto">
+
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-8">
+      <div>
+        <h1 class="text-3xl font-bold text-white mb-2">
+          <i class="fa-solid fa-chalkboard mr-3 text-primary"></i>
+          Gestion des Classes
+        </h1>
+        <p class="text-text-muted">Administration des classes et niveaux</p>
+      </div>
+      <a href="{% url 'classe_create' %}"
+         class="bg-primary hover:bg-primary/80 text-white px-6 py-3 rounded-xl font-semibold flex items-center transition-colors">
+        <i class="fa-solid fa-plus mr-2"></i>
+        Nouvelle Classe
+      </a>
+    </div>
+
+    <!-- Messages -->
+    {% if messages %}
+    <div class="mb-6 space-y-2">
+      {% for message in messages %}
+      <div class="px-5 py-3 rounded-xl text-sm font-medium
+        {% if message.tags == 'success' %}bg-success/10 border border-success/30 text-success
+        {% elif message.tags == 'error' %}bg-danger/10 border border-danger/30 text-red-400
+        {% else %}bg-info/10 border border-info/30 text-info{% endif %}">
+        {{ message }}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Filtres -->
+    <div class="bg-bg-secondary rounded-xl p-6 mb-8 border border-border-standard">
+      <form method="get" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-text-muted mb-2">Niveau</label>
+          <select name="niveau"
+                  class="w-full px-4 py-2 bg-bg-tertiary text-white rounded-lg focus:ring-2 focus:ring-primary focus:outline-none border border-border-standard">
+            <option value="">Tous les niveaux</option>
+            {% for nv_val, nv_label in niveaux %}
+            <option value="{{ nv_val }}" {% if niveau_filter == nv_val %}selected{% endif %}>{{ nv_label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-text-muted mb-2">Année académique</label>
+          <select name="annee"
+                  class="w-full px-4 py-2 bg-bg-tertiary text-white rounded-lg focus:ring-2 focus:ring-primary focus:outline-none border border-border-standard">
+            <option value="">Toutes les années</option>
+            {% for annee in annees %}
+            <option value="{{ annee }}" {% if annee_filter == annee %}selected{% endif %}>{{ annee }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="flex items-end gap-2">
+          <button type="submit"
+                  class="flex-1 bg-primary hover:bg-primary/80 text-white px-6 py-2 rounded-lg font-medium transition-colors">
+            <i class="fa-solid fa-search mr-2"></i>Filtrer
+          </button>
+          {% if niveau_filter or annee_filter %}
+          <a href="{% url 'classe_list' %}"
+             class="px-4 py-2 bg-bg-tertiary hover:bg-bg-tertiary/80 text-text-muted rounded-lg transition-colors">
+            <i class="fa-solid fa-xmark"></i>
+          </a>
+          {% endif %}
+        </div>
+      </form>
+    </div>
+
+    <!-- Statistiques -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+      <div class="bg-bg-secondary rounded-xl p-5 border border-border-standard">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-text-muted text-xs font-semibold uppercase tracking-wider">Total</p>
+            <p class="text-2xl font-bold text-white mt-1">{{ classes.count }}</p>
+          </div>
+          <div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+            <i class="fa-solid fa-chalkboard"></i>
+          </div>
+        </div>
+      </div>
+      <div class="bg-bg-secondary rounded-xl p-5 border border-border-standard">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-text-muted text-xs font-semibold uppercase tracking-wider">Actives</p>
+            <p class="text-2xl font-bold text-success mt-1">{{ classes|length }}</p>
+          </div>
+          <div class="w-10 h-10 rounded-xl bg-success/10 flex items-center justify-center text-success">
+            <i class="fa-solid fa-circle-check"></i>
+          </div>
+        </div>
+      </div>
+      <div class="bg-bg-secondary rounded-xl p-5 border border-border-standard">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-text-muted text-xs font-semibold uppercase tracking-wider">Niveaux</p>
+            <p class="text-2xl font-bold text-accent mt-1">{{ niveaux|length }}</p>
+          </div>
+          <div class="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center text-accent">
+            <i class="fa-solid fa-layer-group"></i>
+          </div>
+        </div>
+      </div>
+      <div class="bg-bg-secondary rounded-xl p-5 border border-border-standard">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-text-muted text-xs font-semibold uppercase tracking-wider">Années</p>
+            <p class="text-2xl font-bold text-warning mt-1">{{ annees|length }}</p>
+          </div>
+          <div class="w-10 h-10 rounded-xl bg-warning/10 flex items-center justify-center text-warning">
+            <i class="fa-solid fa-calendar"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Table des classes -->
+    <div class="bg-bg-secondary rounded-xl overflow-hidden border border-border-standard">
+      <div class="overflow-x-auto">
+        <table class="w-full">
+          <thead class="bg-bg-tertiary/50">
+            <tr>
+              <th class="px-6 py-4 text-left text-xs font-black uppercase tracking-wider text-text-muted">Nom</th>
+              <th class="px-6 py-4 text-left text-xs font-black uppercase tracking-wider text-text-muted">Niveau</th>
+              <th class="px-6 py-4 text-left text-xs font-black uppercase tracking-wider text-text-muted">Section</th>
+              <th class="px-6 py-4 text-left text-xs font-black uppercase tracking-wider text-text-muted">Année académique</th>
+              <th class="px-6 py-4 text-center text-xs font-black uppercase tracking-wider text-text-muted">Statut</th>
+              <th class="px-6 py-4 text-center text-xs font-black uppercase tracking-wider text-text-muted">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-border-standard">
+            {% for classe in classes %}
+            <tr class="hover:bg-bg-tertiary/30 transition-colors">
+              <td class="px-6 py-4">
+                <div class="flex items-center gap-3">
+                  <div class="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary text-sm font-bold flex-shrink-0">
+                    {{ classe.nom|slice:":2"|upper }}
+                  </div>
+                  <div>
+                    <p class="font-semibold text-sm text-white">{{ classe.nom }}</p>
+                    <p class="text-xs text-text-muted font-mono">{{ classe.id|slice:":8" }}</p>
+                  </div>
+                </div>
+              </td>
+              <td class="px-6 py-4">
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-accent/10 text-accent border border-accent/20">
+                  {{ classe.get_niveau_display }}
+                </span>
+              </td>
+              <td class="px-6 py-4">
+                <span class="text-sm text-text-muted">{{ classe.section|default:"—" }}</span>
+              </td>
+              <td class="px-6 py-4">
+                <span class="text-sm font-mono text-white">{{ classe.annee_academique }}</span>
+              </td>
+              <td class="px-6 py-4 text-center">
+                {% if classe.is_active %}
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-success/10 text-success border border-success/20">
+                  <span class="w-1.5 h-1.5 rounded-full bg-success mr-1.5"></span>Active
+                </span>
+                {% else %}
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-bg-tertiary/50 text-text-muted border border-border-standard">
+                  Inactive
+                </span>
+                {% endif %}
+              </td>
+              <td class="px-6 py-4">
+                <div class="flex items-center justify-center gap-3">
+                  <a href="{% url 'classe_edit' classe.id %}"
+                     class="text-warning hover:text-warning/80 transition-colors"
+                     title="Modifier">
+                    <i class="fa-solid fa-edit"></i>
+                  </a>
+                  <a href="{% url 'classe_delete' classe.id %}"
+                     class="text-red-400 hover:text-red-300 transition-colors"
+                     title="Supprimer">
+                    <i class="fa-solid fa-trash"></i>
+                  </a>
+                </div>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="6" class="px-6 py-12 text-center">
+                <div class="text-text-muted">
+                  <i class="fa-solid fa-chalkboard-user text-4xl mb-4 opacity-40"></i>
+                  <p class="text-lg">Aucune classe trouvée</p>
+                  <p class="text-sm mt-2">
+                    {% if niveau_filter or annee_filter %}
+                      Essayez de modifier les filtres ou
+                    {% endif %}
+                    <a href="{% url 'classe_create' %}" class="text-primary hover:underline">créez une première classe</a>.
+                  </p>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,375 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Bulletin QCM - {{ eleve.nom|default:"Élève" }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 12mm;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 12px;
+            color: #000;
+            background: #fff;
+            padding: 10px;
+        }
+
+        .bulletin {
+            width: 100%;
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 10px 14px;
+        }
+
+        /* ===== EN-TÊTE ===== */
+        .header {
+            display: table;
+            width: 100%;
+            margin-bottom: 4px;
+        }
+
+        .header-left,
+        .header-center,
+        .header-right {
+            display: table-cell;
+            vertical-align: middle;
+        }
+
+        .header-left {
+            width: 15%;
+            text-align: left;
+        }
+
+        .header-center {
+            width: 70%;
+            text-align: center;
+        }
+
+        .header-right {
+            width: 15%;
+            text-align: right;
+        }
+
+        .header-left img,
+        .header-right img {
+            max-width: 70px;
+            max-height: 70px;
+        }
+
+        .header-left .logo-placeholder,
+        .header-right .logo-placeholder {
+            width: 65px;
+            height: 65px;
+            border: 1px dashed #999;
+            display: inline-block;
+            text-align: center;
+            line-height: 65px;
+            font-size: 9px;
+            color: #999;
+        }
+
+        .header-center .republique {
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .header-center .ministere {
+            font-size: 12px;
+            font-weight: bold;
+            margin-top: 2px;
+            line-height: 1.3;
+        }
+
+        .academie {
+            text-align: center;
+            font-size: 26px;
+            font-weight: bold;
+            margin: 10px 0 4px;
+        }
+
+        .bulletin-title {
+            text-align: center;
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .annee-periode {
+            text-align: center;
+            font-size: 13px;
+            margin-bottom: 4px;
+        }
+
+        .annee-periode .dots {
+            display: inline-block;
+            border-bottom: 1px dotted #000;
+            min-width: 160px;
+            padding: 0 4px;
+        }
+
+        /* ===== CHAMPS ÉLÈVE (boîtes arrondies) ===== */
+        .eleve-info {
+            margin-top: 14px;
+            font-size: 13px;
+        }
+
+        .eleve-info .row {
+            display: table;
+            width: 100%;
+            margin-bottom: 8px;
+        }
+
+        .eleve-info .label {
+            display: table-cell;
+            width: 80px;
+            vertical-align: middle;
+            font-weight: normal;
+        }
+
+        .eleve-info .input-box {
+            display: table-cell;
+            vertical-align: middle;
+        }
+
+        .input-box .field {
+            border: 1px solid #000;
+            border-radius: 14px;
+            padding: 4px 10px;
+            min-height: 22px;
+            display: inline-block;
+            min-width: 100%;
+            background: #fff;
+        }
+
+        .row-two .label-1,
+        .row-two .input-1,
+        .row-two .label-2,
+        .row-two .input-2 {
+            display: table-cell;
+            vertical-align: middle;
+        }
+
+        .row-two .label-1 { width: 80px; }
+        .row-two .input-1 { width: 45%; padding-right: 10px; }
+        .row-two .label-2 { width: 60px; padding-left: 10px; }
+        .row-two .input-2 { width: 30%; }
+
+        /* ===== TABLE DES MATIÈRES ===== */
+        .notes-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 12px;
+        }
+
+        .notes-table th,
+        .notes-table td {
+            border: 1px solid #000;
+            padding: 6px 5px;
+            text-align: center;
+            vertical-align: middle;
+            height: 30px;
+        }
+
+        .notes-table thead th {
+            background: #d9d9d9;
+            font-weight: bold;
+            font-size: 12px;
+        }
+
+        .notes-table .col-matiere      { width: 35%; text-align: left; padding-left: 10px; font-weight: bold; }
+        .notes-table .col-coef         { width: 12%; }
+        .notes-table .col-note         { width: 13%; }
+        .notes-table .col-observations { width: 40%; text-align: left; padding-left: 8px; }
+
+        /* ===== BAS DU BULLETIN ===== */
+        .moyennes-row {
+            margin-top: 10px;
+            font-size: 12px;
+        }
+
+        .moyennes-row .label {
+            display: inline-block;
+            margin-right: 8px;
+        }
+
+        .moyennes-row .small-box {
+            display: inline-block;
+            border: 1px solid #000;
+            border-radius: 10px;
+            min-width: 70px;
+            height: 22px;
+            vertical-align: middle;
+            padding: 2px 8px;
+        }
+
+        .observations-classe {
+            margin-top: 10px;
+            font-size: 12px;
+        }
+
+        .observations-classe .line {
+            border-bottom: 1px solid #000;
+            min-height: 18px;
+            margin-top: 6px;
+        }
+
+        /* ===== VISA / SIGNATURES ===== */
+        .footer {
+            display: table;
+            width: 100%;
+            margin-top: 20px;
+            font-size: 12px;
+        }
+
+        .footer .visa,
+        .footer .date-sign {
+            display: table-cell;
+            vertical-align: top;
+        }
+
+        .footer .visa {
+            width: 50%;
+        }
+
+        .footer .date-sign {
+            width: 50%;
+            text-align: left;
+        }
+
+        .footer .date-sign .line {
+            margin-bottom: 4px;
+        }
+
+        .dots-line {
+            display: inline-block;
+            border-bottom: 1px dotted #000;
+            min-width: 120px;
+        }
+
+        @media print {
+            body { padding: 0; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="bulletin">
+
+    <!-- ============ EN-TÊTE ============ -->
+    <div class="header">
+        <div class="header-left">
+            {% if logo_benin %}
+                <img src="{{ logo_benin }}" alt="Armoiries">
+            {% else %}
+                <div class="logo-placeholder">ARMOIRIES</div>
+            {% endif %}
+        </div>
+        <div class="header-center">
+            <div class="republique">RÉPUBLIQUE DU BÉNIN</div>
+            <div class="ministere">
+                MINISTÈRE DE L'ENSEIGNEMENT SECONDAIRE,<br>
+                TECHNIQUE ET DE LA FORMATION PROFESSIONNELLE
+            </div>
+        </div>
+        <div class="header-right">
+            {% if logo_academie %}
+                <img src="{{ logo_academie }}" alt="Académie Numérique">
+            {% else %}
+                <div class="logo-placeholder">ACADÉMIE</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- ============ TITRE ============ -->
+    <div class="academie">ACADÉMIE NUMÉRIQUE</div>
+    <div class="bulletin-title">BULLETIN SCOLAIRE - QCM</div>
+
+    <div class="annee-periode">
+        Année Scolaire :
+        <span class="dots">{{ annee_scolaire|default:"" }}</span>
+    </div>
+    <div class="annee-periode">
+        Période :
+        <span class="dots" style="min-width:120px;">{{ periode|default:"" }}</span>
+    </div>
+
+    <!-- ============ INFOS ÉLÈVE ============ -->
+    <div class="eleve-info">
+        <div class="row">
+            <div class="label">Nom :</div>
+            <div class="input-box"><span class="field">{{ eleve.nom|default:"" }}</span></div>
+        </div>
+        <div class="row">
+            <div class="label">Prénoms :</div>
+            <div class="input-box"><span class="field">{{ eleve.prenoms|default:"" }}</span></div>
+        </div>
+        <div class="row row-two">
+            <div class="label-1">Matricule :</div>
+            <div class="input-1"><span class="field">{{ eleve.matricule|default:"" }}</span></div>
+            <div class="label-2">Classe :</div>
+            <div class="input-2"><span class="field" style="background:#fff;">{{ eleve.classe|default:"" }}</span></div>
+        </div>
+    </div>
+
+    <!-- ============ TABLE QCM (UNE SEULE MATIÈRE) ============ -->
+    <table class="notes-table">
+        <thead>
+            <tr>
+                <th class="col-matiere">MATIÈRES</th>
+                <th class="col-coef">COEF.</th>
+                <th class="col-note">NOTE<br>/20</th>
+                <th class="col-observations">OBSERVATIONS</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Une seule ligne pour le QCM : la cellule MATIÈRE est vide par défaut -->
+            <tr>
+                <td class="col-matiere">{{ matiere.nom|default:"" }}</td>
+                <td class="col-coef">{{ matiere.coef|default:"" }}</td>
+                <td class="col-note">{{ matiere.note|default:"" }}</td>
+                <td class="col-observations">{{ matiere.observations|default:"" }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- ============ MOYENNES ============ -->
+    <div class="moyennes-row">
+        <span class="label">Moyennes d'arrivages :</span>
+        <span class="small-box">{{ moyenne_arrivage|default:"" }}</span>
+        <span class="small-box" style="margin-left:6px;">{{ moyenne_arrivage_2|default:"" }}</span>
+    </div>
+
+    <!-- ============ OBSERVATIONS DE CLASSE ============ -->
+    <div class="observations-classe">
+        <span>Observations de classe :</span>
+        <div class="line">{{ observations_classe|default:"" }}</div>
+        <div class="line"></div>
+    </div>
+
+    <!-- ============ VISA / SIGNATURE ============ -->
+    <div class="footer">
+        <div class="visa">
+            <div>Visa du Chef d'Établissement :</div>
+        </div>
+        <div class="date-sign">
+            <div class="line">Date au <span class="dots-line">{{ date_jour|default:"" }}</span>/<span class="dots-line" style="min-width:50px;">{{ date_mois|default:"" }}</span>/<span class="dots-line" style="min-width:50px;">{{ date_annee|default:"" }}</span></div>
+            <div class="line">Signature : <span class="dots-line">{{ signature_prof|default:"" }}</span></div>
+            <div class="line">Signature : <span class="dots-line">{{ signature_chef|default:"" }}</span></div>
+        </div>
+    </div>
+
+</div>
+
+</body>
+</html>

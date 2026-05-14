@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Bulletin - {{ eleve.last_name }} {{ eleve.first_name }}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 9px;
+            line-height: 1.4;
+            background: white;
+        }
+
+        .page {
+            width: 210mm;
+            height: 297mm;
+            margin: 0 auto;
+            padding: 0;
+            background-image: url('{{ bulletin_image_url }}');
+            background-size: cover;
+            background-position: top left;
+            position: relative;
+        }
+
+        /* Zones transparentes où le contenu s'affiche */
+        .content-zone {
+            position: absolute;
+            background: white;
+            opacity: 0.85;
+        }
+
+        /* IDENTITÉ */
+        .identity {
+            position: absolute;
+            top: 40mm;
+            left: 20mm;
+            width: 100mm;
+        }
+
+        .field {
+            margin-bottom: 3mm;
+            font-size: 10px;
+        }
+
+        .field-label {
+            font-weight: bold;
+            font-size: 8px;
+        }
+
+        .field-value {
+            font-weight: 500;
+            font-size: 10px;
+            text-transform: uppercase;
+        }
+
+        /* TABLEAU */
+        .tableau-zone {
+            position: absolute;
+            top: 80mm;
+            left: 15mm;
+            width: 180mm;
+        }
+
+        .tableau-notes {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 7px;
+        }
+
+        .tableau-notes thead th {
+            background: #f0f0f0;
+            border: 1px solid #ccc;
+            padding: 2mm;
+            text-align: center;
+            font-weight: bold;
+            font-size: 7px;
+        }
+
+        .tableau-notes tbody td {
+            border: 1px solid #ddd;
+            padding: 1.5mm;
+            text-align: center;
+            font-size: 8px;
+        }
+
+        .tableau-notes td.matiere {
+            text-align: left;
+            font-weight: 500;
+        }
+
+        .tableau-notes tbody tr {
+            background: white;
+        }
+
+        /* RÉSULTATS */
+        .results-zone {
+            position: absolute;
+            top: 190mm;
+            left: 20mm;
+            width: 170mm;
+        }
+
+        .result-row {
+            display: flex;
+            gap: 30mm;
+            margin-bottom: 5mm;
+        }
+
+        .result-item {
+            flex: 1;
+        }
+
+        .result-label {
+            font-weight: bold;
+            font-size: 8px;
+            margin-bottom: 1mm;
+        }
+
+        .result-value {
+            font-weight: bold;
+            font-size: 12px;
+            color: #008751;
+        }
+
+        /* OBSERVATIONS */
+        .observations-zone {
+            position: absolute;
+            top: 220mm;
+            left: 20mm;
+            width: 170mm;
+        }
+
+        .obs-label {
+            font-weight: bold;
+            font-size: 8px;
+            margin-bottom: 2mm;
+        }
+
+        .obs-text {
+            font-size: 8px;
+            line-height: 1.3;
+            margin-bottom: 5mm;
+        }
+
+        .decision {
+            font-weight: bold;
+            font-size: 11px;
+            color: #E8112D;
+            text-transform: uppercase;
+        }
+
+        @media print {
+            .page { margin: 0; padding: 0; }
+            body { margin: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <!-- IDENTITÉ ÉLÈVE -->
+        <div class="identity">
+            <div class="field">
+                <span class="field-value">{{ eleve.last_name|upper }} {{ eleve.first_name|upper }}</span>
+            </div>
+            <div class="field">
+                <span class="field-label">Matricule:</span> {{ eleve.matricule|default:"" }}
+            </div>
+            <div class="field">
+                <span class="field-label">Classe:</span> {{ classe }}
+            </div>
+            <div class="field">
+                <span class="field-label">Année:</span> {{ annee_scolaire }}
+            </div>
+        </div>
+
+        <!-- TABLEAU DE NOTES -->
+        <div class="tableau-zone">
+            <table class="tableau-notes">
+                <thead>
+                    <tr>
+                        <th>Discipline</th>
+                        <th>Coeff</th>
+                        <th>Interro</th>
+                        <th>Devoir</th>
+                        <th>Finale</th>
+                        <th>Appréc.</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for m in matieres|slice:":12" %}
+                    <tr>
+                        <td class="matiere">{{ m.nom|truncatewords:1 }}</td>
+                        <td>{{ m.coefficient|floatformat:1 }}</td>
+                        <td>{{ m.moy_interrogations|floatformat:1 }}</td>
+                        <td>{{ m.moy_devoirs|floatformat:1 }}</td>
+                        <td><b>{{ m.moyenne_finale|floatformat:1 }}</b></td>
+                        <td>{{ m.appreciation|truncatewords:1 }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- RÉSULTATS FINAUX -->
+        <div class="results-zone">
+            <div class="result-row">
+                <div class="result-item">
+                    <div class="result-label">MOYENNE:</div>
+                    <div class="result-value">{{ moyenne_generale|floatformat:2 }}</div>
+                </div>
+                <div class="result-item">
+                    <div class="result-label">RANG:</div>
+                    <div class="result-value">{{ rang }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- OBSERVATIONS ET DÉCISION -->
+        <div class="observations-zone">
+            <div class="obs-label">OBSERVATION:</div>
+            <div class="obs-text">{{ observation|truncatechars:80 }}</div>
+            <div class="decision">{{ decision }}</div>
+        </div>
+    </div>
+</body>
+</html>

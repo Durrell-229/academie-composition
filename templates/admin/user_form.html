@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}
+  {% if action == 'create' %}Créer un Utilisateur{% else %}Modifier l'Utilisateur{% endif %} - Administration
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-bg-primary p-6">
+  <div class="max-w-4xl mx-auto">
+
+    <!-- Header -->
+    <div class="mb-8">
+      <div class="flex items-center mb-4">
+        <a href="{% url 'admin_user_list' %}" class="text-text-muted hover:text-white transition-colors flex items-center gap-2">
+          <i class="fa-solid fa-arrow-left"></i>
+          Retour à la liste
+        </a>
+      </div>
+      <h1 class="text-3xl font-bold text-white mb-2">
+        <i class="fa-solid fa-user-gear mr-3 text-primary"></i>
+        {% if action == 'create' %}Créer un Utilisateur{% else %}Modifier l'Utilisateur{% endif %}
+      </h1>
+      <p class="text-text-muted">
+        {% if action == 'create' %}Remplissez les informations pour créer un nouveau compte utilisateur
+        {% else %}Modifiez les informations de l'utilisateur{% endif %}
+      </p>
+    </div>
+
+    <!-- Messages -->
+    {% if messages %}
+    <div class="mb-6 space-y-2">
+      {% for message in messages %}
+      <div class="px-5 py-3 rounded-xl text-sm font-medium
+        {% if message.tags == 'success' %}bg-success/10 border border-success/30 text-success
+        {% elif message.tags == 'error' %}bg-danger/10 border border-danger/30 text-red-400
+        {% else %}bg-info/10 border border-info/30 text-info{% endif %}">
+        {{ message }}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Formulaire -->
+    <div class="bg-bg-secondary rounded-xl p-8 border border-border-standard">
+      <form method="post" class="space-y-8">
+        {% csrf_token %}
+
+        <!-- Rôle -->
+        <div>
+          <h3 class="text-sm font-black uppercase tracking-wider text-text-muted mb-4 flex items-center gap-2">
+            <i class="fa-solid fa-shield-halved text-primary"></i> Rôle et accès
+          </h3>
+          <div>
+            <label class="block text-sm font-medium text-text-muted mb-2">
+              Rôle <span class="text-red-400">*</span>
+            </label>
+            <select name="role"
+                    required
+                    class="w-full px-4 py-3 bg-bg-tertiary text-white rounded-lg focus:ring-2 focus:ring-primary focus:outline-none border border-border-standard">
+              {% for role_val, role_label in roles %}
+              <option value="{{ role_val }}"
+                {% if action == 'edit' and target_user.role == role_val %}selected
+                {% elif action == 'create' and role_val == 'eleve' %}selected{% endif %}>
+                {{ role_label }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <!-- Informations Personnelles -->
+        <div>
+          <h3 class="text-sm font-black uppercase tracking-wider text-text-muted mb-4 flex items-center gap-2">
+            <i class="fa-solid fa-user text-primary"></i> Informations personnelles
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label class="block text-sm font-medium text-text-muted mb-2">
+                Prénom <span class="text-red-400">*</span>
+              </label>
+              <input type="text"
+                     name="first_name"
+                     value="{{ target_user.first_name|default:'' }}"
+                     required
+                     class="w-full px-4 py-3 bg-bg-tertiary text-white rounded-lg focus:ring-2 focus:ring-primary focus:outline-none border border-border-standard">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-text-muted mb-2">
+                Nom <span class="text-red-400">*</span>
+              </label>
+              <input type="text"
+                     name="last_name"
+                     value="{{ target_user.last_name|default:'' }}"
+                     required
+                     class="w-full px-4 py-3 bg-bg-tertiary text-white rounded-lg focus:ring-2 focus:ring-primary focus:outline-none border border-border-standard">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-text-muted mb-2">
+                Email <span class="text-red-400">*</span>
+              </label>
+              <input type="email"
+                     name="email"
+                     value="{{ target_user.email|default:'' }}"
+                     required
+                     class="w-full px-4 py-3 bg-bg-tertiary text-white rounded-lg focus:ring-2 focus:ring-primary focus:outline-none border border-border-standard">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-text-muted mb-2">
+                {% if action == 'create' %}Mot de passe <span class="text-red-400">*</span>
+                {% else %}Nouveau mot de passe{% endif %}
+              </label>
+              <input type="password"
+                     name="password"
+                     {% if action == 'create' %}required{% endif %}
+                     placeholder="{% if action == 'edit' %}Laisser vide pour ne pas changer{% endif %}"
+                     class="w-full px-4 py-3 bg-bg-tertiary text-white rounded-lg focus:ring-2 focus:ring-primary focus:outline-none border border-border-standard">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-text-muted mb-2">Téléphone</label>
+              <input type="tel"
+                     name="phone"
+                     value="{{ target_user.phone|default:'' }}"
+                     class="w-full px-4 py-3 bg-bg-tertiary text-white rounded-lg focus:ring-2 focus:ring-primary focus:outline-none border border-border-standard">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-text-muted mb-2">Sexe</label>
+              <select name="sexe"
+                      class="w-full px-4 py-3 bg-bg-tertiary text-white rounded-lg focus:ring-2 focus:ring-primary focus:outline-none border border-border-standard">
+                <option value="">Sélectionner...</option>
+                <option value="Masculin" {% if target_user.sexe == 'Masculin' %}selected{% endif %}>Masculin</option>
+                <option value="Féminin" {% if target_user.sexe == 'Féminin' %}selected{% endif %}>Féminin</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-text-muted mb-2">Pays</label>
+              <select name="country"
+                      class="w-full px-4 py-3 bg-bg-tertiary text-white rounded-lg focus:ring-2 focus:ring-primary focus:outline-none border border-border-standard">
+                <option value="Bénin" {% if target_user.country == 'Bénin' or not target_user.country %}selected{% endif %}>Bénin</option>
+                <option value="France" {% if target_user.country == 'France' %}selected{% endif %}>France</option>
+                <option value="Côte d'Ivoire" {% if target_user.country == "Côte d'Ivoire" %}selected{% endif %}>Côte d'Ivoire</option>
+                <option value="Sénégal" {% if target_user.country == 'Sénégal' %}selected{% endif %}>Sénégal</option>
+                <option value="Togo" {% if target_user.country == 'Togo' %}selected{% endif %}>Togo</option>
+                <option value="Burkina Faso" {% if target_user.country == 'Burkina Faso' %}selected{% endif %}>Burkina Faso</option>
+                <option value="Mali" {% if target_user.country == 'Mali' %}selected{% endif %}>Mali</option>
+                <option value="Niger" {% if target_user.country == 'Niger' %}selected{% endif %}>Niger</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-text-muted mb-2">Matricule</label>
+              <input type="text"
+                     name="matricule"
+                     value="{{ target_user.matricule|default:'' }}"
+                     placeholder="Ex: PROF-2024-00001"
+                     class="w-full px-4 py-3 bg-bg-tertiary text-white rounded-lg focus:ring-2 focus:ring-primary focus:outline-none border border-border-standard">
+            </div>
+          </div>
+        </div>
+
+        <!-- Informations Scolaires -->
+        <div>
+          <h3 class="text-sm font-black uppercase tracking-wider text-text-muted mb-4 flex items-center gap-2">
+            <i class="fa-solid fa-school text-primary"></i> Informations académiques
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label class="block text-sm font-medium text-text-muted mb-2">Niveau</label>
+              <select name="niveau"
+                      class="w-full px-4 py-3 bg-bg-tertiary text-white rounded-lg focus:ring-2 focus:ring-primary focus:outline-none border border-border-standard">
+                <option value="">Sélectionner...</option>
+                {% for nv_val, nv_label in niveaux %}
+                <option value="{{ nv_val }}" {% if target_user.niveau == nv_val %}selected{% endif %}>{{ nv_label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-text-muted mb-2">Classe / Promotion</label>
+              <select name="classe"
+                      class="w-full px-4 py-3 bg-bg-tertiary text-white rounded-lg focus:ring-2 focus:ring-primary focus:outline-none border border-border-standard">
+                <option value="">Sélectionner une classe...</option>
+                {% for c in classes %}
+                <option value="{{ c.nom }}" {% if target_user.classe and c.nom in target_user.classe %}selected{% endif %}>
+                  {{ c.nom }} ({{ c.annee_academique }})
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex items-center justify-between pt-6 border-t border-border-standard">
+          <a href="{% url 'admin_user_list' %}" class="text-text-muted hover:text-white transition-colors text-sm">
+            Annuler
+          </a>
+          <button type="submit"
+                  class="px-8 py-3 bg-primary hover:bg-primary/80 text-white rounded-xl font-semibold transition-colors flex items-center gap-2">
+            {% if action == 'create' %}
+              <i class="fa-solid fa-user-plus"></i> Créer l'utilisateur
+            {% else %}
+              <i class="fa-solid fa-save"></i> Enregistrer les modifications
+            {% endif %}
+          </button>
+        </div>
+      </form>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

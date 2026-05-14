@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Relevé de Composition — {{ resultat.session.exam.titre|default:"Évaluation" }} — {{ resultat.session.eleve.get_full_name }}</title>
+    <style>
+        @page {
+            size: A4 portrait;
+            margin: 15mm;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Times New Roman', Georgia, serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .bulletin-container {
+            max-width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            background: white;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            padding: 20px;
+            position: relative;
+        }
+        
+        /* En-tête officiel */
+        .header-officiel {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 3px solid #1e3a8a;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .drapeau-benin {
+            width: 80px;
+            height: 60px;
+            background: linear-gradient(to right, 
+                #008751 0%, #008751 40%, 
+                #fcd116 40%, #fcd116 60%, 
+                #e8112d 60%, #e8112d 100%);
+            position: relative;
+            border: 2px solid #333;
+        }
+        
+        .drapeau-benin::before {
+            content: "★";
+            position: absolute;
+            left: 28%;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #fcd116;
+            font-size: 20px;
+        }
+        
+        .titre-republique {
+            text-align: center;
+            flex: 1;
+            padding: 0 20px;
+        }
+        
+        .titre-republique h2 {
+            font-size: 14px;
+            font-weight: bold;
+            text-transform: uppercase;
+            color: #1e3a8a;
+            margin-bottom: 5px;
+        }
+        
+        .titre-republique h3 {
+            font-size: 12px;
+            color: #e8112d;
+            font-weight: bold;
+        }
+        
+        .titre-republique p {
+            font-size: 10px;
+            color: #666;
+            font-style: italic;
+        }
+        
+        /* Logo et titre école */
+        .header-ecole {
+            text-align: center;
+            margin: 20px 0;
+            padding: 15px;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            border: 2px solid #1e3a8a;
+            border-radius: 5px;
+        }
+        
+        .logo-ecole {
+            width: 60px;
+            height: 60px;
+            background: #1e3a8a;
+            border-radius: 50%;
+            margin: 0 auto 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 24px;
+        }
+        
+        .nom-ecole {
+            font-size: 18px;
+            font-weight: bold;
+            color: #1e3a8a;
+            text-transform: uppercase;
+        }
+        
+        .type-etablissement {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        /* Titre du bulletin */
+        .titre-bulletin {
+            text-align: center;
+            margin: 25px 0;
+            padding: 15px;
+            background: #1e3a8a;
+            color: white;
+            border-radius: 5px;
+        }
+        
+        .titre-bulletin h1 {
+            font-size: 22px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-bottom: 5px;
+        }
+        
+        .titre-bulletin .periode {
+            font-size: 14px;
+            font-weight: normal;
+        }
+        
+        /* Informations élève */
+        .section-info {
+            margin: 20px 0;
+            border: 2px solid #1e3a8a;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        
+        .section-titre {
+            background: #1e3a8a;
+            color: white;
+            padding: 8px 15px;
+            font-weight: bold;
+            font-size: 14px;
+            text-transform: uppercase;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0;
+        }
+        
+        .info-item {
+            display: flex;
+            padding: 8px 15px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .info-item.full-width {
+            grid-column: 1 / -1;
+        }
+        
+        .info-label {
+            font-weight: bold;
+            color: #1e3a8a;
+            min-width: 150px;
+            font-size: 12px;
+        }
+        
+        .info-value {
+            flex: 1;
+            font-size: 12px;
+        }
+        
+        .photo-eleve {
+            width: 100px;
+            height: 120px;
+            border: 2px solid #1e3a8a;
+            background: #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: auto;
+        }
+        
+        .photo-eleve img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        /* Tableau des notes */
+        .table-notes {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 11px;
+        }
+        
+        .table-notes th {
+            background: #1e3a8a;
+            color: white;
+            padding: 8px;
+            text-align: left;
+            border: 1px solid #1e3a8a;
+            font-weight: bold;
+        }
+        
+        .table-notes th.center {
+            text-align: center;
+        }
+        
+        .table-notes td {
+            padding: 6px 8px;
+            border: 1px solid #cbd5e1;
+        }
+        
+        .table-notes tr:nth-child(even) {
+            background: #f8fafc;
+        }
+        
+        .table-notes tr:hover {
+            background: #e2e8f0;
+        }
+        
+        .note-cell {
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        .note-rouge {
+            color: #dc2626;
+        }
+        
+        .note-vert {
+            color: #16a34a;
+        }
+        
+        .coef-cell {
+            text-align: center;
+        }
+        
+        .total-cell {
+            text-align: center;
+            font-weight: bold;
+            background: #e2e8f0;
+        }
+        
+        /* Rang et moyenne */
+        .resultats-finaux {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+            padding: 15px;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            border: 2px solid #1e3a8a;
+            border-radius: 5px;
+        }
+        
+        .resultat-box {
+            text-align: center;
+            padding: 10px;
+            background: white;
+            border-radius: 5px;
+            border: 1px solid #cbd5e1;
+        }
+        
+        .resultat-label {
+            font-size: 10px;
+            color: #64748b;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+        
+        .resultat-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #1e3a8a;
+        }
+        
+        .resultat-value.mention {
+            color: #e8112d;
+        }
+        
+        /* Compétences et comportement */
+        .comportement-section {
+            margin: 20px 0;
+            border: 2px solid #1e3a8a;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        
+        .competences-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            padding: 15px;
+        }
+        
+        .competence-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 0;
+            border-bottom: 1px dotted #cbd5e1;
+        }
+        
+        .competence-label {
+            font-size: 11px;
+            color: #475569;
+        }
+        
+        .competence-value {
+            display: flex;
+            gap: 3px;
+        }
+        
+        .etoile {
+            color: #fcd116;
+            font-size: 14px;
+        }
+        
+        .etoile-vide {
+            color: #cbd5e1;
+            font-size: 14px;
+        }
+        
+        /* Absences */
+        .absences-section {
+            margin: 20px 0;
+            padding: 15px;
+            background: #fef3c7;
+            border: 2px solid #f59e0b;
+            border-radius: 5px;
+        }
+        
+        .absences-titre {
+            font-weight: bold;
+            color: #92400e;
+            margin-bottom: 10px;
+        }
+        
+        .absences-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+        
+        .absence-item {
+            text-align: center;
+        }
+        
+        .absence-label {
+            font-size: 10px;
+            color: #64748b;
+        }
+        
+        .absence-value {
+            font-size: 16px;
+            font-weight: bold;
+            color: #92400e;
+        }
+        
+        /* Décision du conseil */
+        .decision-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 3px solid;
+            border-radius: 5px;
+            text-align: center;
+        }
+        
+        .decision-admis {
+            border-color: #16a34a;
+            background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+        }
+        
+        .decision-refuse {
+            border-color: #dc2626;
+            background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%);
+        }
+        
+        .decision-titre {
+            font-size: 18px;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+        
+        .decision-admis .decision-titre {
+            color: #16a34a;
+        }
+        
+        .decision-refuse .decision-titre {
+            color: #dc2626;
+        }
+        
+        /* Signatures */
+        .signatures-section {
+            margin-top: 30px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+        }
+        
+        .signature-box {
+            text-align: center;
+        }
+        
+        .signature-ligne {
+            height: 40px;
+            border-bottom: 1px solid #333;
+            margin-bottom: 5px;
+        }
+        
+        .signature-titre {
+            font-size: 11px;
+            font-weight: bold;
+            color: #1e3a8a;
+        }
+        
+        .signature-nom {
+            font-size: 10px;
+            color: #666;
+            margin-top: 3px;
+        }
+        
+        /* Footer */
+        .bulletin-footer {
+            margin-top: 30px;
+            padding-top: 15px;
+            border-top: 1px solid #cbd5e1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 10px;
+            color: #64748b;
+        }
+        
+        .qr-section {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .qr-code {
+            width: 60px;
+            height: 60px;
+            background: white;
+            border: 1px solid #cbd5e1;
+            padding: 3px;
+        }
+        
+        .qr-code img {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .verification-code {
+            font-family: monospace;
+            font-size: 9px;
+            color: #64748b;
+        }
+        
+        /* Cachet */
+        .cachet-section {
+            position: absolute;
+            bottom: 100px;
+            right: 50px;
+            width: 120px;
+            height: 120px;
+            border: 3px solid #e8112d;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #e8112d;
+            font-size: 10px;
+            text-align: center;
+            opacity: 0.7;
+            transform: rotate(-15deg);
+        }
+        
+        .cachet-texte {
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            
+            .bulletin-container {
+                box-shadow: none;
+                max-width: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bulletin-container">
+        <!-- En-tête officiel avec drapeau -->
+        <div class="header-officiel">
+            <div class="drapeau-benin"></div>
+            
+            <div class="titre-republique">
+                <h2>République du Bénin</h2>
+                <h3>Ministère de l'Enseignement Secondaire</h3>
+                <p>Fraternité - Justice - Travail</p>
+            </div>
+            
+            <div class="drapeau-benin"></div>
+        </div>
+        
+        <!-- En-tête école -->
+        <div class="header-ecole">
+            <div class="logo-ecole">AN</div>
+            <div class="nom-ecole">{{ etablissement_nom|default:"Académie Numérique Intelligente" }}</div>
+            <div class="type-etablissement">Cotonou, Bénin — {{ annee_scolaire|default:"2025-2026" }}</div>
+        </div>
+        
+        <!-- Titre du bulletin -->
+        <div class="titre-bulletin">
+            <h1>Relevé de Composition</h1>
+            <div class="periode">{{ resultat.session.exam.titre|default:"Évaluation" }} — {{ resultat.session.exam.matiere.nom|default:"Matière" }}</div>
+        </div>
+        
+        <!-- Informations de l'élève -->
+        <div class="section-info">
+            <div class="section-titre">📋 Informations de l'élève</div>
+            <div style="display: flex; padding: 15px;">
+                <div style="flex: 1;">
+                    <div class="info-item full-width">
+                        <span class="info-label">Nom et Prénom :</span>
+                        <span class="info-value" style="font-size: 14px; font-weight: bold; color: #1e3a8a;">{{ resultat.session.eleve.get_full_name|upper }}</span>
+                    </div>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">Matricule :</span>
+                            <span class="info-value">{{ resultat.session.eleve.matricule|default:"---" }}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Classe :</span>
+                            <span class="info-value" style="font-weight: bold;">{{ resultat.session.eleve.classe|default:"N/A" }}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Date Composition :</span>
+                            <span class="info-value">{{ resultat.session.submitted_at|date:"d/m/Y H:i"|default:"---" }}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Mode :</span>
+                            <span class="info-value">{{ resultat.session.get_mode_display|default:"En ligne" }}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Durée :</span>
+                            <span class="info-value">{{ resultat.session.exam.duree_minutes|default:"N/A" }} min</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Coefficient :</span>
+                            <span class="info-value">{{ coefficient_officiel|default:resultat.session.exam.coefficient|default:"1" }}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="photo-eleve">
+                    {% if resultat.session.eleve.avatar %}
+                        <img src="{{ resultat.session.eleve.avatar.url }}" alt="Photo de {{ resultat.session.eleve.get_full_name }}">
+                    {% else %}
+                        <span style="color: #999; font-size: 10px;">Photo</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tableau des notes -->
+        <div class="section-info">
+            <div class="section-titre">📊 Résultat de la Composition</div>
+            <table class="table-notes">
+                <thead>
+                    <tr>
+                        <th style="width: 30%;">Matière / Épreuve</th>
+                        <th class="center" style="width: 10%;">Coefficient</th>
+                        <th class="center" style="width: 10%;">Note /20</th>
+                        <th class="center" style="width: 10%;">Total</th>
+                        <th style="width: 20%;">Appréciation</th>
+                        <th style="width: 20%;">Correcteur</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>{{ resultat.session.exam.matiere.nom|default:"---" }}</strong></td>
+                        <td class="coef-cell">{{ coefficient_officiel|default:resultat.session.exam.coefficient|default:"1" }}</td>
+                        <td class="note-cell {% if resultat.note < 10 %}note-rouge{% else %}note-vert{% endif %}">
+                            {{ resultat.note|floatformat:2 }}
+                        </td>
+                        <td class="total-cell">{{ resultat.note_moy_coeff|default:resultat.note|floatformat:2 }}</td>
+                        <td>{{ resultat.appreciation|default:"---" }}</td>
+                        <td>{% if resultat.corrige_par_ia %}Système IA (Académie Numérique){% else %}{{ resultat.corrigeur.get_full_name|default:"---" }}{% endif %}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Moyenne et rang -->
+        <div class="resultats-finaux">
+            <div class="resultat-box">
+                <div class="resultat-label">Note obtenue</div>
+                <div class="resultat-value {% if resultat.note < 10 %}note-rouge{% endif %}">
+                    {{ resultat.note|floatformat:2 }}<small>/{{ resultat.note_sur|floatformat:0|default:"20" }}</small>
+                </div>
+            </div>
+            <div class="resultat-box">
+                <div class="resultat-label">Rang</div>
+                <div class="resultat-value">
+                    {% if resultat.classement > 0 %}{{ resultat.classement }}{% else %}N/A{% endif %}<small>/{{ resultat.total_participants|default:"N/A" }}</small>
+                </div>
+            </div>
+            <div class="resultat-box">
+                <div class="resultat-label">Moyenne de classe</div>
+                <div class="resultat-value">
+                    {{ resultat.moyenne_classe|default:"---"|floatformat:2 }}<small>/20</small>
+                </div>
+            </div>
+            <div class="resultat-box">
+                <div class="resultat-label">Mention</div>
+                <div class="resultat-value mention">
+                    {% if resultat.note >= 16 %}Excellent
+                    {% elif resultat.note >= 14 %}Très Bien
+                    {% elif resultat.note >= 12 %}Bien
+                    {% elif resultat.note >= 10 %}Assez Bien
+                    {% elif resultat.note >= 8 %}Passable
+                    {% elif resultat.note >= 5 %}Médiocre
+                    {% else %}Insuffisant{% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Compétences et comportement -->
+        <div class="comportement-section">
+            <div class="section-titre">🎯 Compétences évaluées</div>
+            <div class="competences-grid">
+                <div>
+                    <div class="competence-item">
+                        <span class="competence-label">Compréhension du sujet</span>
+                        <span class="competence-value">
+                            {% if resultat.details_correction.niveau_maitrise == 'Excellent' %}<span class="etoile">★★★★★</span>
+                            {% elif resultat.details_correction.niveau_maitrise == 'Très bon' %}<span class="etoile">★★★★</span><span class="etoile-vide">★</span>
+                            {% elif resultat.details_correction.niveau_maitrise == 'Bon' %}<span class="etoile">★★★</span><span class="etoile-vide">★★</span>
+                            {% elif resultat.details_correction.niveau_maitrise == 'Moyen' %}<span class="etoile">★★</span><span class="etoile-vide">★★★</span>
+                            {% else %}<span class="etoile">★</span><span class="etoile-vide">★★★★</span>{% endif %}
+                        </span>
+                    </div>
+                    <div class="competence-item">
+                        <span class="competence-label">Rigueur et précision</span>
+                        <span class="competence-value">
+                            <span class="etoile">★★★★</span><span class="etoile-vide">★</span>
+                        </span>
+                    </div>
+                    <div class="competence-item">
+                        <span class="competence-label">Organisation de la réponse</span>
+                        <span class="competence-value">
+                            <span class="etoile">★★★★★</span>
+                        </span>
+                    </div>
+                </div>
+                <div>
+                    <div class="competence-item">
+                        <span class="competence-label">Originalité et créativité</span>
+                        <span class="competence-value">
+                            <span class="etoile">★★★★</span><span class="etoile-vide">★</span>
+                        </span>
+                    </div>
+                    <div class="competence-item">
+                        <span class="competence-label">Respect des consignes</span>
+                        <span class="competence-value">
+                            <span class="etoile">★★★★★</span>
+                        </span>
+                    </div>
+                    <div class="competence-item">
+                        <span class="competence-label">Qualité de la rédaction</span>
+                        <span class="competence-value">
+                            <span class="etoile">★★★★</span><span class="etoile-vide">★</span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Décision du conseil -->
+        <div class="decision-section {% if resultat.note >= 10 %}decision-admis{% else %}decision-refuse{% endif %}">
+            <div class="decision-titre">
+                {% if resultat.note >= 10 %}
+                    ✅ VALIDÉ - Composition réussie
+                {% else %}
+                    ❌ NON VALIDÉ - Doit être amélioré
+                {% endif %}
+            </div>
+            <p style="font-size: 12px; color: #666;">
+                Décision du système de correction IA du {{ resultat.corrige_at|date:"d/m/Y H:i"|default:"---" }}
+            </p>
+            {% if resultat.appreciation %}
+                <p style="font-size: 11px; margin-top: 10px; font-style: italic;">
+                    "{{ resultat.appreciation }}"
+                </p>
+            {% endif %}
+        </div>
+        
+        <!-- Points forts et axes d'amélioration -->
+        {% if resultat.details_correction.points_forts_global or resultat.details_correction.axes_amelioration %}
+        <div class="section-info">
+            <div class="section-titre">📝 Feedback détaillé</div>
+            <div style="padding: 15px;">
+                {% if resultat.details_correction.points_forts_global %}
+                <p style="margin-bottom: 10px;"><strong>Points forts :</strong> {{ resultat.details_correction.points_forts_global }}</p>
+                {% endif %}
+                {% if resultat.details_correction.axes_amelioration %}
+                <p><strong>Axes d'amélioration :</strong> {{ resultat.details_correction.axes_amelioration }}</p>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Signatures -->
+        <div class="signatures-section">
+            <div class="signature-box">
+                <div class="signature-ligne"></div>
+                <div class="signature-titre">Le Correcteur</div>
+                {% if resultat.corrige_par_ia %}
+                    <div class="signature-nom">Système IA (Académie Numérique)</div>
+                {% elif resultat.corrigeur %}
+                    <div class="signature-nom">{{ resultat.corrigeur.get_full_name }}</div>
+                {% else %}
+                    <div class="signature-nom">---</div>
+                {% endif %}
+            </div>
+            <div class="signature-box">
+                <div class="signature-ligne"></div>
+                <div class="signature-titre">Le Professeur de Matière</div>
+                <div class="signature-nom">---</div>
+            </div>
+            <div class="signature-box">
+                <div class="signature-ligne"></div>
+                <div class="signature-titre">Le Parent / Tuteur</div>
+                <div class="signature-nom" style="font-size: 9px;">Lu et approuvé</div>
+            </div>
+        </div>
+        
+        <!-- Footer avec QR code -->
+        <div class="bulletin-footer">
+            <div>
+                <strong>Bulletin généré le :</strong> {{ resultat.corrige_at|date:"d/m/Y H:i"|default:now|date:"d/m/Y H:i" }}
+                | <strong>Code :</strong> {{ resultat.id.hex|default:"---"|slice:":12"|upper }}
+            </div>
+            <div class="qr-section">
+                {% if qr_data_uri %}
+                    <div class="qr-code">
+                        <img src="{{ qr_data_uri }}" alt="QR Code">
+                    </div>
+                {% endif %}
+                <div class="verification-code">
+                    Vérification :<br>{{ resultat.id.hex|default:"---"|slice:":12"|upper }}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Cachet -->
+        <div class="cachet-section">
+            <div class="cachet-texte">ACADÉMIE NUMÉRIQUE</div>
+            <div style="font-size: 8px; margin-top: 5px;">Cotonou</div>
+            <div style="font-size: 8px;">{{ resultat.corrige_at|date:"d/m/Y"|default:"---" }}</div>
+        </div>
+    </div>
+</body>
+</html>

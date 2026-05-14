@@ -1,0 +1,557 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Bulletin Scolaire - {{ eleve.nom_prenoms|default:"Élève" }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 10mm;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 11px;
+            color: #000;
+            background: #fff;
+            padding: 10px;
+        }
+
+        .bulletin {
+            width: 100%;
+            max-width: 780px;
+            margin: 0 auto;
+            border: 1px solid #000;
+            padding: 8px;
+        }
+
+        /* ===== EN-TÊTE ===== */
+        .header {
+            display: table;
+            width: 100%;
+            border-bottom: 1px solid #000;
+            padding-bottom: 6px;
+            margin-bottom: 6px;
+        }
+
+        .header-left,
+        .header-right {
+            display: table-cell;
+            width: 50%;
+            vertical-align: top;
+        }
+
+        .header-left {
+            text-align: left;
+            padding-left: 6px;
+        }
+
+        .header-right {
+            text-align: left;
+            padding-left: 10px;
+            border-left: 1px solid #000;
+        }
+
+        .header .logo {
+            display: inline-block;
+            vertical-align: middle;
+            width: 45px;
+            height: 45px;
+            margin-right: 6px;
+        }
+
+        .header .title-block {
+            display: inline-block;
+            vertical-align: middle;
+        }
+
+        .header .title-block .big {
+            font-weight: bold;
+            font-size: 12px;
+        }
+
+        .header .title-block .small {
+            font-size: 10px;
+        }
+
+        .header-right .line {
+            font-size: 10px;
+            margin-bottom: 2px;
+        }
+
+        /* ===== TITRE PRINCIPAL ===== */
+        .main-title {
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            margin: 6px 0 4px;
+        }
+
+        .annee-trimestre {
+            display: table;
+            width: 100%;
+            font-size: 11px;
+            margin-bottom: 6px;
+        }
+
+        .annee-trimestre .left,
+        .annee-trimestre .right {
+            display: table-cell;
+            width: 50%;
+            font-weight: bold;
+        }
+
+        /* ===== SECTIONS GRISES ===== */
+        .section-title {
+            background: #d9d9d9;
+            border: 1px solid #000;
+            text-align: center;
+            font-weight: bold;
+            padding: 3px;
+            font-size: 11px;
+        }
+
+        /* ===== INFOS ÉLÈVE ===== */
+        .info-eleve {
+            border: 1px solid #000;
+            border-top: none;
+            padding: 6px 8px;
+            font-size: 11px;
+        }
+
+        .info-eleve .row {
+            display: table;
+            width: 100%;
+            margin-bottom: 4px;
+        }
+
+        .info-eleve .col {
+            display: table-cell;
+            vertical-align: middle;
+        }
+
+        .info-eleve .field {
+            border-bottom: 1px solid #000;
+            display: inline-block;
+            min-width: 100px;
+            padding: 0 4px;
+        }
+
+        /* ===== TABLE NOTES ===== */
+        .notes-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 10px;
+            margin-top: 4px;
+        }
+
+        .notes-table th,
+        .notes-table td {
+            border: 1px solid #000;
+            padding: 4px 3px;
+            text-align: center;
+            vertical-align: middle;
+            height: 22px;
+        }
+
+        .notes-table thead th {
+            background: #fff;
+            font-weight: bold;
+            font-size: 9px;
+        }
+
+        .notes-table .discipline {
+            text-align: left;
+            padding-left: 6px;
+            width: 22%;
+        }
+
+        .notes-table .col-coef    { width: 6%; }
+        .notes-table .col-interro { width: 6%; }
+        .notes-table .col-dev     { width: 6%; }
+        .notes-table .col-moy     { width: 7%; }
+        .notes-table .col-rang    { width: 7%; }
+        .notes-table .col-app     { width: 19%; }
+
+        .notes-table .vertical {
+            writing-mode: vertical-rl;
+            transform: rotate(180deg);
+            white-space: nowrap;
+        }
+
+        .notes-table .total-row td,
+        .notes-table .moyenne-row td {
+            font-weight: bold;
+        }
+
+        /* ===== RÉSULTATS GLOBAUX ===== */
+        .resultats {
+            border: 1px solid #000;
+            border-top: none;
+            padding: 6px 8px;
+            font-size: 11px;
+        }
+
+        .resultats .row {
+            display: table;
+            width: 100%;
+            margin-bottom: 4px;
+        }
+
+        .resultats .col {
+            display: table-cell;
+            width: 50%;
+        }
+
+        .resultats .field {
+            border-bottom: 1px solid #000;
+            display: inline-block;
+            min-width: 90px;
+            padding: 0 4px;
+        }
+
+        /* ===== AVIS ===== */
+        .avis {
+            border: 1px solid #000;
+            border-top: none;
+            padding: 6px 8px;
+            font-size: 11px;
+        }
+
+        .avis .check-row {
+            display: table;
+            width: 100%;
+            margin-bottom: 4px;
+        }
+
+        .avis .check-col {
+            display: table-cell;
+            width: 33%;
+            padding: 2px 0;
+        }
+
+        .checkbox {
+            display: inline-block;
+            width: 11px;
+            height: 11px;
+            border: 1px solid #000;
+            vertical-align: middle;
+            margin-right: 4px;
+            text-align: center;
+            line-height: 11px;
+            font-size: 10px;
+        }
+
+        .checkbox.checked::before {
+            content: "✓";
+            font-weight: bold;
+        }
+
+        /* ===== DÉCISION ===== */
+        .decision {
+            border: 1px solid #000;
+            border-top: none;
+            padding: 6px 8px;
+            font-size: 11px;
+        }
+
+        .decision .row {
+            display: table;
+            width: 100%;
+        }
+
+        .decision .col {
+            display: table-cell;
+            width: 33%;
+            text-align: center;
+        }
+
+        .decision .box {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 1px solid #000;
+            vertical-align: middle;
+            margin-left: 4px;
+            text-align: center;
+            line-height: 14px;
+        }
+
+        .fait-a {
+            text-align: right;
+            margin-top: 6px;
+            font-size: 11px;
+        }
+
+        .fait-a .field {
+            border-bottom: 1px solid #000;
+            display: inline-block;
+            min-width: 90px;
+            padding: 0 4px;
+        }
+
+        /* ===== SIGNATURES ===== */
+        .signatures {
+            display: table;
+            width: 100%;
+            margin-top: 8px;
+        }
+
+        .signature-box {
+            display: table-cell;
+            width: 50%;
+            border: 1px solid #000;
+            padding: 6px;
+            text-align: center;
+            vertical-align: top;
+            height: 110px;
+        }
+
+        .signature-box .title {
+            font-weight: bold;
+            font-size: 11px;
+        }
+
+        .signature-box .subtitle {
+            font-style: italic;
+            font-size: 10px;
+        }
+
+        .signature-box .stamp-circle {
+            width: 55px;
+            height: 55px;
+            border: 1.5px solid #1e3a8a;
+            border-radius: 50%;
+            margin: 14px auto 0;
+        }
+
+        .signature-box.right {
+            border-left: none;
+        }
+
+        /* ===== UTILITAIRES ===== */
+        .underline {
+            border-bottom: 1px solid #000;
+            display: inline-block;
+            min-width: 60px;
+            padding: 0 3px;
+        }
+
+        @media print {
+            body { padding: 0; }
+            .bulletin { border: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="bulletin">
+
+    <!-- ============ EN-TÊTE ============ -->
+    <div class="header">
+        <div class="header-left">
+            {% if logo_benin %}
+                <img src="{{ logo_benin }}" alt="Armoiries" class="logo">
+            {% else %}
+                <div class="logo" style="border:1px dashed #999;text-align:center;line-height:45px;font-size:8px;">LOGO</div>
+            {% endif %}
+            <div class="title-block">
+                <div class="big">RÉPUBLIQUE DU BÉNIN</div>
+                <div class="small">FRATERNITÉ - JUSTICE - TRAVAIL</div>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="line"><strong>ACADÉMIE NUMÉRIQUE</strong></div>
+            <div class="line">BP : {{ etablissement.bp|default:"___" }}, Tél : {{ etablissement.tel|default:"___ / ___" }}, {{ etablissement.ville|default:"Cotonou" }}</div>
+            <div class="line">DÉPARTEMENT DE L'ATLANTIQUE</div>
+            <div class="line">DIRECTION DÉPARTEMENTALE ...</div>
+        </div>
+    </div>
+
+    <!-- ============ TITRE ============ -->
+    <div class="main-title">BULLETIN SCOLAIRE ET DE NOTES</div>
+
+    <div class="annee-trimestre">
+        <div class="left">
+            ANNÉE SCOLAIRE : 20<span class="underline">{{ annee.debut|default:"__" }}</span> – 20<span class="underline">{{ annee.fin|default:"__" }}</span>
+        </div>
+        <div class="right">
+            TRIMESTRE :
+            <span {% if trimestre == 1 %}style="border:1px solid #000;border-radius:50%;padding:1px 4px;"{% endif %}>1<sup>er</sup></span> /
+            <span {% if trimestre == 2 %}style="border:1px solid #000;border-radius:50%;padding:1px 4px;"{% endif %}>2<sup>ème</sup></span> /
+            <span {% if trimestre == 3 %}style="border:1px solid #000;border-radius:50%;padding:1px 4px;"{% endif %}>3<sup>ème</sup></span>
+            (entourer)
+        </div>
+    </div>
+
+    <!-- ============ INFOS ÉLÈVE ============ -->
+    <div class="section-title">INFORMATIONS SUR L'ÉLÈVE</div>
+    <div class="info-eleve">
+        <div class="row">
+            <div class="col">Nom et Prénoms : <span class="field" style="min-width:400px;">{{ eleve.nom_prenoms|default:"" }}</span></div>
+        </div>
+        <div class="row">
+            <div class="col">
+                Né(e) le : <span class="field" style="min-width:90px;">{{ eleve.date_naissance|default:"__/__/____" }}</span>
+                à : <span class="field" style="min-width:160px;">{{ eleve.lieu_naissance|default:"" }}</span>
+                Sexe : M / F
+                {% if eleve.sexe == "M" %} <strong>(M)</strong>{% elif eleve.sexe == "F" %} <strong>(F)</strong>{% endif %}
+            </div>
+        </div>
+        <div class="row">
+            <div class="col">
+                Classe : <span class="field">{{ eleve.classe|default:"" }}</span>
+                &nbsp;&nbsp;&nbsp;
+                Effectif : <span class="field">{{ eleve.effectif|default:"" }}</span>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col">
+                N° matricule : <span class="field" style="min-width:120px;">{{ eleve.matricule|default:"" }}</span>
+                &nbsp;&nbsp;&nbsp;
+                Statut : Nouveau / Redoublant (entourer)
+                {% if eleve.statut %}<strong>({{ eleve.statut }})</strong>{% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ TABLE NOTES ============ -->
+    <table class="notes-table">
+        <thead>
+            <tr>
+                <th class="discipline">DISCIPLINES</th>
+                <th class="col-coef">COEF.</th>
+                <th class="col-interro"><span class="vertical">INTERRO.</span></th>
+                <th class="col-dev"><span class="vertical">DEV. 1</span></th>
+                <th class="col-dev"><span class="vertical">DEV. 2</span></th>
+                <th class="col-dev"><span class="vertical">DEV. 3</span></th>
+                <th class="col-moy">MOY.<br>/20</th>
+                <th class="col-moy">MOY.<br>COEF.</th>
+                <th class="col-rang">RANG</th>
+                <th class="col-app">APPRÉCIATIONS<br>ET SIGNATURES DES<br>PROFESSEURS</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for matiere in matieres %}
+            <tr>
+                <td class="discipline">{{ matiere.nom }}</td>
+                <td>{{ matiere.coef|default:"" }}</td>
+                <td>{{ matiere.interro|default:"" }}</td>
+                <td>{{ matiere.dev1|default:"" }}</td>
+                <td>{{ matiere.dev2|default:"" }}</td>
+                <td>{{ matiere.dev3|default:"" }}</td>
+                <td>{{ matiere.moyenne|default:"" }}</td>
+                <td>{{ matiere.moy_coef|default:"" }}</td>
+                <td>{{ matiere.rang|default:"" }}</td>
+                <td>{{ matiere.appreciation|default:"" }}</td>
+            </tr>
+            {% empty %}
+                {# Lignes vides par défaut si aucune matière fournie #}
+                <tr><td class="discipline">Français</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                <tr><td class="discipline">Mathématiques</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                <tr><td class="discipline">Anglais</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                <tr><td class="discipline">Histoire et Géographie</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                <tr><td class="discipline">Science de la Vie et de la Terre (SVT)</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                <tr><td class="discipline">Physique-Chimie et Technologie (PCT)</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                <tr><td class="discipline">Informatique et Numérique</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                <tr><td class="discipline">Éducation Physique et Sportive (EPS)</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                <tr><td class="discipline">Modernes (Allemand/Espagnol)</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+            {% endfor %}
+            <tr class="total-row">
+                <td class="discipline">Total</td>
+                <td>{{ totaux.coef|default:"" }}</td>
+                <td colspan="5"></td>
+                <td>{{ totaux.moy_coef|default:"" }}</td>
+                <td colspan="2"></td>
+            </tr>
+            <tr class="moyenne-row">
+                <td class="discipline">Moyenne du Trimestre</td>
+                <td colspan="9" style="text-align:center;">{{ moyenne_trimestre|default:"" }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- ============ RÉSULTATS GLOBAUX ============ -->
+    <div class="section-title" style="margin-top:6px;">RÉSULTATS GLOBAUX</div>
+    <div class="resultats">
+        <div class="row">
+            <div class="col">Moyenne de l'élève : <span class="field">{{ resultats.moyenne|default:"" }}</span></div>
+            <div class="col">Rang : <span class="field">{{ resultats.rang|default:"" }}</span></div>
+        </div>
+        <div class="row">
+            <div class="col">Plus forte moyenne : <span class="field">{{ resultats.plus_forte|default:"" }}</span></div>
+            <div class="col">Plus faible moyenne : <span class="field">{{ resultats.plus_faible|default:"" }}</span></div>
+        </div>
+        <div class="row">
+            <div class="col">Moyenne de la classe : <span class="field">{{ resultats.moyenne_classe|default:"" }}</span></div>
+            <div class="col">Mention : <span class="field" style="min-width:160px;">{{ resultats.mention|default:"" }}</span></div>
+        </div>
+    </div>
+
+    <!-- ============ AVIS DU CONSEIL ============ -->
+    <div class="section-title">AVIS DU CONSEIL DES PROFESSEURS</div>
+    <div class="avis">
+        <div class="check-row">
+            <div class="check-col">
+                <span class="checkbox {% if avis.felicitations %}checked{% endif %}"></span>Félicitations
+            </div>
+            <div class="check-col">
+                <span class="checkbox {% if avis.tableau_honneur %}checked{% endif %}"></span>Tableau d'honneur
+            </div>
+            <div class="check-col">
+                <span class="checkbox {% if avis.encouragement %}checked{% endif %}"></span>Encouragement
+            </div>
+        </div>
+        <div class="check-row">
+            <div class="check-col">
+                <span class="checkbox {% if avis.avertissement %}checked{% endif %}"></span>Avertissement de travail
+            </div>
+            <div class="check-col">
+                <span class="checkbox {% if avis.blame %}checked{% endif %}"></span>Blâme
+            </div>
+            <div class="check-col"></div>
+        </div>
+    </div>
+
+    <!-- ============ DÉCISION DU CONSEIL ============ -->
+    <div class="section-title">DÉCISION DU CONSEIL</div>
+    <div class="decision">
+        <div class="row">
+            <div class="col">
+                Passe : <span class="box">{% if decision == "passe" %}✓{% endif %}</span>
+            </div>
+            <div class="col">
+                Redouble : <span class="box">{% if decision == "redouble" %}✓{% endif %}</span>
+            </div>
+            <div class="col">
+                Exclu : <span class="box">{% if decision == "exclu" %}✓{% endif %}</span>
+            </div>
+        </div>
+        <div class="fait-a">
+            Fait à <span class="field">{{ fait_a|default:"" }}</span>, le <span class="field">{{ fait_le|default:"__/__/____" }}</span>
+        </div>
+    </div>
+
+    <!-- ============ SIGNATURES ============ -->
+    <div class="signatures">
+        <div class="signature-box">
+            <div class="title">Le Directeur</div>
+            <div class="subtitle">(Signature et Cachet)</div>
+            <div class="stamp-circle"></div>
+        </div>
+        <div class="signature-box right">
+            <div class="title">Visa des Parents/Tuteurs</div>
+        </div>
+    </div>
+
+</div>
+
+</body>
+</html>

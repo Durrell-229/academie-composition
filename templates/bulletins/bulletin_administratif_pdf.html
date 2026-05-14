@@ -310,17 +310,11 @@
         <div class="header-top">
             <!-- Logo établissement -->
             <div class="header-left">
-                <div class="logo-box">
-                    <svg viewBox="0 0 120 140" xmlns="http://www.w3.org/2000/svg">
-                        <ellipse cx="60" cy="70" rx="55" ry="65" fill="#008751" stroke="#000" stroke-width="2"/>
-                        <text x="60" y="45" text-anchor="middle" fill="#FCD116" font-size="16" font-weight="bold" font-family="Arial">ANI</text>
-                        <text x="60" y="65" text-anchor="middle" fill="#fff" font-size="10" font-family="Arial">ACADÉMIE</text>
-                        <text x="60" y="80" text-anchor="middle" fill="#fff" font-size="10" font-family="Arial">NUMÉRIQUE</text>
-                        <text x="60" y="100" text-anchor="middle" fill="#FCD116" font-size="9" font-family="Arial">BÉNIN</text>
-                        <path d="M25 112 Q60 125 95 112" stroke="#FCD116" stroke-width="2" fill="none"/>
-                    </svg>
+                <div class="logo-box" style="background:#fff;">
+                    <img src="{{ logo_data_uri }}" alt="Logo"
+                         style="width:100%;height:100%;object-fit:contain;"/>
                 </div>
-                <div style="font-size:6.5px;font-weight:bold;text-align:center;">LOGO ÉTABLISSEMENT</div>
+                <div style="font-size:6px;font-weight:bold;text-align:center;color:#4F46E5;">ACADÉMIE NUMÉRIQUE</div>
             </div>
 
             <!-- Centre -->
@@ -437,9 +431,9 @@
                     <th style="width:4%;">N°</th>
                     <th style="width:24%;">DISCIPLINE</th>
                     <th style="width:6%;">COEF</th>
-                    <th style="width:8%;">DEVOIR 1</th>
-                    <th style="width:8%;">DEVOIR 2</th>
-                    <th style="width:8%;">COMPO</th>
+                    <th style="width:8%;">INTERRO 1</th>
+                    <th style="width:8%;">INTERRO 2</th>
+                    <th style="width:8%;">COMPOSITION</th>
                     <th style="width:8%;">MOYENNE<br>/20</th>
                     <th style="width:8%;">MOY×COEF</th>
                     <th style="width:5%;">RANG</th>
@@ -452,9 +446,9 @@
                     <td>{{ forloop.counter }}</td>
                     <td class="mat">{{ ligne.matiere }}</td>
                     <td>{{ ligne.coefficient|default:"1" }}</td>
-                    <td>{{ ligne.devoir1|default:"--" }}</td>
-                    <td>{{ ligne.devoir2|default:"--" }}</td>
-                    <td>{{ ligne.compo|default:ligne.note }}</td>
+                    <td>{{ ligne.devoir|default:"--" }}</td>
+                    <td>{{ ligne.controle|default:"--" }}</td>
+                    <td>{{ ligne.note|default:"--" }}</td>
                     <td>
                         <strong {% if ligne.note_ok %}style="color:#007a1a;"{% elif ligne.note_nok %}style="color:#c00;"{% endif %}>{{ ligne.note|default:"--" }}</strong>
                     </td>
@@ -528,10 +522,10 @@
                         <td>Assiduité</td>
                         <td>
                             <div class="check-row">
-                                <div class="check-item"><div class="check-box {% if comportement_assiduite == 'TB' %}checked{% endif %}">✓</div> TB</div>
-                                <div class="check-item"><div class="check-box {% if comportement_assiduite == 'B' %}checked{% endif %}">✓</div> B</div>
-                                <div class="check-item"><div class="check-box {% if comportement_assiduite == 'AB' %}checked{% endif %}">✓</div> AB</div>
-                                <div class="check-item"><div class="check-box {% if comportement_assiduite == 'P' %}checked{% endif %}">✓</div> P</div>
+                                <div class="check-item"><div class="check-box {% if comportement_assiduite == 'Excellent' %}checked{% endif %}">✓</div> TB</div>
+                                <div class="check-item"><div class="check-box {% if comportement_assiduite == 'Moyen' %}checked{% endif %}">✓</div> B</div>
+                                <div class="check-item"><div class="check-box {% if comportement_assiduite == 'Passable' %}checked{% endif %}">✓</div> AB</div>
+                                <div class="check-item"><div class="check-box {% if comportement_assiduite == 'Mauvais' %}checked{% endif %}">✓</div> P</div>
                             </div>
                         </td>
                     </tr>
@@ -539,10 +533,10 @@
                         <td>Discipline</td>
                         <td>
                             <div class="check-row">
-                                <div class="check-item"><div class="check-box {% if comportement_discipline == 'TB' %}checked{% endif %}">✓</div> TB</div>
-                                <div class="check-item"><div class="check-box {% if comportement_discipline == 'B' %}checked{% endif %}">✓</div> B</div>
-                                <div class="check-item"><div class="check-box {% if comportement_discipline == 'AB' %}checked{% endif %}">✓</div> AB</div>
-                                <div class="check-item"><div class="check-box {% if comportement_discipline == 'P' %}checked{% endif %}">✓</div> P</div>
+                                <div class="check-item"><div class="check-box {% if comportement_discipline == 'Excellent' %}checked{% endif %}">✓</div> TB</div>
+                                <div class="check-item"><div class="check-box {% if comportement_discipline == 'Moyen' %}checked{% endif %}">✓</div> B</div>
+                                <div class="check-item"><div class="check-box {% if comportement_discipline == 'Passable' %}checked{% endif %}">✓</div> AB</div>
+                                <div class="check-item"><div class="check-box {% if comportement_discipline == 'Mauvais' %}checked{% endif %}">✓</div> P</div>
                             </div>
                         </td>
                     </tr>
@@ -550,10 +544,10 @@
                         <td>Travail en classe</td>
                         <td>
                             <div class="check-row">
-                                <div class="check-item"><div class="check-box {% if comportement_travail == 'TB' %}checked{% endif %}">✓</div> TB</div>
-                                <div class="check-item"><div class="check-box {% if comportement_travail == 'B' %}checked{% endif %}">✓</div> B</div>
-                                <div class="check-item"><div class="check-box {% if comportement_travail == 'AB' %}checked{% endif %}">✓</div> AB</div>
-                                <div class="check-item"><div class="check-box {% if comportement_travail == 'P' %}checked{% endif %}">✓</div> P</div>
+                                <div class="check-item"><div class="check-box {% if comportement_travail == 'Excellent' %}checked{% endif %}">✓</div> TB</div>
+                                <div class="check-item"><div class="check-box {% if comportement_travail == 'Moyen' %}checked{% endif %}">✓</div> B</div>
+                                <div class="check-item"><div class="check-box {% if comportement_travail == 'Passable' %}checked{% endif %}">✓</div> AB</div>
+                                <div class="check-item"><div class="check-box {% if comportement_travail == 'Mauvais' %}checked{% endif %}">✓</div> P</div>
                             </div>
                         </td>
                     </tr>
@@ -561,10 +555,10 @@
                         <td>Présentation</td>
                         <td>
                             <div class="check-row">
-                                <div class="check-item"><div class="check-box {% if comportement_presentation == 'TB' %}checked{% endif %}">✓</div> TB</div>
-                                <div class="check-item"><div class="check-box {% if comportement_presentation == 'B' %}checked{% endif %}">✓</div> B</div>
-                                <div class="check-item"><div class="check-box {% if comportement_presentation == 'AB' %}checked{% endif %}">✓</div> AB</div>
-                                <div class="check-item"><div class="check-box {% if comportement_presentation == 'P' %}checked{% endif %}">✓</div> P</div>
+                                <div class="check-item"><div class="check-box {% if comportement_presentation == 'Excellent' %}checked{% endif %}">✓</div> TB</div>
+                                <div class="check-item"><div class="check-box {% if comportement_presentation == 'Moyen' %}checked{% endif %}">✓</div> B</div>
+                                <div class="check-item"><div class="check-box {% if comportement_presentation == 'Passable' %}checked{% endif %}">✓</div> AB</div>
+                                <div class="check-item"><div class="check-box {% if comportement_presentation == 'Mauvais' %}checked{% endif %}">✓</div> P</div>
                             </div>
                         </td>
                     </tr>
@@ -572,10 +566,10 @@
                         <td>Ponctualité</td>
                         <td>
                             <div class="check-row">
-                                <div class="check-item"><div class="check-box {% if comportement_ponctualite == 'TB' %}checked{% endif %}">✓</div> TB</div>
-                                <div class="check-item"><div class="check-box {% if comportement_ponctualite == 'B' %}checked{% endif %}">✓</div> B</div>
-                                <div class="check-item"><div class="check-box {% if comportement_ponctualite == 'AB' %}checked{% endif %}">✓</div> AB</div>
-                                <div class="check-item"><div class="check-box {% if comportement_ponctualite == 'P' %}checked{% endif %}">✓</div> P</div>
+                                <div class="check-item"><div class="check-box {% if comportement_ponctualite == 'Excellent' %}checked{% endif %}">✓</div> TB</div>
+                                <div class="check-item"><div class="check-box {% if comportement_ponctualite == 'Moyen' %}checked{% endif %}">✓</div> B</div>
+                                <div class="check-item"><div class="check-box {% if comportement_ponctualite == 'Passable' %}checked{% endif %}">✓</div> AB</div>
+                                <div class="check-item"><div class="check-box {% if comportement_ponctualite == 'Mauvais' %}checked{% endif %}">✓</div> P</div>
                             </div>
                         </td>
                     </tr>
@@ -649,7 +643,7 @@
         <div class="footer-center">
             <p class="footer-note">Ce bulletin est un document officiel. Toute falsification est passible de sanctions.</p>
             <p>Délivré à Cotonou, le {% now "d/m/Y" %} — Réf : {{ eleve.matricule|default:"N/A" }}-{{ periode|default:"T1"|slice:":2" }}</p>
-            <p class="footer-legal">N.B. : TB = Très Bien · B = Bien · AB = Assez Bien · P = Passable | Échelle de mention : Excellent ≥16 · TB ≥14 · B ≥12 · AB ≥10 · Passable ≥8 · Médiocre ≥5 · Insuffisant &lt;5</p>
+            <p class="footer-legal">N.B. : TB = Très Bien · B = Bien · AB = Assez Bien · P = Passable | Formule : Moy = (Interro1 + Interro2 + 2×Compo) / 4 | Mentions : Excellent ≥16 · TB ≥14 · B ≥12 · AB ≥10 · Passable ≥8 · Insuffisant &lt;8</p>
         </div>
         <div class="qr-zone">
             <div class="qr-label">Télécharger PDF</div>

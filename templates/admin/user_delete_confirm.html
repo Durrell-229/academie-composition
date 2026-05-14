@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Supprimer l'Utilisateur - Administration{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-bg-primary p-6">
+  <div class="max-w-2xl mx-auto">
+
+    <!-- Header -->
+    <div class="mb-8">
+      <div class="flex items-center mb-4">
+        <a href="{% url 'admin_user_list' %}" class="text-text-muted hover:text-white transition-colors flex items-center gap-2">
+          <i class="fa-solid fa-arrow-left"></i>
+          Retour à la liste
+        </a>
+      </div>
+      <h1 class="text-3xl font-bold text-white mb-2">
+        <i class="fa-solid fa-exclamation-triangle mr-3 text-red-400"></i>
+        Supprimer l'Utilisateur
+      </h1>
+      <p class="text-text-muted">Cette action est irréversible</p>
+    </div>
+
+    <!-- Confirmation Card -->
+    <div class="bg-bg-secondary rounded-xl overflow-hidden border border-border-standard">
+
+      <!-- User Info -->
+      <div class="bg-bg-tertiary/50 p-6 border-b border-border-standard">
+        <div class="flex items-center gap-4">
+          {% if target_user.avatar %}
+          <img src="{{ target_user.avatar.url }}" alt="{{ target_user.full_name }}"
+               class="w-16 h-16 rounded-2xl object-cover flex-shrink-0">
+          {% else %}
+          <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/40 to-accent/20 flex items-center justify-center text-white text-2xl font-bold flex-shrink-0">
+            {{ target_user.first_name|slice:":1" }}{{ target_user.last_name|slice:":1" }}
+          </div>
+          {% endif %}
+          <div>
+            <h3 class="text-xl font-semibold text-white">{{ target_user.full_name }}</h3>
+            <p class="text-text-muted text-sm">{{ target_user.email }}</p>
+            <div class="flex items-center gap-3 mt-2">
+              <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border
+                {% if target_user.role == 'admin' %}bg-red-500/10 text-red-400 border-red-500/20
+                {% elif target_user.role == 'professeur' %}bg-accent/10 text-accent border-accent/20
+                {% elif target_user.role == 'conseiller' %}bg-info/10 text-info border-info/20
+                {% else %}bg-primary/10 text-primary border-primary/20{% endif %}">
+                {{ target_user.get_role_display }}
+              </span>
+              {% if target_user.classe %}
+              <span class="text-xs text-text-muted">{{ target_user.classe }}</span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Warning -->
+      <div class="p-6">
+        <div class="bg-red-500/10 border border-red-500/30 rounded-xl p-4 mb-6">
+          <div class="flex items-start gap-3">
+            <i class="fa-solid fa-exclamation-triangle text-red-400 mt-0.5 flex-shrink-0"></i>
+            <div>
+              <h4 class="text-red-400 font-semibold mb-2">Attention - Action Irréversible</h4>
+              <ul class="text-text-muted text-sm space-y-1">
+                <li>• Le compte de l'utilisateur sera définitivement supprimé</li>
+                <li>• Toutes ses données associées seront perdues</li>
+                <li>• L'utilisateur ne pourra plus se connecter</li>
+                <li>• Cette action ne peut pas être annulée</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Confirmation Form -->
+        <form method="post">
+          {% csrf_token %}
+          <div class="flex items-center justify-between pt-4 border-t border-border-standard">
+            <a href="{% url 'admin_user_list' %}" class="text-text-muted hover:text-white transition-colors text-sm">
+              Annuler
+            </a>
+            <div class="flex gap-3">
+              <a href="{% url 'admin_user_edit' target_user.id %}"
+                 class="px-5 py-2 bg-bg-tertiary hover:bg-bg-tertiary/80 text-white rounded-lg font-medium transition-colors text-sm">
+                <i class="fa-solid fa-edit mr-2"></i>Modifier à la place
+              </a>
+              <button type="submit"
+                      onclick="return confirm('Confirmer la suppression de {{ target_user.full_name }} ?')"
+                      class="px-5 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-semibold transition-colors text-sm">
+                <i class="fa-solid fa-trash mr-2"></i>Supprimer définitivement
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

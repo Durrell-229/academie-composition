@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8 max-w-3xl">
+    <div class="flex items-center gap-4 mb-8">
+        <a href="{% url 'corrections:corrige_types_list' %}" class="text-blue-600 hover:underline text-sm">← Retour à la liste</a>
+        <h1 class="text-2xl font-bold">Corrigé Type</h1>
+    </div>
+
+    <!-- Info examen -->
+    <div class="bg-white rounded-lg shadow p-6 mb-6">
+        <h2 class="text-lg font-semibold mb-4 text-gray-800">Épreuve associée</h2>
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <p class="text-xs text-gray-500 uppercase tracking-widest">Titre</p>
+                <p class="font-semibold text-gray-900">{{ corrige_type.exam.titre }}</p>
+            </div>
+            <div>
+                <p class="text-xs text-gray-500 uppercase tracking-widest">Matière</p>
+                <p class="font-semibold text-gray-900">{{ corrige_type.exam.matiere.nom|default:"—" }}</p>
+            </div>
+            <div>
+                <p class="text-xs text-gray-500 uppercase tracking-widest">Fichier</p>
+                <p class="font-semibold text-gray-900">{{ corrige_type.nom_original }}</p>
+            </div>
+            <div>
+                <p class="text-xs text-gray-500 uppercase tracking-widest">Uploadé le</p>
+                <p class="font-semibold text-gray-900">{{ corrige_type.uploaded_at|date:"d/m/Y H:i" }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Barème associé -->
+    {% if bareme %}
+    <div class="bg-white rounded-lg shadow p-6 mb-6">
+        <h2 class="text-lg font-semibold mb-4 text-gray-800">Barème</h2>
+        <div class="flex items-center gap-4 mb-4">
+            <span class="text-3xl font-black text-blue-600">{{ bareme.total_points }}</span>
+            <span class="text-gray-500">points au total</span>
+        </div>
+        {% if bareme.donnees.critères %}
+        <table class="w-full text-sm">
+            <thead>
+                <tr class="bg-gray-50">
+                    <th class="text-left p-2 text-gray-600">Critère</th>
+                    <th class="text-right p-2 text-gray-600">Points</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for critere in bareme.donnees.critères %}
+                <tr class="border-t">
+                    <td class="p-2">{{ critere.nom }}</td>
+                    <td class="p-2 text-right font-bold">{{ critere.points }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+    </div>
+    {% else %}
+    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+        <p class="text-yellow-700 text-sm">Aucun barème enregistré pour cette épreuve. Le barème sera généré automatiquement par l'IA lors de la correction.</p>
+    </div>
+    {% endif %}
+
+    <!-- Actions -->
+    <div class="flex gap-3">
+        <a href="{% url 'corrections:upload_corrige_type' %}" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm">
+            Remplacer le corrigé type
+        </a>
+    </div>
+</div>
+{% endblock %}

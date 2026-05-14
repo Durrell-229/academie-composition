@@ -1,0 +1,710 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+  {% if bulletin %}Modifier le Bulletin{% else %}Créer un Bulletin{% endif %} | Académie Numérique
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- ===== HEADER ===== -->
+  <div class="animate-in flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-black tracking-tight">
+        {% if bulletin %}
+          <span class="gradient-text">Modifier</span> le Bulletin
+        {% else %}
+          <span class="gradient-text">Créer</span> un Bulletin Scolaire
+        {% endif %}
+      </h1>
+      <p class="text-sm text-text-muted mt-1">Format officiel Bénin — Ministère des Enseignements</p>
+    </div>
+    <div class="flex items-center gap-3">
+      {% if bulletin %}
+      <a href="{% url 'bulletins:scolaire_html' bulletin.id %}" target="_blank"
+         class="px-4 py-2.5 rounded-xl glass border border-border-standard text-sm font-bold hover:bg-bg-tertiary/50 transition flex items-center gap-2">
+        <i class="fa-solid fa-eye"></i> Aperçu
+      </a>
+      <a href="{% url 'bulletins:scolaire_pdf' bulletin.id %}" target="_blank"
+         class="px-4 py-2.5 rounded-xl glass border border-border-standard text-sm font-bold hover:bg-bg-tertiary/50 transition flex items-center gap-2">
+        <i class="fa-solid fa-file-pdf text-red-400"></i> PDF
+      </a>
+      {% endif %}
+      <a href="{% url 'bulletins:index' %}"
+         class="px-4 py-2.5 rounded-xl glass border border-border-standard text-sm font-bold hover:bg-bg-tertiary/50 transition">
+        <i class="fa-solid fa-arrow-left"></i>
+      </a>
+    </div>
+  </div>
+
+  <!-- ===== MESSAGES ===== -->
+  {% if messages %}
+  {% for msg in messages %}
+  <div class="px-4 py-3 rounded-xl border
+    {% if msg.tags == 'success' %}bg-green-500/10 border-green-500/30 text-green-400
+    {% elif msg.tags == 'error' %}bg-red-500/10 border-red-500/30 text-red-400
+    {% else %}bg-primary/10 border-primary/30 text-primary{% endif %}
+    flex items-center gap-3 text-sm font-medium">
+    <i class="fa-solid {% if msg.tags == 'success' %}fa-check-circle{% else %}fa-exclamation-triangle{% endif %}"></i>
+    {{ msg }}
+  </div>
+  {% endfor %}
+  {% endif %}
+
+  <form method="post" id="form-bulletin">
+    {% csrf_token %}
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+
+      <!-- =====================================================
+           COLONNE GAUCHE + CENTRE (2/3) : Formulaire
+           ===================================================== -->
+      <div class="xl:col-span-2 space-y-5">
+
+        <!-- ─── BLOC 1 : Identité établissement ─── -->
+        <div class="glass rounded-2xl border border-border-standard overflow-hidden">
+          <div class="px-5 py-3 border-b border-border-standard bg-bg-tertiary/40 flex items-center gap-2">
+            <i class="fa-solid fa-school text-primary"></i>
+            <span class="font-bold text-sm uppercase tracking-wider">Établissement</span>
+          </div>
+          <div class="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-text-muted uppercase tracking-wider mb-1">Nom de l'établissement</label>
+              <input type="text" name="etablissement_nom"
+                value="{{ form_data.etablissement_nom|default:'Académie Numérique' }}"
+                class="w-full px-3 py-2 rounded-lg bg-bg-tertiary/50 border border-border-standard text-sm text-white focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition"
+                placeholder="Ex: Lycée de l'Excellence">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-text-muted uppercase tracking-wider mb-1">Ville</label>
+              <input type="text" name="etablissement_ville"
+                value="{{ form_data.etablissement_ville|default:'Cotonou' }}"
+                class="w-full px-3 py-2 rounded-lg bg-bg-tertiary/50 border border-border-standard text-sm text-white focus:outline-none focus:border-primary/60 transition"
+                placeholder="Cotonou">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-text-muted uppercase tracking-wider mb-1">BP</label>
+              <input type="text" name="etablissement_bp"
+                value="{{ form_data.etablissement_bp|default:'' }}"
+                class="w-full px-3 py-2 rounded-lg bg-bg-tertiary/50 border border-border-standard text-sm text-white focus:outline-none focus:border-primary/60 transition"
+                placeholder="Ex: 1234">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-text-muted uppercase tracking-wider mb-1">Téléphone</label>
+              <input type="text" name="etablissement_tel"
+                value="{{ form_data.etablissement_tel|default:'' }}"
+                class="w-full px-3 py-2 rounded-lg bg-bg-tertiary/50 border border-border-standard text-sm text-white focus:outline-none focus:border-primary/60 transition"
+                placeholder="Ex: 21 30 00 00">
+            </div>
+          </div>
+        </div>
+
+        <!-- ─── BLOC 2 : Période ─── -->
+        <div class="glass rounded-2xl border border-border-standard overflow-hidden">
+          <div class="px-5 py-3 border-b border-border-standard bg-bg-tertiary/40 flex items-center gap-2">
+            <i class="fa-solid fa-calendar-days text-accent"></i>
+            <span class="font-bold text-sm uppercase tracking-wider">Période</span>
+          </div>
+          <div class="p-5 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-text-muted uppercase tracking-wider mb-1">Trimestre *</label>
+              <select name="trimestre"
+                class="w-full px-3 py-2 rounded-lg bg-bg-tertiary/50 border border-border-standard text-sm text-white focus:outline-none focus:border-primary/60 transition">
+                <option value="1" {% if form_data.trimestre == '1' or not form_data.trimestre %}selected{% endif %}>1er Trimestre</option>
+                <option value="2" {% if form_data.trimestre == '2' %}selected{% endif %}>2ème Trimestre</option>
+                <option value="3" {% if form_data.trimestre == '3' %}selected{% endif %}>3ème Trimestre</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-text-muted uppercase tracking-wider mb-1">Année de début *</label>
+              <input type="number" name="annee_debut" min="2020" max="2035"
+                value="{{ form_data.annee_debut|default:'2025' }}"
+                class="w-full px-3 py-2 rounded-lg bg-bg-tertiary/50 border border-border-standard text-sm text-white focus:outline-none focus:border-primary/60 transition"
+                placeholder="2025">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-text-muted uppercase tracking-wider mb-1">Année de fin *</label>
+              <input type="number" name="annee_fin" min="2020" max="2036"
+                value="{{ form_data.annee_fin|default:'2026' }}"
+                class="w-full px-3 py-2 rounded-lg bg-bg-tertiary/50 border border-border-standard text-sm text-white focus:outline-none focus:border-primary/60 transition"
+                placeholder="2026">
+            </div>
+          </div>
+        </div>
+
+        <!-- ─── BLOC 3 : Identification de l'élève ─── -->
+        <div class="glass rounded-2xl border border-border-standard overflow-hidden">
+          <div class="px-5 py-3 border-b border-border-standard bg-bg-tertiary/40 flex items-center gap-2">
+            <i class="fa-solid fa-user-graduate text-warning"></i>
+            <span class="font-bold text-sm uppercase tracking-wider">Identification de l'Élève</span>
+          </div>
+          <div class="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="md:col-span-2">
+              <label class="block text-xs font-bold text-text-muted uppercase tracking-wider mb-1">Nom et Prénoms complets *</label>
+              <input type="text" name="eleve_nom"
+                value="{{ form_data.eleve_nom|default:'' }}"
+                class="w-full px-3 py-2 rounded-lg bg-bg-tertiary/50 border border-border-standard text-sm text-white focus:outline-none focus:border-primary/60 transition"
+                placeholder="Ex: DOSSOU Jean-Baptiste" required>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-text-muted uppercase tracking-wider mb-1">Date de naissance</label>
+              <input type="text" name="eleve_dob"
+                value="{{ form_data.eleve_dob|default:'' }}"
+                class="w-full px-3 py-2 rounded-lg bg-bg-tertiary/50 border border-border-standard text-sm text-white focus:outline-none focus:border-primary/60 transition"
+                placeholder="JJ/MM/AAAA">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-text-muted uppercase tracking-wider mb-1">Lieu de naissance</label>
+              <input type="text" name="eleve_lieu"
+                value="{{ form_data.eleve_lieu|default:'' }}"
+                class="w-full px-3 py-2 rounded-lg bg-bg-tertiary/50 border border-border-standard text-sm text-white focus:outline-none focus:border-primary/60 transition"
+                placeholder="Ex: Cotonou">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-text-muted uppercase tracking-wider mb-1">Sexe</label>
+              <select name="eleve_sexe"
+                class="w-full px-3 py-2 rounded-lg bg-bg-tertiary/50 border border-border-standard text-sm text-white focus:outline-none focus:border-primary/60 transition">
+                <option value="M" {% if form_data.eleve_sexe == 'M' %}selected{% endif %}>Masculin (M)</option>
+                <option value="F" {% if form_data.eleve_sexe == 'F' %}selected{% endif %}>Féminin (F)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-text-muted uppercase tracking-wider mb-1">Classe *</label>
+              <input type="text" name="eleve_classe"
+                value="{{ form_data.eleve_classe|default:'' }}"
+                class="w-full px-3 py-2 rounded-lg bg-bg-tertiary/50 border border-border-standard text-sm text-white focus:outline-none focus:border-primary/60 transition"
+                placeholder="Ex: 4ème A" required>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-text-muted uppercase tracking-wider mb-1">Effectif de la classe</label>
+              <input type="number" name="eleve_effectif" min="1"
+                value="{{ form_data.eleve_effectif|default:'' }}"
+                class="w-full px-3 py-2 rounded-lg bg-bg-tertiary/50 border border-border-standard text-sm text-white focus:outline-none focus:border-primary/60 transition"
+                placeholder="Ex: 42">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-text-muted uppercase tracking-wider mb-1">N° Matricule</label>
+              <input type="text" name="eleve_matricule"
+                value="{{ form_data.eleve_matricule|default:'' }}"
+                class="w-full px-3 py-2 rounded-lg bg-bg-tertiary/50 border border-border-standard text-sm text-white focus:outline-none focus:border-primary/60 transition"
+                placeholder="Ex: AN-2026-0145">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-text-muted uppercase tracking-wider mb-1">Statut</label>
+              <select name="eleve_statut"
+                class="w-full px-3 py-2 rounded-lg bg-bg-tertiary/50 border border-border-standard text-sm text-white focus:outline-none focus:border-primary/60 transition">
+                <option value="Nouveau" {% if form_data.eleve_statut != 'Redoublant' %}selected{% endif %}>Nouveau</option>
+                <option value="Redoublant" {% if form_data.eleve_statut == 'Redoublant' %}selected{% endif %}>Redoublant</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- ─── BLOC 4 : Notes par matière ─── -->
+        <div class="glass rounded-2xl border border-border-standard overflow-hidden">
+          <div class="px-5 py-3 border-b border-border-standard bg-bg-tertiary/40 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <i class="fa-solid fa-table text-green-400"></i>
+              <span class="font-bold text-sm uppercase tracking-wider">Notes par Matière</span>
+            </div>
+            <button type="button" onclick="ajouterLigne()"
+              class="px-3 py-1.5 rounded-lg bg-primary/20 text-primary text-xs font-bold hover:bg-primary/30 transition flex items-center gap-1">
+              <i class="fa-solid fa-plus"></i> Ajouter matière
+            </button>
+          </div>
+          <div class="p-3 overflow-x-auto">
+            <table class="w-full text-xs border-collapse" id="table-notes">
+              <thead>
+                <tr class="bg-bg-tertiary/60">
+                  <th class="px-2 py-2 text-left border border-border-standard/50 font-bold text-text-muted uppercase text-[10px]" style="min-width:140px;">Discipline</th>
+                  <th class="px-2 py-2 border border-border-standard/50 font-bold text-text-muted uppercase text-[10px]" style="width:50px;">Coef.</th>
+                  <th class="px-2 py-2 border border-border-standard/50 font-bold text-text-muted uppercase text-[10px]" style="width:55px;">Interro.</th>
+                  <th class="px-2 py-2 border border-border-standard/50 font-bold text-text-muted uppercase text-[10px]" style="width:55px;">Dev. 1</th>
+                  <th class="px-2 py-2 border border-border-standard/50 font-bold text-text-muted uppercase text-[10px]" style="width:55px;">Dev. 2</th>
+                  <th class="px-2 py-2 border border-border-standard/50 font-bold text-text-muted uppercase text-[10px]" style="width:55px;">Dev. 3</th>
+                  <th class="px-2 py-2 border border-border-standard/50 font-bold text-primary uppercase text-[10px]" style="width:60px;">Moy./20</th>
+                  <th class="px-2 py-2 border border-border-standard/50 font-bold text-text-muted uppercase text-[10px]" style="width:65px;">Moy.×Coef</th>
+                  <th class="px-2 py-2 border border-border-standard/50 font-bold text-text-muted uppercase text-[10px]" style="width:50px;">Rang</th>
+                  <th class="px-2 py-2 text-left border border-border-standard/50 font-bold text-text-muted uppercase text-[10px]" style="min-width:130px;">Appréciation</th>
+                  <th class="px-2 py-2 border border-border-standard/50" style="width:36px;"></th>
+                </tr>
+              </thead>
+              <tbody id="tbody-notes">
+                {% for i in matieres_range %}
+                <tr class="ligne-note hover:bg-bg-tertiary/20 transition" data-idx="{{ forloop.counter0 }}">
+                  <td class="p-1 border border-border-standard/30">
+                    <input type="text" name="mat_nom_{{ forloop.counter0 }}"
+                      value="{{ matieres_form|index:forloop.counter0|attr:'nom'|default:'' }}"
+                      class="w-full bg-transparent text-white text-xs px-1 py-1 focus:outline-none focus:bg-bg-tertiary/40 rounded"
+                      placeholder="Nom de la matière">
+                  </td>
+                  <td class="p-1 border border-border-standard/30">
+                    <input type="number" name="mat_coef_{{ forloop.counter0 }}" min="1" max="9" step="0.5"
+                      value="{{ matieres_form|index:forloop.counter0|attr:'coef'|default:'' }}"
+                      class="w-full bg-transparent text-white text-xs text-center px-1 py-1 focus:outline-none focus:bg-bg-tertiary/40 rounded note-input"
+                      placeholder="1" onchange="calculerMoyenne(this)">
+                  </td>
+                  {% for field in "interro dev1 dev2 dev3" %}
+                  <td class="p-1 border border-border-standard/30">
+                    <input type="number" name="mat_{{ field }}_{{ forloop.parentloop.counter0 }}" min="0" max="20" step="0.25"
+                      value=""
+                      class="w-full bg-transparent text-white text-xs text-center px-1 py-1 focus:outline-none focus:bg-bg-tertiary/40 rounded note-input"
+                      placeholder="—" onchange="calculerMoyenne(this)">
+                  </td>
+                  {% endfor %}
+                  <td class="p-1 border border-border-standard/30 bg-primary/5">
+                    <input type="number" name="mat_moy_{{ forloop.counter0 }}" min="0" max="20" step="0.01"
+                      value=""
+                      class="w-full bg-transparent text-primary text-xs text-center font-bold px-1 py-1 focus:outline-none rounded"
+                      placeholder="—" readonly>
+                  </td>
+                  <td class="p-1 border border-border-standard/30">
+                    <input type="number" name="mat_moy_coef_{{ forloop.counter0 }}" min="0" step="0.01"
+                      value=""
+                      class="w-full bg-transparent text-white text-xs text-center px-1 py-1 focus:outline-none rounded"
+                      placeholder="—" readonly>
+                  </td>
+                  <td class="p-1 border border-border-standard/30">
+                    <input type="number" name="mat_rang_{{ forloop.counter0 }}" min="1"
+                      value=""
+                      class="w-full bg-transparent text-white text-xs text-center px-1 py-1 focus:outline-none focus:bg-bg-tertiary/40 rounded"
+                      placeholder="—">
+                  </td>
+                  <td class="p-1 border border-border-standard/30">
+                    <input type="text" name="mat_app_{{ forloop.counter0 }}"
+                      value=""
+                      class="w-full bg-transparent text-text-muted text-xs px-1 py-1 focus:outline-none focus:bg-bg-tertiary/40 rounded"
+                      placeholder="Bien, TB...">
+                  </td>
+                  <td class="p-1 border border-border-standard/30 text-center">
+                    <button type="button" onclick="supprimerLigne(this)"
+                      class="text-red-400/60 hover:text-red-400 transition p-0.5 rounded">
+                      <i class="fa-solid fa-trash text-[10px]"></i>
+                    </button>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <!-- Totaux -->
+          <div class="px-4 py-3 border-t border-border-standard/50 bg-bg-tertiary/20 flex items-center gap-6 text-sm">
+            <span class="text-text-muted">Total coef. : <strong id="total-coef" class="text-white">—</strong></span>
+            <span class="text-text-muted">Total moy×coef : <strong id="total-moy-coef" class="text-white">—</strong></span>
+            <span class="text-text-muted text-base">Moyenne du trimestre : <strong id="moy-trim" class="text-primary text-lg">—</strong> /20</span>
+          </div>
+          <input type="hidden" name="nb_matieres" id="nb-matieres" value="{{ matieres_range|length }}">
+        </div>
+
+        <!-- ─── BLOC 5 : Résultats globaux ─── -->
+        <div class="glass rounded-2xl border border-border-standard overflow-hidden">
+          <div class="px-5 py-3 border-b border-border-standard bg-bg-tertiary/40 flex items-center gap-2">
+            <i class="fa-solid fa-chart-bar text-green-400"></i>
+            <span class="font-bold text-sm uppercase tracking-wider">Résultats Globaux</span>
+          </div>
+          <div class="p-5 grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-text-muted uppercase tracking-wider mb-1">Moyenne générale</label>
+              <input type="text" name="res_moyenne" id="res-moyenne"
+                value="{{ form_data.res_moyenne|default:'' }}"
+                class="w-full px-3 py-2 rounded-lg bg-bg-tertiary/50 border border-border-standard text-sm text-primary font-bold focus:outline-none focus:border-primary/60 transition"
+                placeholder="Ex: 13,75">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-text-muted uppercase tracking-wider mb-1">Rang de l'élève</label>
+              <input type="text" name="res_rang"
+                value="{{ form_data.res_rang|default:'' }}"
+                class="w-full px-3 py-2 rounded-lg bg-bg-tertiary/50 border border-border-standard text-sm text-white focus:outline-none focus:border-primary/60 transition"
+                placeholder="Ex: 3 / 42">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-text-muted uppercase tracking-wider mb-1">Mention</label>
+              <select name="res_mention"
+                class="w-full px-3 py-2 rounded-lg bg-bg-tertiary/50 border border-border-standard text-sm text-white focus:outline-none focus:border-primary/60 transition">
+                <option value="">— Choisir —</option>
+                <option value="Excellent"     {% if form_data.res_mention == 'Excellent' %}selected{% endif %}>Excellent (≥ 18)</option>
+                <option value="Très Bien"     {% if form_data.res_mention == 'Très Bien' %}selected{% endif %}>Très Bien (≥ 16)</option>
+                <option value="Bien"          {% if form_data.res_mention == 'Bien' %}selected{% endif %}>Bien (≥ 14)</option>
+                <option value="Assez Bien"    {% if form_data.res_mention == 'Assez Bien' %}selected{% endif %}>Assez Bien (≥ 12)</option>
+                <option value="Passable"      {% if form_data.res_mention == 'Passable' %}selected{% endif %}>Passable (≥ 10)</option>
+                <option value="Insuffisant"   {% if form_data.res_mention == 'Insuffisant' %}selected{% endif %}>Insuffisant (< 10)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-text-muted uppercase tracking-wider mb-1">Plus forte moyenne</label>
+              <input type="text" name="res_plus_forte"
+                value="{{ form_data.res_plus_forte|default:'' }}"
+                class="w-full px-3 py-2 rounded-lg bg-bg-tertiary/50 border border-border-standard text-sm text-white focus:outline-none focus:border-primary/60 transition"
+                placeholder="Ex: 17,25">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-text-muted uppercase tracking-wider mb-1">Plus faible moyenne</label>
+              <input type="text" name="res_plus_faible"
+                value="{{ form_data.res_plus_faible|default:'' }}"
+                class="w-full px-3 py-2 rounded-lg bg-bg-tertiary/50 border border-border-standard text-sm text-white focus:outline-none focus:border-primary/60 transition"
+                placeholder="Ex: 8,10">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-text-muted uppercase tracking-wider mb-1">Moyenne de la classe</label>
+              <input type="text" name="res_moy_classe"
+                value="{{ form_data.res_moy_classe|default:'' }}"
+                class="w-full px-3 py-2 rounded-lg bg-bg-tertiary/50 border border-border-standard text-sm text-white focus:outline-none focus:border-primary/60 transition"
+                placeholder="Ex: 11,80">
+            </div>
+          </div>
+        </div>
+
+        <!-- ─── BLOC 6 : Absences & Retards ─── -->
+        <div class="glass rounded-2xl border border-border-standard overflow-hidden">
+          <div class="px-5 py-3 border-b border-border-standard bg-bg-tertiary/40 flex items-center gap-2">
+            <i class="fa-solid fa-calendar-xmark text-orange-400"></i>
+            <span class="font-bold text-sm uppercase tracking-wider">Absences & Retards</span>
+          </div>
+          <div class="p-5 grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-text-muted uppercase tracking-wider mb-1">Abs. justifiées (j.)</label>
+              <input type="number" name="abs_justifiees" min="0"
+                value="{{ form_data.abs_justifiees|default:'0' }}"
+                class="w-full px-3 py-2 rounded-lg bg-bg-tertiary/50 border border-border-standard text-sm text-white focus:outline-none focus:border-primary/60 transition">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-text-muted uppercase tracking-wider mb-1">Abs. injustifiées (j.)</label>
+              <input type="number" name="abs_injustifiees" min="0"
+                value="{{ form_data.abs_injustifiees|default:'0' }}"
+                class="w-full px-3 py-2 rounded-lg bg-bg-tertiary/50 border border-border-standard text-sm text-white focus:outline-none focus:border-primary/60 transition">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-text-muted uppercase tracking-wider mb-1">Total heures absences</label>
+              <input type="number" name="abs_heures" min="0"
+                value="{{ form_data.abs_heures|default:'0' }}"
+                class="w-full px-3 py-2 rounded-lg bg-bg-tertiary/50 border border-border-standard text-sm text-white focus:outline-none focus:border-primary/60 transition">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-text-muted uppercase tracking-wider mb-1">Retards</label>
+              <input type="number" name="abs_retards" min="0"
+                value="{{ form_data.abs_retards|default:'0' }}"
+                class="w-full px-3 py-2 rounded-lg bg-bg-tertiary/50 border border-border-standard text-sm text-white focus:outline-none focus:border-primary/60 transition">
+            </div>
+          </div>
+        </div>
+
+        <!-- ─── BLOC 7 : Comportement ─── -->
+        <div class="glass rounded-2xl border border-border-standard overflow-hidden">
+          <div class="px-5 py-3 border-b border-border-standard bg-bg-tertiary/40 flex items-center gap-2">
+            <i class="fa-solid fa-star text-yellow-400"></i>
+            <span class="font-bold text-sm uppercase tracking-wider">Comportement</span>
+          </div>
+          <div class="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+            {% for crit in comportement_criteres %}
+            <div>
+              <label class="block text-xs font-bold text-text-muted uppercase tracking-wider mb-1">{{ crit.label }}</label>
+              <div class="flex gap-2">
+                {% for val in "Excellent,Passable,Moyen,Mauvais"|split:"," %}
+                <label class="flex-1 cursor-pointer">
+                  <input type="radio" name="comport_{{ crit.key }}" value="{{ val }}"
+                    {% if form_data|get:crit.key == val or not form_data|get:crit.key and val == "Moyen" %}checked{% endif %}
+                    class="sr-only peer">
+                  <div class="text-center px-1 py-1.5 rounded-lg border border-border-standard text-[10px] font-bold
+                    transition peer-checked:border-primary/60 peer-checked:bg-primary/20 peer-checked:text-primary
+                    hover:border-primary/40 text-text-muted">
+                    {{ val }}
+                  </div>
+                </label>
+                {% endfor %}
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- ─── BLOC 8 : Avis du conseil ─── -->
+        <div class="glass rounded-2xl border border-border-standard overflow-hidden">
+          <div class="px-5 py-3 border-b border-border-standard bg-bg-tertiary/40 flex items-center gap-2">
+            <i class="fa-solid fa-users text-blue-400"></i>
+            <span class="font-bold text-sm uppercase tracking-wider">Avis du Conseil des Professeurs</span>
+          </div>
+          <div class="p-5 grid grid-cols-2 md:grid-cols-3 gap-3">
+            {% for avis_item in avis_options %}
+            <label class="flex items-center gap-3 cursor-pointer p-3 rounded-xl border border-border-standard hover:border-primary/40 transition group">
+              <input type="checkbox" name="avis_{{ avis_item.key }}"
+                {% if form_data|get:avis_item.key %}checked{% endif %}
+                class="w-4 h-4 rounded accent-primary">
+              <span class="text-sm font-medium text-text-muted group-hover:text-white transition">{{ avis_item.label }}</span>
+            </label>
+            {% endfor %}
+          </div>
+          <div class="px-5 pb-5">
+            <label class="block text-xs font-bold text-text-muted uppercase tracking-wider mb-1">Observation du conseil</label>
+            <textarea name="observation" rows="2"
+              class="w-full px-3 py-2 rounded-lg bg-bg-tertiary/50 border border-border-standard text-sm text-white focus:outline-none focus:border-primary/60 transition resize-none"
+              placeholder="Ex: Élève sérieux et appliqué. Doit améliorer ses résultats en anglais.">{{ form_data.observation|default:'' }}</textarea>
+          </div>
+        </div>
+
+        <!-- ─── BLOC 9 : Décision du conseil ─── -->
+        <div class="glass rounded-2xl border border-border-standard overflow-hidden">
+          <div class="px-5 py-3 border-b border-border-standard bg-bg-tertiary/40 flex items-center gap-2">
+            <i class="fa-solid fa-gavel text-red-400"></i>
+            <span class="font-bold text-sm uppercase tracking-wider">Décision du Conseil</span>
+          </div>
+          <div class="p-5">
+            <div class="grid grid-cols-3 gap-3 mb-4">
+              {% for dec in decisions %}
+              <label class="cursor-pointer">
+                <input type="radio" name="decision" value="{{ dec.val }}"
+                  {% if form_data.decision == dec.val or not form_data.decision and dec.val == 'passe' %}checked{% endif %}
+                  class="sr-only peer">
+                <div class="text-center p-3 rounded-xl border-2 border-border-standard font-bold text-sm
+                  transition peer-checked:border-{{ dec.color }}/60 peer-checked:bg-{{ dec.color }}/10 peer-checked:text-{{ dec.color }}
+                  hover:border-primary/40 text-text-muted">
+                  <i class="fa-solid {{ dec.icon }} mb-1 text-lg block"></i>
+                  {{ dec.label }}
+                </div>
+              </label>
+              {% endfor %}
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-bold text-text-muted uppercase tracking-wider mb-1">Fait à</label>
+                <input type="text" name="fait_a"
+                  value="{{ form_data.fait_a|default:'Cotonou' }}"
+                  class="w-full px-3 py-2 rounded-lg bg-bg-tertiary/50 border border-border-standard text-sm text-white focus:outline-none focus:border-primary/60 transition"
+                  placeholder="Cotonou">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-text-muted uppercase tracking-wider mb-1">Le (date)</label>
+                <input type="text" name="fait_le"
+                  value="{{ form_data.fait_le|default:'' }}"
+                  class="w-full px-3 py-2 rounded-lg bg-bg-tertiary/50 border border-border-standard text-sm text-white focus:outline-none focus:border-primary/60 transition"
+                  placeholder="Ex: 30/06/2026">
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- fin col gauche -->
+
+      <!-- =====================================================
+           COLONNE DROITE (1/3) : Récapitulatif + Actions
+           ===================================================== -->
+      <div class="xl:col-span-1 space-y-5">
+
+        <!-- Actions sticky -->
+        <div class="glass rounded-2xl border border-border-standard p-5 sticky top-4 space-y-3">
+          <h3 class="font-black text-sm uppercase tracking-wider text-text-muted">Actions</h3>
+
+          <button type="submit" name="action" value="save"
+            class="w-full px-4 py-3 rounded-xl bg-button-gradient text-white font-bold text-sm shadow-lg shadow-primary/20 hover:opacity-90 transition flex items-center justify-center gap-2">
+            <i class="fa-solid fa-floppy-disk"></i>
+            {% if bulletin %}Enregistrer les modifications{% else %}Créer le bulletin{% endif %}
+          </button>
+
+          {% if bulletin %}
+          <a href="{% url 'bulletins:scolaire_html' bulletin.id %}" target="_blank"
+            class="w-full px-4 py-3 rounded-xl glass border border-border-standard text-white font-bold text-sm hover:bg-bg-tertiary/50 transition flex items-center justify-center gap-2">
+            <i class="fa-solid fa-eye text-blue-400"></i> Aperçu HTML
+          </a>
+          <a href="{% url 'bulletins:scolaire_pdf' bulletin.id %}" target="_blank"
+            class="w-full px-4 py-3 rounded-xl glass border border-border-standard text-white font-bold text-sm hover:bg-bg-tertiary/50 transition flex items-center justify-center gap-2">
+            <i class="fa-solid fa-file-pdf text-red-400"></i> Télécharger PDF
+          </a>
+          {% endif %}
+
+          <!-- Récapitulatif live -->
+          <div class="mt-4 pt-4 border-t border-border-standard space-y-2">
+            <h4 class="text-xs font-black uppercase tracking-wider text-text-muted">Récapitulatif</h4>
+            <div class="flex justify-between text-xs">
+              <span class="text-text-muted">Matières</span>
+              <span class="font-bold text-white" id="recap-matieres">—</span>
+            </div>
+            <div class="flex justify-between text-xs">
+              <span class="text-text-muted">Total coef.</span>
+              <span class="font-bold text-white" id="recap-coef">—</span>
+            </div>
+            <div class="flex justify-between text-sm">
+              <span class="text-text-muted font-medium">Moyenne trim.</span>
+              <span class="font-black text-primary text-base" id="recap-moy">—</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Raccourcis matières Bénin -->
+        <div class="glass rounded-2xl border border-border-standard overflow-hidden">
+          <div class="px-4 py-3 border-b border-border-standard bg-bg-tertiary/40">
+            <span class="font-bold text-xs uppercase tracking-wider text-text-muted">Grilles officielles Bénin</span>
+          </div>
+          <div class="p-4 space-y-2">
+            <p class="text-xs text-text-muted mb-2">Charger automatiquement les matières et coefficients :</p>
+            <button type="button" onclick="chargerGrille('bepc')"
+              class="w-full px-3 py-2 rounded-lg glass border border-border-standard text-xs font-bold hover:bg-bg-tertiary/50 transition text-left flex items-center justify-between">
+              <span>BEPC (6ème → 3ème)</span>
+              <i class="fa-solid fa-download text-primary"></i>
+            </button>
+            <button type="button" onclick="chargerGrille('D')"
+              class="w-full px-3 py-2 rounded-lg glass border border-border-standard text-xs font-bold hover:bg-bg-tertiary/50 transition text-left flex items-center justify-between">
+              <span>BAC Série D (Sciences)</span>
+              <i class="fa-solid fa-download text-primary"></i>
+            </button>
+            <button type="button" onclick="chargerGrille('A2')"
+              class="w-full px-3 py-2 rounded-lg glass border border-border-standard text-xs font-bold hover:bg-bg-tertiary/50 transition text-left flex items-center justify-between">
+              <span>BAC Série A2 (Lettres)</span>
+              <i class="fa-solid fa-download text-primary"></i>
+            </button>
+            <button type="button" onclick="chargerGrille('C')"
+              class="w-full px-3 py-2 rounded-lg glass border border-border-standard text-xs font-bold hover:bg-bg-tertiary/50 transition text-left flex items-center justify-between">
+              <span>BAC Série C (Maths)</span>
+              <i class="fa-solid fa-download text-primary"></i>
+            </button>
+          </div>
+        </div>
+
+      </div><!-- fin col droite -->
+    </div><!-- fin grid -->
+  </form>
+</div>
+
+<!-- ===== JAVASCRIPT ===== -->
+<script>
+// ─── Grilles officielles des matières Bénin ───
+const GRILLES = {
+  bepc: [
+    {nom:"Français",coef:4},{nom:"Mathématiques",coef:4},{nom:"Anglais",coef:2},
+    {nom:"Histoire-Géographie",coef:2},{nom:"SVT",coef:2},{nom:"PCT",coef:2},
+    {nom:"EPS",coef:1},{nom:"Langue Vivante 2",coef:1}
+  ],
+  D: [
+    {nom:"Mathématiques",coef:7},{nom:"SVT",coef:6},{nom:"Physique-Chimie",coef:5},
+    {nom:"Français",coef:3},{nom:"Philosophie",coef:2},{nom:"Histoire-Géographie",coef:2},
+    {nom:"Anglais",coef:2},{nom:"EPS",coef:1},{nom:"Langue Nationale",coef:1}
+  ],
+  A2: [
+    {nom:"Français",coef:5},{nom:"Philosophie",coef:4},{nom:"Histoire-Géographie",coef:5},
+    {nom:"Anglais",coef:3},{nom:"Espagnol/Allemand",coef:2},{nom:"Mathématiques",coef:2},
+    {nom:"SVT",coef:1},{nom:"EPS",coef:1},{nom:"Langue Nationale",coef:1}
+  ],
+  C: [
+    {nom:"Mathématiques",coef:8},{nom:"Physique-Chimie",coef:7},{nom:"SVT",coef:3},
+    {nom:"Français",coef:3},{nom:"Philosophie",coef:2},{nom:"Histoire-Géographie",coef:2},
+    {nom:"Anglais",coef:2},{nom:"EPS",coef:1},{nom:"Langue Nationale",coef:1}
+  ]
+};
+
+let nbLignes = parseInt(document.getElementById('nb-matieres').value) || 0;
+
+function creerLigne(idx, nom, coef) {
+  return `<tr class="ligne-note hover:bg-bg-tertiary/20 transition" data-idx="${idx}">
+    <td class="p-1 border border-border-standard/30"><input type="text" name="mat_nom_${idx}" value="${nom||''}" class="w-full bg-transparent text-white text-xs px-1 py-1 focus:outline-none focus:bg-bg-tertiary/40 rounded" placeholder="Nom de la matière"></td>
+    <td class="p-1 border border-border-standard/30"><input type="number" name="mat_coef_${idx}" value="${coef||''}" min="1" max="9" step="0.5" class="w-full bg-transparent text-white text-xs text-center px-1 py-1 focus:outline-none focus:bg-bg-tertiary/40 rounded note-input" placeholder="1" onchange="calculerTotaux()"></td>
+    <td class="p-1 border border-border-standard/30"><input type="number" name="mat_interro_${idx}" min="0" max="20" step="0.25" class="w-full bg-transparent text-white text-xs text-center px-1 py-1 focus:outline-none focus:bg-bg-tertiary/40 rounded note-input" placeholder="—" onchange="calculerMoyenneLigne(${idx})"></td>
+    <td class="p-1 border border-border-standard/30"><input type="number" name="mat_dev1_${idx}" min="0" max="20" step="0.25" class="w-full bg-transparent text-white text-xs text-center px-1 py-1 focus:outline-none focus:bg-bg-tertiary/40 rounded note-input" placeholder="—" onchange="calculerMoyenneLigne(${idx})"></td>
+    <td class="p-1 border border-border-standard/30"><input type="number" name="mat_dev2_${idx}" min="0" max="20" step="0.25" class="w-full bg-transparent text-white text-xs text-center px-1 py-1 focus:outline-none focus:bg-bg-tertiary/40 rounded note-input" placeholder="—" onchange="calculerMoyenneLigne(${idx})"></td>
+    <td class="p-1 border border-border-standard/30"><input type="number" name="mat_dev3_${idx}" min="0" max="20" step="0.25" class="w-full bg-transparent text-white text-xs text-center px-1 py-1 focus:outline-none focus:bg-bg-tertiary/40 rounded note-input" placeholder="—" onchange="calculerMoyenneLigne(${idx})"></td>
+    <td class="p-1 border border-border-standard/30 bg-primary/5"><input type="number" name="mat_moy_${idx}" min="0" max="20" step="0.01" class="w-full bg-transparent text-primary text-xs text-center font-bold px-1 py-1 focus:outline-none rounded" placeholder="—" readonly></td>
+    <td class="p-1 border border-border-standard/30"><input type="number" name="mat_moy_coef_${idx}" min="0" step="0.01" class="w-full bg-transparent text-white text-xs text-center px-1 py-1 focus:outline-none rounded" placeholder="—" readonly></td>
+    <td class="p-1 border border-border-standard/30"><input type="number" name="mat_rang_${idx}" min="1" class="w-full bg-transparent text-white text-xs text-center px-1 py-1 focus:outline-none focus:bg-bg-tertiary/40 rounded" placeholder="—"></td>
+    <td class="p-1 border border-border-standard/30"><input type="text" name="mat_app_${idx}" class="w-full bg-transparent text-text-muted text-xs px-1 py-1 focus:outline-none focus:bg-bg-tertiary/40 rounded" placeholder="Bien, TB..."></td>
+    <td class="p-1 border border-border-standard/30 text-center"><button type="button" onclick="supprimerLigne(this)" class="text-red-400/60 hover:text-red-400 transition p-0.5 rounded"><i class="fa-solid fa-trash text-[10px]"></i></button></td>
+  </tr>`;
+}
+
+function ajouterLigne() {
+  const tbody = document.getElementById('tbody-notes');
+  tbody.insertAdjacentHTML('beforeend', creerLigne(nbLignes));
+  nbLignes++;
+  document.getElementById('nb-matieres').value = nbLignes;
+  calculerTotaux();
+}
+
+function supprimerLigne(btn) {
+  btn.closest('tr').remove();
+  calculerTotaux();
+}
+
+function calculerMoyenneLigne(idx) {
+  const vals = ['interro','dev1','dev2','dev3'].map(f => {
+    const el = document.querySelector(`[name="mat_${f}_${idx}"]`);
+    const v = el ? parseFloat(el.value) : NaN;
+    return isNaN(v) ? null : v;
+  }).filter(v => v !== null);
+  const coefEl = document.querySelector(`[name="mat_coef_${idx}"]`);
+  const coef = coefEl ? parseFloat(coefEl.value) || 1 : 1;
+  const moyEl = document.querySelector(`[name="mat_moy_${idx}"]`);
+  const moyCoefEl = document.querySelector(`[name="mat_moy_coef_${idx}"]`);
+  if (vals.length > 0) {
+    const moy = Math.round((vals.reduce((a,b)=>a+b,0)/vals.length)*100)/100;
+    if (moyEl) moyEl.value = moy;
+    if (moyCoefEl) moyCoefEl.value = Math.round(moy*coef*100)/100;
+  }
+  calculerTotaux();
+}
+
+function calculerTotaux() {
+  let totalCoef = 0, totalMoyCoef = 0, nb = 0;
+  document.querySelectorAll('#tbody-notes tr').forEach(tr => {
+    const idx = tr.dataset.idx;
+    if (idx === undefined) return;
+    const coef = parseFloat(tr.querySelector(`[name="mat_coef_${idx}"]`)?.value) || 0;
+    const moyCoef = parseFloat(tr.querySelector(`[name="mat_moy_coef_${idx}"]`)?.value) || 0;
+    if (coef > 0) { totalCoef += coef; nb++; }
+    totalMoyCoef += moyCoef;
+  });
+  const moy = totalCoef > 0 ? Math.round(totalMoyCoef/totalCoef*100)/100 : null;
+  document.getElementById('total-coef').textContent    = totalCoef || '—';
+  document.getElementById('total-moy-coef').textContent= Math.round(totalMoyCoef*100)/100 || '—';
+  document.getElementById('moy-trim').textContent      = moy !== null ? moy : '—';
+  document.getElementById('recap-matieres').textContent= nb;
+  document.getElementById('recap-coef').textContent    = totalCoef || '—';
+  document.getElementById('recap-moy').textContent     = moy !== null ? moy+'/20' : '—';
+  if (moy !== null) {
+    const moyEl = document.getElementById('res-moyenne');
+    if (moyEl && !moyEl.value) moyEl.value = String(moy).replace('.',',');
+    // Mention automatique
+    const mentionSel = document.querySelector('[name="res_mention"]');
+    if (mentionSel && !mentionSel.value) {
+      if (moy>=18) mentionSel.value='Excellent';
+      else if (moy>=16) mentionSel.value='Très Bien';
+      else if (moy>=14) mentionSel.value='Bien';
+      else if (moy>=12) mentionSel.value='Assez Bien';
+      else if (moy>=10) mentionSel.value='Passable';
+      else mentionSel.value='Insuffisant';
+    }
+  }
+}
+
+function calculerMoyenne(el) {
+  const tr = el.closest('tr');
+  const idx = tr.dataset.idx;
+  if (idx !== undefined) calculerMoyenneLigne(idx);
+}
+
+function chargerGrille(serie) {
+  const matieres = GRILLES[serie];
+  if (!matieres) return;
+  const tbody = document.getElementById('tbody-notes');
+  tbody.innerHTML = '';
+  nbLignes = 0;
+  matieres.forEach(m => {
+    tbody.insertAdjacentHTML('beforeend', creerLigne(nbLignes, m.nom, m.coef));
+    nbLignes++;
+  });
+  document.getElementById('nb-matieres').value = nbLignes;
+  calculerTotaux();
+}
+
+// Init au chargement
+document.addEventListener('DOMContentLoaded', () => {
+  // Re-indexer les lignes existantes
+  document.querySelectorAll('#tbody-notes tr').forEach((tr, i) => {
+    tr.dataset.idx = i;
+  });
+  nbLignes = document.querySelectorAll('#tbody-notes tr').length;
+  document.getElementById('nb-matieres').value = nbLignes;
+  if (nbLignes === 0) {
+    // Bulletin vide : charger grille BEPC par défaut
+    chargerGrille('bepc');
+  } else {
+    calculerTotaux();
+  }
+});
+</script>
+{% endblock %}

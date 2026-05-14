@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Gestion des Utilisateurs - Administration{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-bg-primary p-6">
+  <div class="max-w-7xl mx-auto">
+
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-8">
+      <div>
+        <h1 class="text-3xl font-bold text-white mb-2">
+          <i class="fa-solid fa-users-gear mr-3 text-primary"></i>
+          Gestion des Utilisateurs
+        </h1>
+        <p class="text-text-muted">Administration de tous les comptes utilisateurs</p>
+      </div>
+      <a href="{% url 'admin_user_create' %}"
+         class="bg-primary hover:bg-primary/80 text-white px-6 py-3 rounded-xl font-semibold flex items-center gap-2 transition-colors">
+        <i class="fa-solid fa-user-plus"></i>
+        Nouvel Utilisateur
+      </a>
+    </div>
+
+    <!-- Messages -->
+    {% if messages %}
+    <div class="mb-6 space-y-2">
+      {% for message in messages %}
+      <div class="px-5 py-3 rounded-xl text-sm font-medium
+        {% if message.tags == 'success' %}bg-success/10 border border-success/30 text-success
+        {% elif message.tags == 'error' %}bg-danger/10 border border-danger/30 text-red-400
+        {% else %}bg-info/10 border border-info/30 text-info{% endif %}">
+        {{ message }}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Filtres -->
+    <div class="bg-bg-secondary rounded-xl p-6 mb-8 border border-border-standard">
+      <form method="get" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-text-muted mb-2">Rechercher</label>
+          <input type="text"
+                 name="search"
+                 value="{{ search_filter }}"
+                 placeholder="Nom, prénom, email..."
+                 class="w-full px-4 py-2 bg-bg-tertiary text-white rounded-lg focus:ring-2 focus:ring-primary focus:outline-none border border-border-standard">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-text-muted mb-2">Rôle</label>
+          <select name="role"
+                  class="w-full px-4 py-2 bg-bg-tertiary text-white rounded-lg focus:ring-2 focus:ring-primary focus:outline-none border border-border-standard">
+            <option value="">Tous les rôles</option>
+            {% for role_val, role_label in roles %}
+            <option value="{{ role_val }}" {% if role_filter == role_val %}selected{% endif %}>{{ role_label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="flex items-end gap-2">
+          <button type="submit"
+                  class="flex-1 bg-primary hover:bg-primary/80 text-white px-6 py-2 rounded-lg font-medium transition-colors">
+            <i class="fa-solid fa-search mr-2"></i>Filtrer
+          </button>
+          {% if role_filter or search_filter %}
+          <a href="{% url 'admin_user_list' %}"
+             class="px-4 py-2 bg-bg-tertiary hover:bg-bg-tertiary/80 text-text-muted rounded-lg transition-colors">
+            <i class="fa-solid fa-xmark"></i>
+          </a>
+          {% endif %}
+        </div>
+      </form>
+    </div>
+
+    <!-- Onglets rôles rapides -->
+    <div class="flex flex-wrap gap-2 mb-6">
+      <a href="{% url 'admin_user_list' %}"
+         class="px-4 py-2 rounded-xl text-xs font-semibold transition-colors
+           {% if not role_filter %}bg-primary text-white{% else %}bg-bg-secondary border border-border-standard text-text-muted hover:text-white{% endif %}">
+        Tous
+      </a>
+      {% for role_val, role_label in roles %}
+      <a href="?role={{ role_val }}{% if search_filter %}&search={{ search_filter }}{% endif %}"
+         class="px-4 py-2 rounded-xl text-xs font-semibold transition-colors
+           {% if role_filter == role_val %}bg-primary text-white
+           {% else %}bg-bg-secondary border border-border-standard text-text-muted hover:text-white{% endif %}">
+        {{ role_label }}
+      </a>
+      {% endfor %}
+    </div>
+
+    <!-- Table -->
+    <div class="bg-bg-secondary rounded-xl overflow-hidden border border-border-standard">
+      <div class="px-6 py-4 border-b border-border-standard flex items-center justify-between">
+        <span class="text-sm font-semibold text-text-muted">{{ users.count }} utilisateur(s)</span>
+        <a href="{% url 'admin_eleve_list' %}" class="text-xs text-primary hover:underline">
+          Gestion élèves (vue dédiée) &rarr;
+        </a>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full">
+          <thead class="bg-bg-tertiary/50">
+            <tr>
+              <th class="px-6 py-4 text-left text-xs font-black uppercase tracking-wider text-text-muted">Utilisateur</th>
+              <th class="px-6 py-4 text-left text-xs font-black uppercase tracking-wider text-text-muted">Rôle</th>
+              <th class="px-6 py-4 text-left text-xs font-black uppercase tracking-wider text-text-muted">Contact</th>
+              <th class="px-6 py-4 text-left text-xs font-black uppercase tracking-wider text-text-muted">Classe / Niveau</th>
+              <th class="px-6 py-4 text-left text-xs font-black uppercase tracking-wider text-text-muted">Inscription</th>
+              <th class="px-6 py-4 text-center text-xs font-black uppercase tracking-wider text-text-muted">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-border-standard">
+            {% for u in users %}
+            <tr class="hover:bg-bg-tertiary/30 transition-colors">
+              <td class="px-6 py-4">
+                <div class="flex items-center gap-3">
+                  {% if u.avatar %}
+                  <img src="{{ u.avatar.url }}" alt="{{ u.full_name }}"
+                       class="w-10 h-10 rounded-xl object-cover flex-shrink-0">
+                  {% else %}
+                  <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/40 to-accent/20 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                    {{ u.first_name|slice:":1" }}{{ u.last_name|slice:":1" }}
+                  </div>
+                  {% endif %}
+                  <div>
+                    <p class="font-semibold text-sm text-white">{{ u.full_name }}</p>
+                    <p class="text-xs text-text-muted">{{ u.email }}</p>
+                  </div>
+                </div>
+              </td>
+              <td class="px-6 py-4">
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border
+                  {% if u.role == 'admin' %}bg-red-500/10 text-red-400 border-red-500/20
+                  {% elif u.role == 'professeur' %}bg-accent/10 text-accent border-accent/20
+                  {% elif u.role == 'conseiller' %}bg-info/10 text-info border-info/20
+                  {% else %}bg-primary/10 text-primary border-primary/20{% endif %}">
+                  {{ u.get_role_display }}
+                </span>
+              </td>
+              <td class="px-6 py-4">
+                <p class="text-sm text-text-muted">{{ u.email }}</p>
+                {% if u.phone %}<p class="text-xs text-text-muted mt-0.5">{{ u.phone }}</p>{% endif %}
+              </td>
+              <td class="px-6 py-4">
+                {% if u.classe %}
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-bg-tertiary/50 text-text-muted border border-border-standard">
+                  {{ u.classe }}
+                </span>
+                {% endif %}
+                <p class="text-xs text-text-muted mt-1">{{ u.get_niveau_display }}</p>
+              </td>
+              <td class="px-6 py-4">
+                <span class="text-sm text-text-muted">{{ u.date_joined|date:"d/m/Y" }}</span>
+              </td>
+              <td class="px-6 py-4">
+                <div class="flex items-center justify-center gap-3">
+                  <a href="{% url 'admin_user_edit' u.id %}"
+                     class="text-warning hover:text-warning/80 transition-colors"
+                     title="Modifier">
+                    <i class="fa-solid fa-edit"></i>
+                  </a>
+                  {% if u.id != user.id %}
+                  <a href="{% url 'admin_user_delete' u.id %}"
+                     class="text-red-400 hover:text-red-300 transition-colors"
+                     title="Supprimer">
+                    <i class="fa-solid fa-trash"></i>
+                  </a>
+                  {% else %}
+                  <span class="text-text-muted opacity-40" title="Vous ne pouvez pas vous supprimer">
+                    <i class="fa-solid fa-trash"></i>
+                  </span>
+                  {% endif %}
+                </div>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="6" class="px-6 py-12 text-center">
+                <div class="text-text-muted">
+                  <i class="fa-solid fa-users-slash text-4xl mb-4 opacity-40"></i>
+                  <p class="text-lg">Aucun utilisateur trouvé</p>
+                  <p class="text-sm mt-2">
+                    {% if role_filter or search_filter %}Essayez de modifier les filtres ou
+                    {% endif %}
+                    <a href="{% url 'admin_user_create' %}" class="text-primary hover:underline">créez un utilisateur</a>.
+                  </p>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
