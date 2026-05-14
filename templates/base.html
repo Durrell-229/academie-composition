@@ -7,16 +7,10 @@
     <title>{% block title %}Académie Numérique{% endblock %}</title>
     <meta name="description" content="Plateforme d'évaluation et de composition intelligente pour les grandes écoles">
 
-    <!-- Favicon & PWA -->
+    <!-- Favicon -->
     <link rel="icon" type="image/png" href="{% static 'img/logo.png' %}">
     <link rel="shortcut icon" type="image/png" href="{% static 'img/logo.png' %}">
     <link rel="apple-touch-icon" href="{% static 'img/logo.png' %}">
-    <link rel="manifest" href="{% static 'manifest.json' %}">
-    <meta name="theme-color" content="#4F46E5">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="AcadNum">
 
     <!-- Tailwind CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -626,15 +620,5 @@
     {% block extra_js %}{% endblock %}
 
 <script src="{% static "js/qcm-dropdowns.js" %}"></script>
-
-<script>
-  // Enregistrement du Service Worker (PWA)
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('{% static "js/service_worker.js" %}', { scope: '/' })
-        .catch(() => {});  // silencieux si hors HTTPS en dev
-    });
-  }
-</script>
 </body>
 </html>
