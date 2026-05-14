@@ -60,7 +60,8 @@ def login_view(request):
             cache.set(cache_key, attempts + 1, _LOGIN_LOCKOUT_SECONDS)
             messages.error(request, "Email ou mot de passe incorrect.")
 
-    return render(request, 'accounts/login.html', {'is_auth_page': True})
+    google_configured = bool(getattr(settings, 'GOOGLE_CLIENT_ID', ''))
+    return render(request, 'accounts/login.html', {'is_auth_page': True, 'google_configured': google_configured})
 
 
 @login_required

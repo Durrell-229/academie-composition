@@ -23,7 +23,8 @@
         </div>
         {% endif %}
 
-        <!-- Google OAuth Button -->
+        <!-- Google OAuth Button (masqué si non configuré) -->
+        {% if google_configured %}
         <a href="{% url 'google_login' %}" class="w-full flex items-center justify-center gap-3 px-6 py-4 rounded-2xl bg-white text-gray-900 font-bold text-sm border-2 border-gray-200 hover:bg-gray-50 hover:border-gray-300 hover:shadow-lg active:scale-[0.98] transition-all shadow-md">
             <svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
@@ -39,6 +40,7 @@
             <span class="text-xs font-bold uppercase tracking-widest" style="color: #94A3B8;">ou</span>
             <div class="flex-1 h-px bg-border-standard"></div>
         </div>
+        {% endif %}
 
         <form method="POST" class="space-y-6">
             {% csrf_token %}
