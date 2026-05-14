@@ -2,6 +2,7 @@ import logging
 import uuid
 from typing import List, Optional
 from ninja import Router, Schema
+from ninja.errors import HttpError
 from django.shortcuts import get_object_or_404
 from bulletins.models import Bulletin, BulletinLigne
 
@@ -29,14 +30,12 @@ class BulletinOut(Schema):
 @router.get("/{eleve_id}", response=List[BulletinOut])
 def list_eleve_bulletins(request, eleve_id: uuid.UUID):
     user = request.user
-    # Élève ne peut accéder qu'à ses propres bulletins
-    if user.role == 'eleve' and str(user.id) != str(eleve_id):
-        return []
-    # Parent ne peut accéder qu'aux bulletins de ses enfants
+    if user.role == 'eleve' and user.id != eleve_id:
+        raise HttpError(403, "Accès refusé")
     if user.role == 'parent':
         enfants_ids = list(user.enfants.values_list('eleve_id', flat=True))
         if eleve_id not in enfants_ids:
-            return []
+            raise HttpError(403, "Accès refusé")
     return Bulletin.objects.filter(eleve_id=eleve_id).order_by('-created_at')
 
 
@@ -47,7 +46,7 @@ def generate_bulletin(request, eleve_id: uuid.UUID, periode: str):
 
     # Seuls admin et conseiller peuvent générer un bulletin
     if request.user.role not in ('admin', 'conseiller'):
-        return {"error": "Permission refusée"}, 403
+        raise HttpError(403, "Permission refusée")
 
     eleve = get_object_or_404(User, id=eleve_id)
 
@@ -66,4 +65,4 @@ def generate_bulletin(request, eleve_id: uuid.UUID, periode: str):
         return {"success": True, "bulletin_id": str(bulletin.id)}
     except Exception as e:
         logger.error(f"generate_bulletin eleve={eleve_id} periode={periode}: {e}", exc_info=True)
-        return {"error": "Erreur lors de la génération du bulletin"}, 500
+        raise HttpError(500, "Erreur lors de la génération du bulletin")

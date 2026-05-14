@@ -1,5 +1,6 @@
 from ninja import Router, Schema, File, Form
 from ninja.files import UploadedFile
+from ninja.pagination import paginate, PageNumberPagination
 from exams.models import Exam, ExamFile
 from core.models import Matiere, Classe
 from django.shortcuts import get_object_or_404
@@ -17,18 +18,15 @@ class ExamOut(Schema):
     statut: str
 
 @router.get("/", response=List[ExamOut])
+@paginate(PageNumberPagination, page_size=25)
 def list_exams(request):
     user = request.user
-    # Élève : seulement les examens de sa classe
+    base_qs = Exam.objects.select_related('matiere', 'createur')
     if user.role == 'eleve':
-        return Exam.objects.filter(
-            assignments__eleve=user, statut='publie'
-        ).distinct()
-    # Professeur : seulement ses propres examens
+        return base_qs.filter(assignments__eleve=user, statut='publie').distinct()
     if user.role == 'professeur':
-        return Exam.objects.filter(createur=user)
-    # Admin / Conseiller : tous les examens
-    return Exam.objects.all()
+        return base_qs.filter(createur=user)
+    return base_qs.all()
 
 @router.post("/create-with-files")
 def create_exam_with_files(

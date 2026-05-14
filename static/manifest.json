@@ -1,0 +1,45 @@
+{
+  "name": "Académie Numérique",
+  "short_name": "AcadNum",
+  "description": "Plateforme d'évaluation et de composition intelligente",
+  "start_url": "/accueil/",
+  "display": "standalone",
+  "background_color": "#0F172A",
+  "theme_color": "#4F46E5",
+  "orientation": "any",
+  "lang": "fr",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/static/img/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/img/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "categories": ["education"],
+  "shortcuts": [
+    {
+      "name": "Mes compositions",
+      "url": "/compositions/",
+      "description": "Accéder à mes compositions"
+    },
+    {
+      "name": "Mes bulletins",
+      "url": "/bulletins/",
+      "description": "Consulter mes bulletins"
+    },
+    {
+      "name": "Abonnements",
+      "url": "/payments/abonnements/",
+      "description": "Gérer mon abonnement"
+    }
+  ]
+}

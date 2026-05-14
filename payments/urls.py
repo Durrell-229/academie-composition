@@ -8,10 +8,10 @@ from . import views
 app_name = 'payments'
 
 urlpatterns = [
-    # URLs de base (frais scolaires, paiements traditionnels)
-    path('', views.paiement_list, name='paiement_list'),
-    
-    # URLs d'abonnement (système FedaPay)
+    # Page d'accueil paiements (redirige vers abonnements)
+    path('dashboard/', views.paiement_list, name='paiement_list'),
+
+    # URLs d'abonnement FedaPay (abonnements/, souscrire/, webhook/, etc.)
     path('', include('payments.urls_abonnement')),
 ]
 

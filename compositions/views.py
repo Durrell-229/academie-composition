@@ -95,6 +95,7 @@ def composition_room_view(request, exam_id):
 @login_required
 def submit_paper_view(request, session_id):
     session = get_object_or_404(CompositionSession, id=session_id, eleve=request.user)
+    exam = session.exam
     
     if session.statut in ['soumis', 'corrige', 'exclu']:
         from django.contrib import messages
@@ -141,8 +142,11 @@ def submit_paper_view(request, session_id):
         thread = threading.Thread(target=_run_correction_async, args=(str(session.id),), daemon=True)
         thread.start()
 
-        messages.success(request, "Votre composition a été soumise avec succès. La correction IA est en cours.")
-        return redirect('result_detail', session_id=session.id)
+        # Show confirmation page with bulletin access
+        return render(request, 'bulletins/confirmation_devoir.html', {
+            'exam_title': exam.titre,
+            'session': session,
+        })
 
     return render(request, 'compositions/submit_paper.html', {'session': session})
 

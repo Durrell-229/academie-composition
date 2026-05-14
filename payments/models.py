@@ -6,7 +6,7 @@ Adapté au contexte béninois (Francs CFA - XOF)
 import uuid
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-from accounts.models import User
+from django.conf import settings
 from schools.models import Etablissement, Classe
 
 
@@ -80,7 +80,7 @@ class Paiement(models.Model):
     numero_paiement = models.CharField(_('numéro de paiement'), max_length=50, unique=True)
     
     # Relations
-    eleve = models.ForeignKey(User, on_delete=models.CASCADE, related_name='paiements', limit_choices_to={'role': 'eleve'})
+    eleve = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='paiements', limit_choices_to={'role': 'eleve'})
     frais = models.ForeignKey(FraisScolaire, on_delete=models.CASCADE, related_name='paiements')
     classe = models.ForeignKey(Classe, on_delete=models.CASCADE, related_name='paiements')
     annee_scolaire = models.CharField(_('année scolaire'), max_length=9, default='2024-2025')
@@ -114,7 +114,7 @@ class Paiement(models.Model):
     notes = models.TextField(_('notes'), blank=True)
     
     # Métadonnées
-    cree_par = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='paiements_crees')
+    cree_par = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='paiements_crees')
     date_creation = models.DateTimeField(auto_now_add=True)
     date_modification = models.DateTimeField(auto_now=True)
     
@@ -227,7 +227,7 @@ class BourseScolaire(models.Model):
         TERMINEE = 'terminee', _('Terminée')
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    eleve = models.ForeignKey(User, on_delete=models.CASCADE, related_name='bourses', limit_choices_to={'role': 'eleve'})
+    eleve = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='bourses', limit_choices_to={'role': 'eleve'})
     
     type_bourse = models.CharField(_('type de bourse'), max_length=20, choices=TypeBourse.choices)
     statut = models.CharField(_('statut'), max_length=20, choices=StatutBourse.choices, default=StatutBourse.EN_ATTENTE)
@@ -260,7 +260,7 @@ class BourseScolaire(models.Model):
         ordering = ['-date_demande']
     
     def __str__(self):
-        return f"{self.eleve.get_full_name} - {self.get_type_bourse_display()}"
+        return f"{self.eleve.get_full_name()} - {self.get_type_bourse_display()}"
 
 
 class RapportFinancier(models.Model):
@@ -295,7 +295,7 @@ class RapportFinancier(models.Model):
     fichier_rapport = models.FileField(_('rapport PDF'), upload_to='finance/rapports/', blank=True, null=True)
     
     # Génération
-    genere_par = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='rapports_financiers_generes')
+    genere_par = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='rapports_financiers_generes')
     date_generation = models.DateTimeField(_('date de génération'), auto_now_add=True)
     
     class Meta:
@@ -413,7 +413,7 @@ class AbonnementEleve(models.Model):
     numero_abonnement = models.CharField(_('numéro d\'abonnement'), max_length=50, unique=True)
     
     # Relations
-    eleve = models.ForeignKey(User, on_delete=models.CASCADE, related_name='abonnements', limit_choices_to={'role': 'eleve'})
+    eleve = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='abonnements', limit_choices_to={'role': 'eleve'})
     plan = models.ForeignKey(PlanAbonnementScolaire, on_delete=models.PROTECT, related_name='abonnements')
     etablissement = models.ForeignKey(Etablissement, on_delete=models.CASCADE, related_name='abonnements_eleves')
     
@@ -449,7 +449,7 @@ class AbonnementEleve(models.Model):
         verbose_name = _('Abonnement élève')
         verbose_name_plural = _('Abonnements élèves')
         ordering = ['-date_souscription']
-        unique_together = ['eleve', 'plan']
+        # Pas de unique_together : un élève peut renouveler le même plan après résiliation
     
     def __str__(self):
         return f"{self.eleve.get_full_name()} - {self.plan.nom} ({self.get_statut_display()})"
@@ -504,7 +504,7 @@ class PaiementAbonnement(models.Model):
     
     # Relations
     abonnement = models.ForeignKey(AbonnementEleve, on_delete=models.CASCADE, related_name='paiements')
-    eleve = models.ForeignKey(User, on_delete=models.CASCADE, related_name='paiements_abonnement')
+    eleve = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='paiements_abonnement')
     
     # Montant
     montant = models.DecimalField(_('montant (XOF)'), max_digits=12, decimal_places=0)

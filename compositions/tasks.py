@@ -166,14 +166,16 @@ def process_ia_correction(session_id):
         matiere_nom = exam.matiere.nom if exam.matiere else ''
         coeff_officiel = get_benin_coefficient(matiere_nom, serie)
 
+        from bulletins.services import get_logo_data_uri
         context = {
             'resultat': resultat,
             'annee_scolaire': '2025-2026',
             'serie': serie,
             'coefficient_officiel': coeff_officiel,
             'qr_data_uri': QRService.generate_composition_qr(resultat),
+            'logo_data_uri': get_logo_data_uri(),
         }
-        html = render_to_string('compositions/bulletin_resultat_benin.html', context)
+        html = render_to_string('compositions/bulletin_composition_benin.html', context)
         pdf_file = BytesIO()
         pisa_status = pisa.CreatePDF(BytesIO(html.encode("UTF-8")), dest=pdf_file, link_callback=link_callback)
         

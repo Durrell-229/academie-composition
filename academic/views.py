@@ -503,9 +503,17 @@ def discipline_list(request):
 @login_required
 def discipline_create(request):
     """Création d'un incident disciplinaire"""
+    from .forms import DisciplineForm
+    from .models import Discipline
     if request.method == 'POST':
-        # Logique de création
-        messages.success(request, "L'incident disciplinaire a été enregistré.")
-        return redirect('academic:discipline_list')
-    
-    return render(request, 'academic/discipline_form.html', {'title': 'Enregistrer un incident'})
+        form = DisciplineForm(request.POST)
+        if form.is_valid():
+            discipline = form.save(commit=False)
+            discipline.signale_par = request.user
+            discipline.save()
+            messages.success(request, "L'incident disciplinaire a été enregistré.")
+            return redirect('academic:discipline_list')
+        messages.error(request, "Veuillez corriger les erreurs du formulaire.")
+    else:
+        form = DisciplineForm()
+    return render(request, 'academic/discipline_form.html', {'title': 'Enregistrer un incident', 'form': form})

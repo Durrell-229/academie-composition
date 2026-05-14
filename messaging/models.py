@@ -110,7 +110,7 @@ class Message(models.Model):
     taille_fichier = models.PositiveIntegerField(_('taille du fichier (octets)'), null=True, blank=True)
     
     # Statut
-    is_supprime = models.BooleanField(_('supprimé'), default=False)
+    is_supprime = models.BooleanField(_('supprimé'), default=False, db_index=True)
     is_modifie = models.BooleanField(_('modifié'), default=False)
     
     # Réponse

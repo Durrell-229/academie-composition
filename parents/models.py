@@ -43,6 +43,7 @@ class Parent(models.Model):
         verbose_name_plural = _('Parents')
     
     def __str__(self):
+        # Utiliser select_related('user') dans les querysets pour éviter le N+1
         return f"{self.user.get_full_name()} ({self.get_lien_parente_display()})"
 
 
@@ -63,6 +64,7 @@ class Enfant(models.Model):
         unique_together = ['parent', 'eleve']
     
     def __str__(self):
+        # Utiliser select_related('parent__user', 'eleve') dans les querysets pour éviter le N+1
         return f"{self.parent} - {self.eleve.get_full_name()}"
 
 
@@ -87,7 +89,7 @@ class NotificationParent(models.Model):
     titre = models.CharField(_('titre'), max_length=200)
     contenu = models.TextField(_('contenu'))
     
-    is_lue = models.BooleanField(_('lue'), default=False)
+    is_lue = models.BooleanField(_('lue'), default=False, db_index=True)
     date_notification = models.DateTimeField(auto_now_add=True)
     
     class Meta:

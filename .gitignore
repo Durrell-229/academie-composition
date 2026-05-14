@@ -84,3 +84,9 @@ env.localized/
 Thumbs.db
 nul
 nul
+
+# Uploads et fichiers générés
+media/
+outputs/
+staticfiles/
+logs/

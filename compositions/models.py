@@ -24,7 +24,7 @@ class CompositionSession(models.Model):
     exam = models.ForeignKey(Exam, on_delete=models.CASCADE, related_name='sessions')
     eleve = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='composition_sessions')
     mode = models.CharField(_('mode'), max_length=20, choices=Mode.choices, default=Mode.EN_LIGNE)
-    statut = models.CharField(_('statut'), max_length=20, choices=Statut.choices, default=Statut.EN_ATTENTE)
+    statut = models.CharField(_('statut'), max_length=20, choices=Statut.choices, default=Statut.EN_ATTENTE, db_index=True)
     started_at = models.DateTimeField(_('début'), blank=True, null=True)
     submitted_at = models.DateTimeField(_('soumission'), blank=True, null=True)
     time_spent_seconds = models.PositiveIntegerField(_('temps passé (secondes)'), default=0)
@@ -43,6 +43,7 @@ class CompositionSession(models.Model):
         ordering = ['-created_at']
 
     def __str__(self):
+        # Utiliser select_related('eleve', 'exam') dans les querysets pour éviter le N+1
         return f"{self.eleve.full_name} - {self.exam.titre}"
 
     def start(self):
@@ -132,6 +133,7 @@ class Resultat(models.Model):
         ordering = ['-note']
 
     def __str__(self):
+        # Utiliser select_related('session__eleve') dans les querysets pour éviter le N+1
         return f"{self.session.eleve.full_name} - {self.note}/{self.note_sur}"
 
 from django.db.models.signals import post_save
@@ -191,4 +193,5 @@ class AntiCheatLog(models.Model):
         ordering = ['-timestamp']
 
     def __str__(self):
+        # Utiliser select_related('session__eleve') dans les querysets pour éviter le N+1
         return f"{self.get_type_event_display()} - {self.session.eleve.full_name}"

@@ -27,7 +27,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     last_name = models.CharField(_('nom'), max_length=150)
     phone = models.CharField(_('téléphone'), max_length=30, blank=True)
     country = models.CharField(_('pays'), max_length=100, default='France')
-    role = models.CharField(_('rôle'), max_length=20, choices=Role.choices, default=Role.ELEVE)
+    role = models.CharField(_('rôle'), max_length=20, choices=Role.choices, default=Role.ELEVE, db_index=True)
     niveau = models.CharField(_('niveau'), max_length=30, choices=Niveau.choices, default=Niveau.SECONDAIRE)
     classe = models.CharField(_('classe / promotion'), max_length=100, blank=True)
     matricule = models.CharField(_('matricule'), max_length=50, blank=True, unique=True, null=True)

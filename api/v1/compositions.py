@@ -42,7 +42,7 @@ def start_composition(request, exam_id: uuid.UUID):
     )
     
     if not created and session.statut == 'soumis':
-        return {"error": "Cet examen a déjà été soumis."}, 400
+        raise HttpError(400, "Cet examen a déjà été soumis.")
     
     session.statut = 'en_cours'
     if not session.started_at:
@@ -52,9 +52,9 @@ def start_composition(request, exam_id: uuid.UUID):
 
 @router.post("/save-answer/{session_id}")
 def save_answer(request, session_id: uuid.UUID, data: AnswerSchema):
-    session = get_object_or_404(CompositionSession, id=session_id)
+    session = get_object_or_404(CompositionSession, id=session_id, eleve=request.user)
     if session.statut != 'en_cours':
-        return {"error": "La session n'est plus active."}, 403
+        raise HttpError(403, "La session n'est plus active.")
         
     answer, created = StudentAnswer.objects.update_or_create(
         session=session,
@@ -73,8 +73,8 @@ def upload_page(
     """
     Upload REEL et VERIFIE pour les copies papier.
     """
-    session = get_object_or_404(CompositionSession, id=session_id)
-    
+    session = get_object_or_404(CompositionSession, id=session_id, eleve=request.user)
+
     # Sécurité : Validation du type MIME
     if not file.content_type.startswith('image/'):
         return {"error": "Type de fichier non autorisé. Images uniquement."}, 400
@@ -96,7 +96,7 @@ def upload_page(
 
 @router.post("/submit/{session_id}")
 def submit_composition(request, session_id: uuid.UUID):
-    session = get_object_or_404(CompositionSession, id=session_id)
+    session = get_object_or_404(CompositionSession, id=session_id, eleve=request.user)
     if session.statut == 'soumis':
         return {"message": "Déjà soumis"}
         

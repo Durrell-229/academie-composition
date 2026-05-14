@@ -26,10 +26,10 @@ class Presence(models.Model):
     classe = models.ForeignKey(Classe, on_delete=models.CASCADE, related_name='presences')
     professeur = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='presences_signees', limit_choices_to={'role': 'professeur'})
     
-    date = models.DateField(_('date'))
+    date = models.DateField(_('date'), db_index=True)
     heure_arrivee = models.TimeField(_('heure d\'arrivée'), null=True, blank=True)
-    statut = models.CharField(_('statut'), max_length=20, choices=StatutPresence.choices, default=StatutPresence.PRESENT)
-    
+    statut = models.CharField(_('statut'), max_length=20, choices=StatutPresence.choices, default=StatutPresence.PRESENT, db_index=True)
+
     # Détails d'absence/retard
     motif_absence = models.TextField(_('motif d\'absence'), blank=True)
     duree_absence = models.PositiveIntegerField(_('durée d\'absence (heures)'), null=True, blank=True)

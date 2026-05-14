@@ -75,16 +75,16 @@ def souscrire_abonnement(request):
     
     plan = get_object_or_404(PlanAbonnementScolaire, slug=plan_slug, is_actif=True)
     
-    # Vérifier la config FedaPay
-    etablissement = request.user.etablissement_eleves.first()
-    if not etablissement or not hasattr(etablissement, 'config_fedapay'):
-        messages.error(request, "Le paiement n'est pas disponible pour le moment.")
-        return redirect('payments:abonnements')
-    
-    config = etablissement.config_fedapay
-    if not config.is_actif:
-        messages.error(request, "Le système de paiement est temporairement indisponible.")
-        return redirect('payments:abonnements')
+    # Vérifier la config FedaPay via l'établissement du plan
+    etablissement = plan.etablissement
+    if not hasattr(etablissement, 'config_fedapay'):
+        messages.warning(request, "Le paiement FedaPay n'est pas encore configuré pour cet établissement.")
+        config = None
+    else:
+        config = etablissement.config_fedapay
+        if not config.is_actif:
+            messages.error(request, "Le système de paiement est temporairement indisponible.")
+            return redirect('payments:abonnements')
     
     # Calculer le prix avec promotion
     prix_final = plan.prix_mensuel
@@ -134,8 +134,8 @@ def initier_paiement_fedapay(request):
         telephone = data.get('telephone', '')
         
         plan = get_object_or_404(PlanAbonnementScolaire, id=plan_id, is_actif=True)
-        etablissement = request.user.etablissement_eleves.first()
-        
+        etablissement = plan.etablissement
+
         if not etablissement:
             return JsonResponse({'success': False, 'error': 'Établissement non trouvé'})
         
@@ -506,17 +506,17 @@ def checkout_fedapay_embed(request):
     
     plan = get_object_or_404(PlanAbonnementScolaire, slug=plan_slug, is_actif=True)
     eleve = request.user
-    
-    # Vérifier la config FedaPay
-    etablissement = eleve.etablissement_eleves.first()
-    if not etablissement or not hasattr(etablissement, 'config_fedapay'):
-        messages.error(request, "Le paiement n'est pas disponible pour le moment.")
-        return redirect('payments:abonnements')
-    
-    config = etablissement.config_fedapay
-    if not config.is_actif:
-        messages.error(request, "Le système de paiement est temporairement indisponible.")
-        return redirect('payments:abonnements')
+
+    # Vérifier la config FedaPay via l'établissement du plan
+    etablissement = plan.etablissement
+    if not hasattr(etablissement, 'config_fedapay'):
+        messages.warning(request, "Le paiement FedaPay n'est pas encore configuré.")
+        config = None
+    else:
+        config = etablissement.config_fedapay
+        if not config.is_actif:
+            messages.error(request, "Le système de paiement est temporairement indisponible.")
+            return redirect('payments:abonnements')
     
     # Calculer le montant
     if type_abonnement == 'annuel':

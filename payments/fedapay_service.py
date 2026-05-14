@@ -359,13 +359,15 @@ class FedaPayCheckout:
     """
     
     @staticmethod
-    def creer_checkout_url(eleve, montant, description, reference, callback_url=None):
+    def creer_checkout_url(eleve, montant, description, reference, callback_url=None, etablissement=None):
         """
         Créer une URL de checkout simple pour un paiement
         """
         try:
-            # Récupérer la config FedaPay de l'élève
-            etablissement = eleve.etablissement_eleves.first()
+            # Récupérer la config FedaPay via l'abonnement actif de l'élève
+            if etablissement is None:
+                abonnement = eleve.abonnements.select_related('etablissement').filter(statut='actif').first()
+                etablissement = abonnement.etablissement if abonnement else None
             if not etablissement or not hasattr(etablissement, 'config_fedapay'):
                 logger.error("Configuration FedaPay non trouvée")
                 return None

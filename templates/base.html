@@ -7,6 +7,17 @@
     <title>{% block title %}Académie Numérique{% endblock %}</title>
     <meta name="description" content="Plateforme d'évaluation et de composition intelligente pour les grandes écoles">
 
+    <!-- Favicon & PWA -->
+    <link rel="icon" type="image/png" href="{% static 'img/logo.png' %}">
+    <link rel="shortcut icon" type="image/png" href="{% static 'img/logo.png' %}">
+    <link rel="apple-touch-icon" href="{% static 'img/logo.png' %}">
+    <link rel="manifest" href="{% static 'manifest.json' %}">
+    <meta name="theme-color" content="#4F46E5">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="AcadNum">
+
     <!-- Tailwind CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -276,10 +287,12 @@
                 <!-- Logo + Toggle -->
                 <div class="flex items-center justify-between px-4 h-16 border-b border-border-standard flex-shrink-0">
                     <a href="{% url 'dashboard' %}" class="flex items-center gap-3 overflow-hidden" x-show="sidebarOpen">
-                        <div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center flex-shrink-0">
-                            <i class="fa-solid fa-graduation-cap text-white text-sm"></i>
-                        </div>
-                        <span class="font-black text-text-primary tracking-tight whitespace-nowrap">ACADÉMIE <span class="text-primary">IA</span></span>
+                        <img src="{% static 'img/logo.png' %}" alt="Logo Académie Numérique" class="w-9 h-9 rounded-xl flex-shrink-0 object-cover">
+                        <span class="font-black text-text-primary tracking-tight whitespace-nowrap">ACADÉMIE <span class="gradient-text">NUM.</span></span>
+                    </a>
+                    <!-- Icône seule quand sidebar réduite -->
+                    <a href="{% url 'dashboard' %}" x-show="!sidebarOpen" class="flex-shrink-0">
+                        <img src="{% static 'img/logo.png' %}" alt="Logo" class="w-9 h-9 rounded-xl object-cover">
                     </a>
                     <button @click="sidebarOpen = !sidebarOpen" class="w-8 h-8 rounded-lg flex items-center justify-center text-text-muted hover:text-text-primary hover:bg-bg-tertiary transition flex-shrink-0">
                         <i class="fa-solid" :class="sidebarOpen ? 'fa-chevron-left' : 'fa-bars'"></i>
@@ -481,10 +494,8 @@
         <!-- Mobile Header -->
         <div class="flex items-center justify-between px-4 h-16 border-b border-border-standard flex-shrink-0">
             <a href="{% url 'dashboard' %}" class="flex items-center gap-3">
-                <div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center flex-shrink-0">
-                    <i class="fa-solid fa-graduation-cap text-white text-sm"></i>
-                </div>
-                <span class="font-black text-text-primary tracking-tight">ACADÉMIE <span class="text-primary">IA</span></span>
+                <img src="{% static 'img/logo.png' %}" alt="Logo Académie Numérique" class="w-9 h-9 rounded-xl flex-shrink-0 object-cover">
+                <span class="font-black text-text-primary tracking-tight">ACADÉMIE <span class="gradient-text">NUM.</span></span>
             </a>
             <button @click="mobileMenu = false" class="w-8 h-8 rounded-lg flex items-center justify-center text-text-muted hover:text-text-primary hover:bg-bg-tertiary transition">
                 <i class="fa-solid fa-xmark"></i>
@@ -615,5 +626,15 @@
     {% block extra_js %}{% endblock %}
 
 <script src="{% static "js/qcm-dropdowns.js" %}"></script>
+
+<script>
+  // Enregistrement du Service Worker (PWA)
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('{% static "js/service_worker.js" %}', { scope: '/' })
+        .catch(() => {});  // silencieux si hors HTTPS en dev
+    });
+  }
+</script>
 </body>
 </html>

@@ -4,7 +4,7 @@ from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
 
-from core.models import Matiere, Classe
+# String references used below to avoid circular imports with core
 
 
 class Exam(models.Model):
@@ -26,8 +26,8 @@ class Exam(models.Model):
     titre = models.CharField(_('titre'), max_length=300)
     description = models.TextField(_('description'), blank=True)
     type_exam = models.CharField(_('type'), max_length=20, choices=Type.choices, default=Type.COMPOSITION)
-    matiere = models.ForeignKey(Matiere, on_delete=models.SET_NULL, null=True, related_name='exams')
-    classe = models.ForeignKey(Classe, on_delete=models.SET_NULL, null=True, blank=True, related_name='exams')
+    matiere = models.ForeignKey('core.Matiere', on_delete=models.SET_NULL, null=True, related_name='exams')
+    classe = models.ForeignKey('core.Classe', on_delete=models.SET_NULL, null=True, blank=True, related_name='exams')
     createur = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='exams_crees')
     duree_minutes = models.PositiveIntegerField(_('durée (minutes)'), default=60)
     date_debut = models.DateTimeField(_('date de début'))
@@ -96,7 +96,7 @@ class ExamAssignment(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     exam = models.ForeignKey(Exam, on_delete=models.CASCADE, related_name='assignments')
     eleve = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='exam_assignments', blank=True, null=True)
-    classe = models.ForeignKey(Classe, on_delete=models.CASCADE, related_name='exam_assignments', blank=True, null=True)
+    classe = models.ForeignKey('core.Classe', on_delete=models.CASCADE, related_name='exam_assignments', blank=True, null=True)
     assigned_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='assignments_crees')
     assigned_at = models.DateTimeField(auto_now_add=True)
     notified = models.BooleanField(default=False)
@@ -146,8 +146,8 @@ class ExamenNational(models.Model):
     horaires = models.JSONField(_('horaires'), default=dict, blank=True)
     coefficient_default = models.DecimalField(_('coefficient par défaut'), max_digits=4, decimal_places=2, default=1.00)
     coefficients_par_matiere = models.JSONField(_('coefficients par matière'), default=dict, blank=True)
-    classes = models.ManyToManyField(Classe, related_name='examens_nationaux', verbose_name=_('classes concernées'))
-    matieres = models.ManyToManyField(Matiere, related_name='examens_nationaux', verbose_name=_('matières concernées'))
+    classes = models.ManyToManyField('core.Classe', related_name='examens_nationaux', verbose_name=_('classes concernées'))
+    matieres = models.ManyToManyField('core.Matiere', related_name='examens_nationaux', verbose_name=_('matières concernées'))
     statut = models.CharField(_('statut'), max_length=30, choices=Statut.choices, default=Statut.BROUILLON)
     createur = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='examens_nationaux_crees')
     instructions = models.TextField(_('instructions'), blank=True, default='')
@@ -178,7 +178,7 @@ class ExamenNationalMatiere(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     examen = models.ForeignKey(ExamenNational, on_delete=models.CASCADE, related_name='examen_matieres')
-    matiere = models.ForeignKey(Matiere, on_delete=models.CASCADE, related_name='examen_matieres')
+    matiere = models.ForeignKey('core.Matiere', on_delete=models.CASCADE, related_name='examen_matieres')
     epreuve_file = models.FileField(_('épreuve'), upload_to='examens_nationaux/epreuves/%Y/%m/')
     corrige_type_file = models.FileField(_('corrigé type'), upload_to='examens_nationaux/corriges/%Y/%m/')
     epreuve_document_id = models.CharField(_('ID épreuve'), max_length=32, blank=True, editable=False,
@@ -224,7 +224,7 @@ class ExamenComposition(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     examen = models.ForeignKey(ExamenNational, on_delete=models.CASCADE, related_name='compositions')
     eleve = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='examen_compositions')
-    classe = models.ForeignKey(Classe, on_delete=models.CASCADE, related_name='examen_compositions')
+    classe = models.ForeignKey('core.Classe', on_delete=models.CASCADE, related_name='examen_compositions')
     statut = models.CharField(_('statut'), max_length=20, choices=StatutComp.choices, default=StatutComp.INSCRIT)
     moyenne_generale = models.DecimalField(_('moyenne générale'), max_digits=5, decimal_places=2, default=0.00, null=True, blank=True)
     rang = models.PositiveIntegerField(_('rang'), default=0)
@@ -295,7 +295,7 @@ class ExamenBulletin(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     examen = models.ForeignKey(ExamenNational, on_delete=models.CASCADE, related_name='bulletins')
     eleve = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='examens_bulletins')
-    classe = models.ForeignKey(Classe, on_delete=models.CASCADE, related_name='examens_bulletins')
+    classe = models.ForeignKey('core.Classe', on_delete=models.CASCADE, related_name='examens_bulletins')
     moyenne_generale = models.DecimalField(_('moyenne générale'), max_digits=5, decimal_places=2, default=0.00)
     rang = models.PositiveIntegerField(_('rang'), default=0)
     effectif_total = models.PositiveIntegerField(_('effectif total'), default=0)

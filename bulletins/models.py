@@ -59,6 +59,12 @@ class Bulletin(models.Model):
     
     created_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        verbose_name = _('Bulletin')
+        verbose_name_plural = _('Bulletins')
+        ordering = ['-created_at']
+        # unique_together = ['eleve', 'annee_scolaire', 'periode']  # À activer après nettoyage des doublons
+
     def __str__(self):
         return f"Bulletin {self.periode} - {self.eleve.full_name}"
 
