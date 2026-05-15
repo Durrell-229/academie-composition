@@ -471,6 +471,170 @@ def submit_from_room(request):
         }, status=500)
 
 
+def _build_composition_bulletin_context(resultat):
+    """
+    Construit le contexte au format bulletin_scolaire à partir d'un Resultat de composition.
+    Compatible avec templates/bulletins/bulletin.html.
+    """
+    session = resultat.session
+    eleve = session.eleve
+    exam = session.exam
+
+    # Matière principale de l'examen
+    matiere_nom = exam.matiere.nom if exam.matiere else exam.titre
+    coef = float(exam.coefficient or 1)
+    note = float(resultat.note or 0)
+    note_sur = float(resultat.note_sur or 20)
+    # Ramener sur 20 si nécessaire
+    moy_20 = round(note * 20 / note_sur, 2) if note_sur else note
+    moy_coef = round(moy_20 * coef, 2)
+
+    # Rang
+    rang_str = str(resultat.classement or '')
+    if resultat.total_participants:
+        rang_str = f"{resultat.classement} / {resultat.total_participants}"
+
+    matieres = [{
+        'nom': matiere_nom,
+        'coef': int(coef) if coef == int(coef) else coef,
+        'interro': '',
+        'dev1': note if note_sur == 20 else f"{note}/{int(note_sur)}",
+        'dev2': '',
+        'dev3': '',
+        'moyenne': moy_20,
+        'moy_coef': moy_coef,
+        'rang': rang_str,
+        'appreciation': resultat.appreciation or '',
+    }]
+
+    # Mention → avis
+    mention = (resultat.mention or '').lower()
+    note_norm = moy_20
+    avis = {
+        'felicitations': note_norm >= 18,
+        'tableau_honneur': 16 <= note_norm < 18,
+        'encouragement': 14 <= note_norm < 16,
+        'avertissement': note_norm < 10,
+        'blame': False,
+    }
+
+    # Décision
+    if note_norm >= 10:
+        decision = 'passe'
+    else:
+        decision = 'redouble'
+
+    # Année scolaire depuis la date de l'examen
+    annee_debut = exam.date_debut.year if exam.date_debut else timezone.now().year
+    annee = {'debut': str(annee_debut)[-2:], 'fin': str(annee_debut + 1)[-2:]}
+
+    # Nom complet
+    if hasattr(eleve, 'get_full_name') and callable(eleve.get_full_name):
+        nom_prenoms = eleve.get_full_name()
+    else:
+        nom_prenoms = getattr(eleve, 'username', '')
+
+    return {
+        'logo_benin': '/static/images/armoiries_benin.png',
+        'etablissement': {'bp': '', 'tel': '', 'ville': 'Cotonou'},
+        'annee': annee,
+        'trimestre': 1,
+        'eleve': {
+            'nom_prenoms': nom_prenoms,
+            'date_naissance': getattr(eleve, 'date_naissance', '') or '',
+            'lieu_naissance': getattr(eleve, 'lieu_naissance', '') or '',
+            'sexe': getattr(eleve, 'sexe', '') or '',
+            'classe': getattr(eleve, 'classe', None) and str(eleve.classe) or '',
+            'effectif': resultat.total_participants or '',
+            'matricule': getattr(eleve, 'matricule', '') or getattr(eleve, 'username', ''),
+            'statut': '',
+        },
+        'matieres': matieres,
+        'totaux': {
+            'coef': int(coef) if coef == int(coef) else coef,
+            'moy_coef': moy_coef,
+        },
+        'moyenne_trimestre': moy_20,
+        'resultats': {
+            'moyenne': str(moy_20).replace('.', ','),
+            'rang': rang_str,
+            'plus_forte': '',
+            'plus_faible': '',
+            'moyenne_classe': '',
+            'mention': resultat.get_mention_display() if hasattr(resultat, 'get_mention_display') else mention,
+        },
+        'avis': avis,
+        'decision': decision,
+        'fait_a': 'Cotonou',
+        'fait_le': resultat.corrige_at.strftime('%d/%m/%Y') if resultat.corrige_at else '',
+    }
+
+
+@login_required
+def bulletin_composition_html(request, session_id):
+    """
+    Affiche le bulletin d'une composition au format officiel béninois (HTML).
+    URL : /compositions/<session_id>/bulletin/
+    """
+    session = get_object_or_404(CompositionSession, id=session_id)
+    if request.user.role == 'eleve' and session.eleve != request.user:
+        return HttpResponseForbidden("Accès non autorisé.")
+
+    resultat = get_object_or_404(Resultat, session=session)
+    context = _build_composition_bulletin_context(resultat)
+    return render(request, 'bulletins/bulletin.html', context)
+
+
+@login_required
+def bulletin_composition_pdf(request, session_id):
+    """
+    Génère le bulletin d'une composition au format PDF officiel béninois.
+    URL : /compositions/<session_id>/bulletin/pdf/
+    """
+    from django.template.loader import render_to_string
+
+    session = get_object_or_404(CompositionSession, id=session_id)
+    if request.user.role == 'eleve' and session.eleve != request.user:
+        return HttpResponseForbidden("Accès non autorisé.")
+
+    resultat = get_object_or_404(Resultat, session=session)
+    context = _build_composition_bulletin_context(resultat)
+    html_string = render_to_string('bulletins/bulletin.html', context, request=request)
+
+    eleve = session.eleve
+    filename = f"bulletin_{getattr(eleve, 'last_name', 'eleve')}_{session.exam.titre[:15].replace(' ', '_')}.pdf"
+
+    # WeasyPrint en priorité
+    try:
+        from weasyprint import HTML as WeasyHTML
+        pdf_bytes = WeasyHTML(
+            string=html_string,
+            base_url=request.build_absolute_uri('/')
+        ).write_pdf()
+        resp = HttpResponse(pdf_bytes, content_type='application/pdf')
+        resp['Content-Disposition'] = f'inline; filename="{filename}"'
+        return resp
+    except ImportError:
+        pass
+    except Exception as e:
+        logger.warning(f"WeasyPrint bulletin composition: {e}, fallback xhtml2pdf")
+
+    # Fallback xhtml2pdf
+    try:
+        from io import BytesIO
+        from xhtml2pdf import pisa
+        buf = BytesIO()
+        pisa_status = pisa.CreatePDF(html_string, dest=buf, encoding='utf-8')
+        if pisa_status.err:
+            return HttpResponse("Erreur lors de la génération du PDF.", status=500)
+        resp = HttpResponse(buf.getvalue(), content_type='application/pdf')
+        resp['Content-Disposition'] = f'inline; filename="{filename}"'
+        return resp
+    except Exception as e:
+        logger.error(f"xhtml2pdf bulletin composition: {e}")
+        return HttpResponse(f"Impossible de générer le PDF : {e}", status=500)
+
+
 def download_composition_bulletin(request, resultat_id):
     """
     Endpoint PUBLIC pour télécharger le bulletin d'une composition via QR code.

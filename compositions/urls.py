@@ -10,6 +10,9 @@ urlpatterns = [
     path('api/upload-screenshot/', views.upload_screenshot, name='upload_screenshot'),
     path('api/nemotron-analyze/', views.nemotron_analyze_screenshot, name='nemotron_analyze'),
     path('api/submit-from-room/', views.submit_from_room, name='submit_from_room'),
+    # Bulletin de composition — format officiel béninois
+    path('<uuid:session_id>/bulletin/', views.bulletin_composition_html, name='bulletin_html'),
+    path('<uuid:session_id>/bulletin/pdf/', views.bulletin_composition_pdf, name='bulletin_pdf'),
     # Endpoint public pour téléchargement bulletin via QR
     path('bulletin/<uuid:resultat_id>/download/', views.download_composition_bulletin, name='bulletin_download'),
     # Vue protégée pour servir les fichiers d'examen (bloque les corrigés types aux élèves)
