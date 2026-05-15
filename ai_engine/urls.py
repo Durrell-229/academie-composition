@@ -1,5 +1,5 @@
-from django.urls import path, include
-from . import ocr_views
+from django.urls import path
+from . import views as ocr_views
 
 app_name = 'ocr'
 

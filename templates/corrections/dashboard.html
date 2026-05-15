@@ -3,34 +3,128 @@
 {% block content %}
 <div class="container mx-auto px-4 py-8">
     <h1 class="text-3xl font-bold mb-8">Dashboard Corrections</h1>
-    
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div class="bg-white rounded-lg shadow p-6">
-            <h2 class="text-xl font-semibold mb-2">Total Corrections</h2>
+
+    <!-- Stats globales -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div class="bg-white rounded-lg shadow p-5">
+            <p class="text-sm text-gray-500">Total corrections</p>
             <p class="text-3xl font-bold text-blue-600">{{ total_corrections }}</p>
         </div>
-        
-        <div class="bg-white rounded-lg shadow p-6">
-            <h2 class="text-xl font-semibold mb-2">En Attente</h2>
-            <p class="text-3xl font-bold text-yellow-600">{{ pending_corrections }}</p>
+        <div class="bg-white rounded-lg shadow p-5">
+            <p class="text-sm text-gray-500">En attente</p>
+            <p class="text-3xl font-bold text-yellow-500">{{ pending_corrections }}</p>
         </div>
-        
-        <div class="bg-white rounded-lg shadow p-6">
-            <h2 class="text-xl font-semibold mb-2">Terminées</h2>
-            <p class="text-3xl font-bold text-green-600">{{ completed_corrections }}</p>
+        <div class="bg-white rounded-lg shadow p-5">
+            <p class="text-sm text-gray-500">IA terminées</p>
+            <p class="text-3xl font-bold text-green-600">{{ ai_done }}</p>
+        </div>
+        <div class="bg-white rounded-lg shadow p-5">
+            <p class="text-sm text-gray-500">Humaines terminées</p>
+            <p class="text-3xl font-bold text-purple-600">{{ humain_done }}</p>
         </div>
     </div>
-    
-    <div class="mt-8">
-        <h2 class="text-xl font-semibold mb-4">Actions Rapides</h2>
-        <div class="space-x-4">
-            <a href="{% url 'corrections:corrige_types_list' %}" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-                Gérer Corrigés Types
-            </a>
-            <a href="{% url 'corrections:baremes_list' %}" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
-                Gérer Barèmes
-            </a>
+
+    <!-- Actions rapides -->
+    <div class="flex flex-wrap gap-3 mb-8">
+        <a href="{% url 'corrections:corrige_types_list' %}" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+            Corrigés types
+        </a>
+        <a href="{% url 'corrections:upload_corrige_type' %}" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
+            Uploader un corrigé
+        </a>
+        <a href="{% url 'corrections:baremes_list' %}" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+            Barèmes
+        </a>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Copies soumises sans correction -->
+        <div>
+            <h2 class="text-xl font-semibold mb-4">Copies en attente de correction</h2>
+            {% if sessions_sans_correction %}
+            <div class="space-y-3">
+                {% for session in sessions_sans_correction %}
+                <div class="bg-white rounded-lg shadow p-4 flex items-center justify-between">
+                    <div>
+                        <p class="font-medium">{{ session.eleve.get_full_name|default:session.eleve.username }}</p>
+                        <p class="text-sm text-gray-500">{{ session.exam.titre }} — {{ session.submitted_at|date:"d/m/Y H:i" }}</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button
+                            onclick="triggerAI('{{ session.id }}')"
+                            class="bg-blue-500 text-white text-sm px-3 py-1 rounded hover:bg-blue-600">
+                            Correction IA
+                        </button>
+                        <a href="#" onclick="showAssignModal('{{ session.id }}')"
+                           class="bg-purple-500 text-white text-sm px-3 py-1 rounded hover:bg-purple-600">
+                            Assigner
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-gray-500 italic">Aucune copie en attente.</p>
+            {% endif %}
+        </div>
+
+        <!-- Mes corrections humaines -->
+        <div>
+            <h2 class="text-xl font-semibold mb-4">Mes corrections à faire</h2>
+            {% if mes_corrections %}
+            <div class="space-y-3">
+                {% for correction in mes_corrections %}
+                <div class="bg-white rounded-lg shadow p-4 flex items-center justify-between">
+                    <div>
+                        <p class="font-medium">{{ correction.session.eleve.get_full_name|default:correction.session.eleve.username }}</p>
+                        <p class="text-sm text-gray-500">{{ correction.session.exam.titre }}</p>
+                        {% if correction.date_limite %}
+                        <p class="text-xs text-red-500">Limite : {{ correction.date_limite|date:"d/m/Y" }}</p>
+                        {% endif %}
+                    </div>
+                    <a href="{% url 'corrections:human_correction_form' correction.session.id %}"
+                       class="bg-purple-600 text-white text-sm px-3 py-1 rounded hover:bg-purple-700">
+                        Corriger
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-gray-500 italic">Aucune correction assignée.</p>
+            {% endif %}
         </div>
     </div>
 </div>
+
+<script>
+function triggerAI(sessionId) {
+    if (!confirm('Lancer la correction IA pour cette copie ?')) return;
+    fetch(`/corrections/ai/${sessionId}/trigger/`, {
+        method: 'POST',
+        headers: {'X-CSRFToken': '{{ csrf_token }}', 'Content-Type': 'application/json'},
+    })
+    .then(r => r.json())
+    .then(data => {
+        alert(data.success ? `Correction IA terminée. Note : ${data.note}/20` : `Erreur : ${data.error}`);
+        if (data.success) location.reload();
+    })
+    .catch(() => alert('Erreur réseau'));
+}
+
+function showAssignModal(sessionId) {
+    const correcteurId = prompt('ID du correcteur à assigner :');
+    if (!correcteurId) return;
+    const dateLimite = prompt('Date limite (YYYY-MM-DDTHH:MM, optionnel) :') || '';
+    const formData = new FormData();
+    formData.append('correcteur_id', correcteurId);
+    formData.append('date_limite', dateLimite);
+    formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+    fetch(`/corrections/humain/${sessionId}/assigner/`, {method: 'POST', body: formData})
+    .then(r => r.json())
+    .then(data => {
+        alert(data.success ? 'Correction assignée.' : `Erreur : ${data.error}`);
+        if (data.success) location.reload();
+    });
+}
+</script>
 {% endblock %}
