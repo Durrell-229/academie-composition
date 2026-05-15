@@ -642,3 +642,96 @@ class PromotionAbonnement(models.Model):
             self.date_debut <= now <= self.date_fin and
             (self.nombre_utilisations_max is None or self.nombre_utilisations < self.nombre_utilisations_max)
         )
+
+
+# ═══════════════════════════════════════════════════════════════
+# SYSTÈME DE COMMISSIONS & PAYOUTS AUTOMATIQUES
+# ═══════════════════════════════════════════════════════════════
+
+class ConfigurationCommission(models.Model):
+    """
+    Taux de commission et numéros de téléphone pour chaque bénéficiaire.
+    Un seul enregistrement par établissement (OneToOne).
+    Flux : Client paie → webhook → calcul parts → payout automatique
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    etablissement = models.OneToOneField(
+        Etablissement, on_delete=models.CASCADE, related_name='config_commission'
+    )
+
+    # Taux (doivent totaliser 100 %)
+    taux_admin = models.DecimalField(_('taux admin (%)'), max_digits=5, decimal_places=2, default=10)
+    taux_commercial = models.DecimalField(_('taux commercial (%)'), max_digits=5, decimal_places=2, default=20)
+    taux_prestataire = models.DecimalField(_('taux prestataire (%)'), max_digits=5, decimal_places=2, default=70)
+
+    # Numéros Mobile Money des bénéficiaires
+    telephone_admin = models.CharField(_('téléphone admin'), max_length=20)
+    telephone_commercial = models.CharField(_('téléphone commercial'), max_length=20)
+    telephone_prestataire = models.CharField(_('téléphone prestataire'), max_length=20)
+
+    is_actif = models.BooleanField(_('actif'), default=True)
+    date_creation = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = _('Configuration commission')
+        verbose_name_plural = _('Configurations commission')
+
+    def __str__(self):
+        return f"Commissions {self.etablissement.nom} ({self.taux_admin}% / {self.taux_commercial}% / {self.taux_prestataire}%)"
+
+    @property
+    def total_taux(self):
+        return float(self.taux_admin) + float(self.taux_commercial) + float(self.taux_prestataire)
+
+    def calculer_parts(self, montant_total: int) -> dict:
+        """Retourne un dict avec la part de chaque bénéficiaire en entier XOF."""
+        admin = int(montant_total * self.taux_admin / 100)
+        commercial = int(montant_total * self.taux_commercial / 100)
+        prestataire = montant_total - admin - commercial  # absorbe les arrondis
+        return {
+            'admin': admin,
+            'commercial': commercial,
+            'prestataire': prestataire,
+        }
+
+
+class PayoutCommission(models.Model):
+    """
+    Trace chaque virement envoyé à un bénéficiaire après paiement confirmé.
+    Un paiement génère 3 lignes : admin, commercial, prestataire.
+    """
+
+    class Beneficiaire(models.TextChoices):
+        ADMIN = 'admin', _('Admin')
+        COMMERCIAL = 'commercial', _('Commercial')
+        PRESTATAIRE = 'prestataire', _('Prestataire')
+
+    class Statut(models.TextChoices):
+        EN_ATTENTE = 'en_attente', _('En attente')
+        ENVOYE = 'envoye', _('Envoyé')
+        SUCCES = 'succes', _('Succès')
+        ECHEC = 'echec', _('Échec')
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    paiement = models.ForeignKey(
+        PaiementAbonnement, on_delete=models.CASCADE, related_name='payouts'
+    )
+    beneficiaire = models.CharField(_('bénéficiaire'), max_length=20, choices=Beneficiaire.choices)
+    telephone = models.CharField(_('téléphone'), max_length=20)
+    montant = models.DecimalField(_('montant (XOF)'), max_digits=12, decimal_places=0)
+    taux_applique = models.DecimalField(_('taux appliqué (%)'), max_digits=5, decimal_places=2)
+    statut = models.CharField(_('statut'), max_length=20, choices=Statut.choices, default=Statut.EN_ATTENTE)
+    fedapay_payout_id = models.CharField(_('FedaPay Payout ID'), max_length=100, blank=True)
+    reponse_api = models.JSONField(_('réponse API'), blank=True, null=True)
+    message_erreur = models.TextField(_('erreur'), blank=True)
+    date_creation = models.DateTimeField(auto_now_add=True)
+    date_traitement = models.DateTimeField(_('date de traitement'), blank=True, null=True)
+
+    class Meta:
+        verbose_name = _('Payout commission')
+        verbose_name_plural = _('Payouts commissions')
+        ordering = ['-date_creation']
+
+    def __str__(self):
+        return f"{self.get_beneficiaire_display()} — {self.montant:,.0f} FCFA ({self.get_statut_display()})"

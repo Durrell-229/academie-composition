@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-8">
+        <h1 class="text-2xl font-bold">Commissions & Payouts</h1>
+        <a href="{% url 'payments:config_commission' %}" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 text-sm">
+            Configurer les taux
+        </a>
+    </div>
+
+    <!-- Config active -->
+    {% if config %}
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 flex flex-wrap gap-6">
+        <div><span class="text-xs text-gray-500 uppercase">Admin</span><br><strong class="text-lg">{{ config.taux_admin }} %</strong><br><span class="text-xs text-gray-500">{{ config.telephone_admin }}</span></div>
+        <div><span class="text-xs text-gray-500 uppercase">Commercial</span><br><strong class="text-lg">{{ config.taux_commercial }} %</strong><br><span class="text-xs text-gray-500">{{ config.telephone_commercial }}</span></div>
+        <div><span class="text-xs text-gray-500 uppercase">Prestataire</span><br><strong class="text-lg">{{ config.taux_prestataire }} %</strong><br><span class="text-xs text-gray-500">{{ config.telephone_prestataire }}</span></div>
+    </div>
+    {% else %}
+    <div class="bg-yellow-50 border border-yellow-300 rounded p-4 mb-6 text-yellow-800 text-sm">
+        Aucune configuration de commission. <a href="{% url 'payments:config_commission' %}" class="underline font-medium">Configurer maintenant</a>
+    </div>
+    {% endif %}
+
+    <!-- Stats -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div class="bg-white rounded-lg shadow p-5">
+            <p class="text-xs text-gray-500 uppercase">Total distribué</p>
+            <p class="text-2xl font-bold text-green-600">{{ stats.total_envoye|default:0|floatformat:0 }} FCFA</p>
+        </div>
+        <div class="bg-white rounded-lg shadow p-5">
+            <p class="text-xs text-gray-500 uppercase">En attente</p>
+            <p class="text-2xl font-bold text-yellow-500">{{ stats.total_attente }}</p>
+        </div>
+        <div class="bg-white rounded-lg shadow p-5">
+            <p class="text-xs text-gray-500 uppercase">Échecs</p>
+            <p class="text-2xl font-bold text-red-500">{{ stats.total_echec }}</p>
+        </div>
+        {% for b in par_beneficiaire %}
+        <div class="bg-white rounded-lg shadow p-5">
+            <p class="text-xs text-gray-500 uppercase">{{ b.label }}</p>
+            <p class="text-xl font-bold text-blue-600">{{ b.total|floatformat:0 }} FCFA</p>
+            <p class="text-xs text-gray-400">{{ b.nb }} payouts</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+        <!-- Paiements sans distribution -->
+        {% if paiements_sans_payouts %}
+        <div>
+            <h2 class="text-lg font-semibold mb-3 text-yellow-700">Paiements confirmés sans distribution</h2>
+            <div class="space-y-2">
+                {% for p in paiements_sans_payouts %}
+                <div class="bg-white rounded shadow p-4 flex justify-between items-center">
+                    <div>
+                        <p class="font-medium text-sm">{{ p.eleve.get_full_name }}</p>
+                        <p class="text-xs text-gray-500">{{ p.montant|floatformat:0 }} FCFA — {{ p.date_paiement|date:"d/m/Y" }}</p>
+                    </div>
+                    <button onclick="distribuer('{{ p.id }}')"
+                            class="bg-green-600 text-white text-xs px-3 py-1 rounded hover:bg-green-700">
+                        Distribuer
+                    </button>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Derniers payouts -->
+        <div>
+            <h2 class="text-lg font-semibold mb-3">Derniers payouts</h2>
+            <div class="bg-white rounded-lg shadow overflow-hidden">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50 text-xs text-gray-500 uppercase">
+                        <tr>
+                            <th class="text-left px-4 py-2">Bénéficiaire</th>
+                            <th class="text-right px-4 py-2">Montant</th>
+                            <th class="text-center px-4 py-2">Statut</th>
+                            <th class="text-center px-4 py-2">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for payout in derniers_payouts %}
+                        <tr class="border-t">
+                            <td class="px-4 py-2">
+                                <span class="font-medium">{{ payout.get_beneficiaire_display }}</span><br>
+                                <span class="text-xs text-gray-400">{{ payout.telephone }}</span>
+                            </td>
+                            <td class="px-4 py-2 text-right font-medium">{{ payout.montant|floatformat:0 }} FCFA</td>
+                            <td class="px-4 py-2 text-center">
+                                {% if payout.statut == 'succes' or payout.statut == 'envoye' %}
+                                <span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded-full">{{ payout.get_statut_display }}</span>
+                                {% elif payout.statut == 'echec' %}
+                                <span class="bg-red-100 text-red-700 text-xs px-2 py-0.5 rounded-full">Échec</span>
+                                {% else %}
+                                <span class="bg-yellow-100 text-yellow-700 text-xs px-2 py-0.5 rounded-full">Attente</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-2 text-center">
+                                {% if payout.statut == 'echec' %}
+                                <button onclick="relancer('{{ payout.id }}')"
+                                        class="text-blue-600 text-xs hover:underline">Relancer</button>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="4" class="px-4 py-6 text-center text-gray-400 italic">Aucun payout.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const csrfToken = '{{ csrf_token }}';
+
+function post(url) {
+    return fetch(url, {method: 'POST', headers: {'X-CSRFToken': csrfToken}}).then(r => r.json());
+}
+
+function distribuer(paiementId) {
+    if (!confirm('Distribuer les commissions pour ce paiement ?')) return;
+    post(`/payments/commissions/paiement/${paiementId}/distribuer/`)
+        .then(d => { alert(d.success ? 'Distribution effectuée.' : `Erreur : ${d.error}`); if (d.success) location.reload(); });
+}
+
+function relancer(payoutId) {
+    if (!confirm('Relancer ce payout ?')) return;
+    post(`/payments/commissions/payout/${payoutId}/relancer/`)
+        .then(d => { alert(d.success ? 'Payout relancé.' : `Erreur : ${d.error}`); if (d.success) location.reload(); });
+}
+</script>
+{% endblock %}

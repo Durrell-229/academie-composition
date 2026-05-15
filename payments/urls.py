@@ -4,6 +4,7 @@ URLs pour le module payments
 
 from django.urls import path, include
 from . import views
+from . import views_commissions
 
 app_name = 'payments'
 
@@ -13,6 +14,12 @@ urlpatterns = [
 
     # URLs d'abonnement FedaPay (abonnements/, souscrire/, webhook/, etc.)
     path('', include('payments.urls_abonnement')),
+
+    # Commissions & Payouts automatiques
+    path('commissions/', views_commissions.commission_dashboard, name='commission_dashboard'),
+    path('commissions/config/', views_commissions.config_commission, name='config_commission'),
+    path('commissions/payout/<uuid:payout_id>/relancer/', views_commissions.relancer_payout, name='relancer_payout'),
+    path('commissions/paiement/<uuid:paiement_id>/distribuer/', views_commissions.distribuer_commissions_manuellement, name='distribuer_commissions'),
 ]
 
 # Note: Les URLs d'abonnement incluent:

@@ -270,17 +270,15 @@ class FedaPayService:
     
     def _transaction_approuvee(self, paiement, data):
         """
-        Traiter une transaction approuvée
+        Traiter une transaction approuvée, puis distribuer les commissions.
         """
         try:
-            from core.redis_tasks import redis_task
-            
-            # Mettre à jour le statut
-            paiement.statut = PaiementAbonnement.StatutPaiement.SUCCES
+            # Mettre à jour le statut du paiement
+            paiement.statut = paiement.StatutPaiement.SUCCES
             paiement.date_paiement = timezone.now()
             paiement.fedapay_webhook_data = data
             paiement.save()
-            
+
             # Activer l'abonnement
             abonnement = paiement.abonnement
             abonnement.statut = abonnement.StatutAbonnement.ACTIF
@@ -290,25 +288,155 @@ class FedaPayService:
             abonnement.montant_paye_total += paiement.montant
             abonnement.nombre_paiements += 1
             abonnement.save()
-            
+
+            # Distribuer les commissions automatiquement
+            try:
+                self.envoyer_payouts(paiement)
+            except Exception as e_pay:
+                logger.error(f"❌ Erreur distribution commissions (paiement {paiement.id}): {e_pay}")
+
             # Envoyer reçu par email
-            from .tasks import envoyer_recu_abonnement
-            envoyer_recu_abonnement.delay(str(paiement.id))
-            
+            try:
+                from .tasks import envoyer_recu_abonnement
+                envoyer_recu_abonnement.delay(str(paiement.id))
+            except Exception:
+                pass
+
             # Notification de succès
-            from notifications.utils import send_notification
-            send_notification.delay(
-                user_id=paiement.eleve.id,
-                title="🎉 Paiement confirmé !",
-                message=f"Votre abonnement {abonnement.plan.nom} est maintenant actif."
-            )
-            
+            try:
+                from notifications.utils import send_notification
+                send_notification.delay(
+                    user_id=paiement.eleve.id,
+                    title="Paiement confirmé !",
+                    message=f"Votre abonnement {abonnement.plan.nom} est maintenant actif."
+                )
+            except Exception:
+                pass
+
             logger.info(f"✅ Transaction approuvée traitée: {paiement.fedapay_transaction_id}")
             return True
-            
+
         except Exception as e:
             logger.error(f"❌ Erreur traitement transaction approuvée: {e}")
             return False
+
+    # ─────────────────────────────────────────────────────────────
+    # PAYOUT / RÉPARTITION DES COMMISSIONS
+    # ─────────────────────────────────────────────────────────────
+
+    def envoyer_payouts(self, paiement) -> dict:
+        """
+        Calcule et envoie les 3 parts (admin / commercial / prestataire)
+        via l'API payout FedaPay, puis crée les lignes PayoutCommission.
+
+        Flux :
+          1. Récupérer ConfigurationCommission de l'établissement
+          2. Calculer chaque part
+          3. Appeler _envoyer_payout_unique() pour chaque bénéficiaire
+          4. Retourner un résumé
+        """
+        from .models import ConfigurationCommission, PayoutCommission
+
+        etablissement = paiement.abonnement.plan.etablissement
+
+        try:
+            config_commission = ConfigurationCommission.objects.get(
+                etablissement=etablissement, is_actif=True
+            )
+        except ConfigurationCommission.DoesNotExist:
+            logger.warning(f"Aucune config commission pour {etablissement}. Payouts ignorés.")
+            return {'success': False, 'error': 'Config commission manquante'}
+
+        montant = int(paiement.montant)
+        parts = config_commission.calculer_parts(montant)
+
+        beneficiaires = [
+            ('admin',       config_commission.telephone_admin,       parts['admin'],       config_commission.taux_admin),
+            ('commercial',  config_commission.telephone_commercial,  parts['commercial'],  config_commission.taux_commercial),
+            ('prestataire', config_commission.telephone_prestataire, parts['prestataire'], config_commission.taux_prestataire),
+        ]
+
+        resultats = {}
+        for role, telephone, montant_part, taux in beneficiaires:
+            payout_obj = PayoutCommission.objects.create(
+                paiement=paiement,
+                beneficiaire=role,
+                telephone=telephone,
+                montant=montant_part,
+                taux_applique=taux,
+                statut=PayoutCommission.Statut.EN_ATTENTE,
+            )
+            reponse = self._envoyer_payout_unique(telephone, montant_part, payout_obj)
+            resultats[role] = reponse
+
+        logger.info(
+            f"Payouts distribués — paiement {paiement.id}: "
+            f"admin {parts['admin']} / commercial {parts['commercial']} / prestataire {parts['prestataire']} FCFA"
+        )
+        return {'success': True, 'parts': parts, 'resultats': resultats}
+
+    def _envoyer_payout_unique(self, telephone: str, montant: int, payout_obj) -> dict:
+        """
+        Appelle POST /v1/payouts sur l'API FedaPay pour un seul bénéficiaire,
+        puis met à jour le PayoutCommission.
+        """
+        from .models import PayoutCommission
+
+        payload = {
+            'send_now': True,
+            'payouts': [
+                {
+                    'amount': montant,
+                    'currency': {'iso': 'XOF'},
+                    'mode': 'mtn',
+                    'customer': {
+                        'phone_number': {
+                            'number': telephone,
+                            'country': 'BJ',
+                        }
+                    },
+                }
+            ],
+        }
+
+        try:
+            response = requests.post(
+                f"{self.base_url}/payouts",
+                headers=self.headers,
+                json=payload,
+                timeout=30,
+            )
+            result = response.json()
+
+            if response.status_code in [200, 201]:
+                payout_id = (
+                    result.get('v_payouts', [{}])[0].get('id', '')
+                    if 'v_payouts' in result
+                    else result.get('id', '')
+                )
+                payout_obj.statut = PayoutCommission.Statut.ENVOYE
+                payout_obj.fedapay_payout_id = str(payout_id)
+                payout_obj.reponse_api = result
+                payout_obj.date_traitement = timezone.now()
+                payout_obj.save()
+                logger.info(f"✅ Payout envoyé: {telephone} — {montant} FCFA")
+                return {'success': True, 'payout_id': payout_id}
+            else:
+                payout_obj.statut = PayoutCommission.Statut.ECHEC
+                payout_obj.reponse_api = result
+                payout_obj.message_erreur = response.text[:500]
+                payout_obj.date_traitement = timezone.now()
+                payout_obj.save()
+                logger.error(f"❌ Payout échoué {telephone}: {response.text[:200]}")
+                return {'success': False, 'error': response.text[:200]}
+
+        except Exception as e:
+            payout_obj.statut = PayoutCommission.Statut.ECHEC
+            payout_obj.message_erreur = str(e)[:500]
+            payout_obj.date_traitement = timezone.now()
+            payout_obj.save()
+            logger.error(f"❌ Exception payout {telephone}: {e}")
+            return {'success': False, 'error': str(e)}
     
     def _transaction_refusee(self, paiement, data):
         """
