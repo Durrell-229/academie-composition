@@ -126,6 +126,12 @@ def process_ia_correction(session_id):
     elif note_finale >= 8: mention = 'passable'
     else: mention = 'insuffisant'
     
+    # ═══ 4a. VÉRIFICATION D'ACCÈS PAYWALL ═══
+    from .access import verifier_acces_correction, construire_apercu
+    a_acces, raison_acces = verifier_acces_correction(session.eleve, session)
+    apercu = construire_apercu(correction_result, float(exam.note_maximale))
+    logger.info(f"[Correction] Accès paywall: {a_acces} ({raison_acces}) — élève {session.eleve.id}")
+
     resultat, created = Resultat.objects.update_or_create(
         session=session,
         defaults={
@@ -145,12 +151,14 @@ def process_ia_correction(session_id):
                 'nb_files': submission_files.count(),
                 'has_text_answer': answers.exists(),
             },
-            'corrige_at': timezone.now()
+            'corrige_at': timezone.now(),
+            'correction_complete': a_acces,    # True ssi abonné ou déjà payé
+            'apercu_correction': apercu,       # toujours stocké pour le paywall
         }
     )
-    
-    logger.info(f"[Correction] Résultat enregistré: {note_finale}/{exam.note_maximale} - Mention: {mention}")
-    
+
+    logger.info(f"[Correction] Résultat enregistré: {note_finale}/{exam.note_maximale} - Mention: {mention} - Paywall: {not a_acces}")
+
     # ═══ 5. GÉNÉRATION DU BULLETIN PDF ═══
     try:
         from bulletins.services import BulletinService
@@ -187,8 +195,8 @@ def process_ia_correction(session_id):
     except Exception as e:
         logger.error(f"[Correction] Erreur génération bulletin PDF: {e}")
 
-    # ═══ 6. MARQUER LA SESSION COMME CORRIGÉE ═══
-    session.statut = 'corrige'
+    # ═══ 6. STATUT SESSION ═══
+    session.statut = 'corrige' if a_acces else 'bloque'
     session.save()
     
     # ═══ 7. GAMIFICATION (XP) ═══

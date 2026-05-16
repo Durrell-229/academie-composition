@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}Paiement échoué - Académie Numérique{% endblock %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center px-4 py-16" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);">
+    <div class="max-w-md w-full text-center">
+        <!-- Icône échec -->
+        <div class="mb-8">
+            <div class="inline-flex items-center justify-center w-24 h-24 rounded-full mb-4"
+                 style="background: linear-gradient(135deg, #dc2626, #ef4444);">
+                <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </div>
+            <div class="text-6xl mb-2">😕</div>
+        </div>
+
+        <!-- Message -->
+        <div class="rounded-2xl p-8 mb-6" style="background: #1e293b; border: 1px solid #334155;">
+            <h1 class="text-3xl font-bold text-white mb-3">Paiement non abouti</h1>
+            <p class="text-slate-300 text-lg mb-6">{{ message|default:"Le paiement n'a pas pu être complété." }}</p>
+
+            <div class="rounded-xl p-4 mb-6" style="background: rgba(220,38,38,0.1); border: 1px solid rgba(239,68,68,0.3);">
+                <p class="text-red-400 text-sm font-medium">
+                    ⚠️ Votre compte n'a pas été débité. Vous pouvez réessayer à tout moment.
+                </p>
+            </div>
+
+            <!-- Causes possibles -->
+            <div class="text-left mb-6 rounded-xl p-4" style="background: #0f172a; border: 1px solid #334155;">
+                <p class="text-slate-400 text-sm font-semibold mb-3">Causes possibles :</p>
+                <ul class="space-y-2 text-slate-500 text-sm">
+                    <li>• Solde insuffisant sur votre compte Mobile Money</li>
+                    <li>• Délai d'expiration du paiement dépassé</li>
+                    <li>• Problème de réseau ou d'opérateur</li>
+                    <li>• Transaction annulée</li>
+                </ul>
+            </div>
+
+            <div class="flex flex-col gap-3">
+                <a href="{% url 'payments:abonnements' %}"
+                   class="block w-full py-3 px-6 rounded-xl font-semibold text-white text-center transition"
+                   style="background: linear-gradient(135deg, #4f46e5, #7c3aed);">
+                    Réessayer le paiement
+                </a>
+                <a href="{% url 'dashboard' %}"
+                   class="block w-full py-3 px-6 rounded-xl font-semibold text-center transition"
+                   style="background: #334155; color: #cbd5e1;">
+                    Retour au tableau de bord
+                </a>
+            </div>
+        </div>
+
+        <p class="text-slate-500 text-sm">
+            Besoin d'aide ? Contactez le support à <span class="text-blue-400">support@academie-numerique.bj</span>
+        </p>
+    </div>
+</div>
+{% endblock %}

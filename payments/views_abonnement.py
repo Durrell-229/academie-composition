@@ -9,14 +9,16 @@ from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from datetime import timedelta
 from django.utils import timezone
 from django.conf import settings
 from django.views.decorators.http import require_http_methods
 
 from .models import (
     PlanAbonnementScolaire, AbonnementEleve, PaiementAbonnement,
-    ConfigurationFedaPay, PromotionAbonnement
+    ConfigurationFedaPay, PromotionAbonnement, FraisScolaire
 )
+from schools.models import Etablissement, Classe
 from .fedapay_service import FedaPayService, FedaPayCheckout
 from .tasks import traiter_paiement_fedapay
 from core.redis_tasks import get_task_result
@@ -169,8 +171,8 @@ def initier_paiement_fedapay(request):
             etablissement=etablissement,
             statut=AbonnementEleve.StatutAbonnement.EN_ATTENTE,
             date_debut=timezone.now(),
-            date_fin=timezone.now() + timezone.timedelta(days=plan.duree_jours),
-            date_prochain_paiement=timezone.now() + timezone.timedelta(days=plan.duree_jours) if plan.type_plan != 'annuel' else None
+            date_fin=timezone.now() + timedelta(days=plan.duree_jours),
+            date_prochain_paiement=timezone.now() + timedelta(days=plan.duree_jours) if plan.type_plan != 'annuel' else None
         )
         
         # Créer le paiement
@@ -218,7 +220,7 @@ def verifier_statut_paiement(request, paiement_id):
                 return JsonResponse({
                     'success': True,
                     'status': 'completed',
-                    'redirect_url': '/payments/abonnement/succes/'
+                    'redirect_url': '/payments/paiement/succes/'
                 })
         
         return JsonResponse({
@@ -435,6 +437,64 @@ def admin_save_config_fedapay(request):
 
 
 @staff_member_required
+def admin_edit_plan(request, plan_id):
+    """Modifier un plan d'abonnement existant"""
+    plan = get_object_or_404(PlanAbonnementScolaire, id=plan_id)
+    etablissements = Etablissement.objects.filter(is_actif=True)
+
+    if request.method == 'POST':
+        try:
+            plan.etablissement_id = request.POST.get('etablissement')
+            plan.nom = request.POST.get('nom')
+            plan.slug = request.POST.get('slug')
+            plan.niveau = request.POST.get('niveau', 'standard')
+            plan.type_plan = request.POST.get('type_plan', 'mensuel')
+            plan.prix_mensuel = request.POST.get('prix_mensuel', 0)
+            plan.prix_annuel = request.POST.get('prix_annuel') or None
+            plan.reduction_annuelle_pourcentage = request.POST.get('reduction', 0)
+            plan.description_courte = request.POST.get('description_courte', '')
+            plan.description_complete = request.POST.get('description_complete', '')
+            plan.duree_jours = request.POST.get('duree_jours', 30)
+            plan.ordre_affichage = request.POST.get('ordre', 1)
+            plan.couleur = request.POST.get('couleur', '#3b82f6')
+            plan.icone = request.POST.get('icone', '🎓')
+            plan.is_populaire = request.POST.get('is_populaire') == 'on'
+            plan.is_recommande = request.POST.get('is_recommande') == 'on'
+            plan.is_actif = request.POST.get('is_actif') == 'on'
+            plan.badge_special = request.POST.get('badge_special', '')
+            features_raw = request.POST.get('features_text', '')
+            plan.features = [f.strip() for f in features_raw.splitlines() if f.strip()]
+            plan.save()
+            messages.success(request, f'Plan "{plan.nom}" mis à jour avec succès.')
+            return redirect('payments:admin_plans_abonnement')
+        except Exception as e:
+            messages.error(request, f'Erreur : {e}')
+
+    context = {
+        'plan': plan,
+        'etablissements': etablissements,
+        'niveaux': PlanAbonnementScolaire.NiveauPlan.choices,
+        'types': PlanAbonnementScolaire.TypePlan.choices,
+        'features_text': '\n'.join(plan.features) if plan.features else '',
+    }
+    return render(request, 'payments/admin_edit_plan.html', context)
+
+
+@staff_member_required
+@require_http_methods(["POST"])
+def admin_delete_plan(request, plan_id):
+    """Supprimer un plan (uniquement si aucun abonnement actif)"""
+    plan = get_object_or_404(PlanAbonnementScolaire, id=plan_id)
+    if plan.abonnements.filter(statut=AbonnementEleve.StatutAbonnement.ACTIF).exists():
+        messages.error(request, f'Impossible de supprimer "{plan.nom}" : des abonnements actifs y sont liés.')
+    else:
+        nom = plan.nom
+        plan.delete()
+        messages.success(request, f'Plan "{nom}" supprimé.')
+    return redirect('payments:admin_plans_abonnement')
+
+
+@staff_member_required
 def admin_plans_abonnement(request):
     """
     Gestion des plans d'abonnement (Super Admin)
@@ -552,6 +612,7 @@ def checkout_fedapay_embed(request):
         date_debut=timezone.now(),
         date_fin=timezone.now() + timedelta(days=plan.duree_jours),
     )
+
     
     # Préparer le contexte
     context = {
@@ -608,8 +669,8 @@ def confirmer_paiement_fedapay(request):
         
         # Notification
         from notifications.utils import send_notification
-        send_notification.delay(
-            user_id=request.user.id,
+        send_notification(
+            user=request.user,
             title="🎉 Paiement confirmé !",
             message=f"Votre abonnement {abonnement.plan.nom} est maintenant actif."
         )
@@ -627,3 +688,196 @@ def confirmer_paiement_fedapay(request):
             'success': False,
             'error': str(e)
         })
+
+
+# ═══════════════════════════════════════════════════════════════
+# CRUD FRAIS SCOLAIRES (ADMIN)
+# ═══════════════════════════════════════════════════════════════
+
+@staff_member_required
+def admin_frais_list(request):
+    """Liste des frais scolaires avec filtres par établissement"""
+    etablissement_id = request.GET.get('etablissement')
+    frais_qs = FraisScolaire.objects.select_related('etablissement').prefetch_related('classes_concernees')
+
+    etablissements = Etablissement.objects.filter(is_actif=True)
+
+    if etablissement_id:
+        frais_qs = frais_qs.filter(etablissement_id=etablissement_id)
+
+    context = {
+        'frais_list': frais_qs.order_by('type_frais', 'nom'),
+        'etablissements': etablissements,
+        'etablissement_filtre': etablissement_id,
+        'types_frais': FraisScolaire.TypeFrais.choices,
+    }
+    return render(request, 'payments/admin_frais_list.html', context)
+
+
+@staff_member_required
+def admin_frais_create(request):
+    """Créer un nouveau frais scolaire"""
+    etablissements = Etablissement.objects.filter(is_actif=True)
+    classes = Classe.objects.select_related('etablissement').all()
+
+    if request.method == 'POST':
+        try:
+            etab_id = request.POST.get('etablissement')
+            frais = FraisScolaire.objects.create(
+                etablissement_id=etab_id,
+                code=request.POST.get('code'),
+                nom=request.POST.get('nom'),
+                type_frais=request.POST.get('type_frais'),
+                description=request.POST.get('description', ''),
+                montant=request.POST.get('montant', 0),
+                est_obligatoire=request.POST.get('est_obligatoire') == 'on',
+                est_paiement_unique=request.POST.get('est_paiement_unique') == 'on',
+                nombre_echeances=request.POST.get('nombre_echeances', 1),
+                is_actif=request.POST.get('is_actif') == 'on',
+            )
+            classes_ids = request.POST.getlist('classes_concernees')
+            if classes_ids:
+                frais.classes_concernees.set(classes_ids)
+            messages.success(request, f'Frais "{frais.nom}" créé avec succès.')
+            return redirect('payments:admin_frais_list')
+        except Exception as e:
+            messages.error(request, f'Erreur : {e}')
+
+    context = {
+        'etablissements': etablissements,
+        'classes': classes,
+        'types_frais': FraisScolaire.TypeFrais.choices,
+        'action': 'Créer',
+        'frais': None,
+    }
+    return render(request, 'payments/admin_frais_form.html', context)
+
+
+@staff_member_required
+def admin_frais_edit(request, frais_id):
+    """Modifier un frais scolaire existant"""
+    frais = get_object_or_404(FraisScolaire, id=frais_id)
+    etablissements = Etablissement.objects.filter(is_actif=True)
+    classes = Classe.objects.select_related('etablissement').all()
+
+    if request.method == 'POST':
+        try:
+            frais.etablissement_id = request.POST.get('etablissement')
+            frais.code = request.POST.get('code')
+            frais.nom = request.POST.get('nom')
+            frais.type_frais = request.POST.get('type_frais')
+            frais.description = request.POST.get('description', '')
+            frais.montant = request.POST.get('montant', 0)
+            frais.est_obligatoire = request.POST.get('est_obligatoire') == 'on'
+            frais.est_paiement_unique = request.POST.get('est_paiement_unique') == 'on'
+            frais.nombre_echeances = request.POST.get('nombre_echeances', 1)
+            frais.is_actif = request.POST.get('is_actif') == 'on'
+            frais.save()
+            classes_ids = request.POST.getlist('classes_concernees')
+            frais.classes_concernees.set(classes_ids)
+            messages.success(request, f'Frais "{frais.nom}" mis à jour.')
+            return redirect('payments:admin_frais_list')
+        except Exception as e:
+            messages.error(request, f'Erreur : {e}')
+
+    context = {
+        'frais': frais,
+        'etablissements': etablissements,
+        'classes': classes,
+        'types_frais': FraisScolaire.TypeFrais.choices,
+        'selected_classes': [str(pk) for pk in frais.classes_concernees.values_list('id', flat=True)],
+        'action': 'Modifier',
+    }
+    return render(request, 'payments/admin_frais_form.html', context)
+
+
+@staff_member_required
+@require_http_methods(["POST"])
+def admin_frais_delete(request, frais_id):
+    """Supprimer un frais scolaire"""
+    frais = get_object_or_404(FraisScolaire, id=frais_id)
+    if frais.paiements.exists():
+        messages.error(request, f'Impossible de supprimer "{frais.nom}" : des paiements y sont liés.')
+    else:
+        nom = frais.nom
+        frais.delete()
+        messages.success(request, f'Frais "{nom}" supprimé.')
+    return redirect('payments:admin_frais_list')
+
+
+# ═══════════════════════════════════════════════════════════════
+# PAYWALL — PAIEMENT CORRECTION UNITAIRE
+# ═══════════════════════════════════════════════════════════════
+
+@login_required
+@require_http_methods(["POST"])
+def initier_paiement_correction(request, session_id):
+    """
+    Initie un paiement FedaPay pour débloquer la correction d'une composition.
+    Retourne JSON : {'payment_url': '...'} ou {'error': '...'}.
+    """
+    from compositions.models import CompositionSession
+    from .models import PaiementCorrectionUnitaire
+    import uuid as _uuid
+
+    try:
+        session = get_object_or_404(CompositionSession, id=session_id, eleve=request.user)
+        montant = getattr(settings, 'PRIX_CORRECTION_UNITAIRE', 500)
+        reference = f"CORR-{session.id.hex[:8].upper()}-{_uuid.uuid4().hex[:6].upper()}"
+
+        # Créer ou récupérer un paiement en attente pour cette session
+        paiement_obj, _ = PaiementCorrectionUnitaire.objects.get_or_create(
+            session=session,
+            eleve=request.user,
+            statut='en_attente',
+            defaults={
+                'reference': reference,
+                'montant': montant,
+            }
+        )
+
+        # Tenter FedaPay si une config globale est disponible
+        try:
+            config = ConfigurationFedaPay.objects.filter(is_actif=True).first()
+            if config:
+                import requests as _requests
+                base_url = (
+                    "https://api.fedapay.com/v1"
+                    if config.environnement == 'production'
+                    else "https://sandbox-api.fedapay.com/v1"
+                )
+                headers = {
+                    'Authorization': f'Bearer {config.cle_api_secrete}',
+                    'Content-Type': 'application/json',
+                }
+                callback_url = request.build_absolute_uri(f'/payments/correction/callback/{paiement_obj.id}/')
+                payload = {
+                    'description': f'Correction composition — {session.exam.titre}',
+                    'amount': {'total': int(montant), 'currency': 'XOF'},
+                    'callback_url': callback_url,
+                    'metadata': {
+                        'paiement_correction_id': str(paiement_obj.id),
+                        'session_id': str(session.id),
+                        'eleve_id': str(request.user.id),
+                    },
+                }
+                resp = _requests.post(f'{base_url}/transactions', headers=headers, json=payload, timeout=10)
+                if resp.status_code in (200, 201):
+                    data = resp.json()
+                    payment_url = data.get('url') or data.get('payment_url')
+                    paiement_obj.fedapay_transaction_id = str(data.get('id', ''))
+                    paiement_obj.fedapay_url_paiement = payment_url or ''
+                    paiement_obj.statut = 'en_cours'
+                    paiement_obj.save()
+                    if payment_url:
+                        return JsonResponse({'payment_url': payment_url})
+        except Exception as fedapay_err:
+            logger.warning(f"FedaPay correction non disponible: {fedapay_err}")
+
+        # Fallback : page d'abonnement (FedaPay non configuré ou erreur)
+        fallback_url = request.build_absolute_uri('/payments/abonnements/')
+        return JsonResponse({'payment_url': fallback_url})
+
+    except Exception as e:
+        logger.error(f"Erreur initier_paiement_correction: {e}")
+        return JsonResponse({'error': str(e)}, status=500)

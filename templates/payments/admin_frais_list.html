@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block title %}Frais scolaires — Administration{% endblock %}
+
+{% block content %}
+<div class="min-h-screen px-4 py-10" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);">
+  <div class="max-w-6xl mx-auto">
+
+    <!-- En-tête -->
+    <div class="flex items-center justify-between mb-8">
+      <div>
+        <h1 class="text-3xl font-bold text-white">Frais scolaires</h1>
+        <p class="text-slate-400 mt-1">Gérez tous les frais d'inscription, de scolarité et autres</p>
+      </div>
+      <a href="{% url 'payments:admin_frais_create' %}"
+         class="py-2 px-5 rounded-xl font-semibold text-white text-sm"
+         style="background: linear-gradient(135deg, #059669, #047857);">
+        + Nouveau frais
+      </a>
+    </div>
+
+    {% if messages %}
+    <div class="mb-6 space-y-2">
+      {% for msg in messages %}
+      <div class="rounded-xl px-4 py-3 text-sm font-medium
+          {% if msg.tags == 'success' %}text-emerald-400{% elif msg.tags == 'error' %}text-red-400{% else %}text-yellow-400{% endif %}"
+          style="background: #1e293b; border: 1px solid #334155;">{{ msg }}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Filtre établissement -->
+    <form method="get" class="mb-6 flex gap-3 items-center">
+      <select name="etablissement"
+              class="rounded-lg px-3 py-2 text-sm text-white"
+              style="background: #1e293b; border: 1px solid #334155;"
+              onchange="this.form.submit()">
+        <option value="">Tous les établissements</option>
+        {% for etab in etablissements %}
+        <option value="{{ etab.id }}" {% if etab.id|stringformat:"s" == etablissement_filtre %}selected{% endif %}>
+          {{ etab.nom }}
+        </option>
+        {% endfor %}
+      </select>
+      {% if etablissement_filtre %}
+      <a href="{% url 'payments:admin_frais_list' %}" class="text-slate-400 hover:text-white text-sm">Réinitialiser</a>
+      {% endif %}
+    </form>
+
+    <!-- Tableau -->
+    <div class="rounded-2xl overflow-hidden" style="border: 1px solid #334155;">
+      <table class="w-full text-sm">
+        <thead style="background: #0f172a;">
+          <tr>
+            <th class="text-left text-slate-400 font-semibold px-5 py-3 uppercase text-xs">Code</th>
+            <th class="text-left text-slate-400 font-semibold px-5 py-3 uppercase text-xs">Nom</th>
+            <th class="text-left text-slate-400 font-semibold px-5 py-3 uppercase text-xs">Type</th>
+            <th class="text-left text-slate-400 font-semibold px-5 py-3 uppercase text-xs">Établissement</th>
+            <th class="text-right text-slate-400 font-semibold px-5 py-3 uppercase text-xs">Montant</th>
+            <th class="text-center text-slate-400 font-semibold px-5 py-3 uppercase text-xs">Statut</th>
+            <th class="text-center text-slate-400 font-semibold px-5 py-3 uppercase text-xs">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for frais in frais_list %}
+          <tr class="border-t transition-colors hover:bg-slate-800/40" style="border-color: #334155;">
+            <td class="px-5 py-4 text-slate-300 font-mono text-xs">{{ frais.code }}</td>
+            <td class="px-5 py-4">
+              <p class="text-white font-medium">{{ frais.nom }}</p>
+              {% if frais.description %}
+              <p class="text-slate-500 text-xs mt-0.5 truncate max-w-xs">{{ frais.description }}</p>
+              {% endif %}
+            </td>
+            <td class="px-5 py-4">
+              <span class="text-xs px-2 py-0.5 rounded-full text-slate-300"
+                    style="background: #334155;">{{ frais.get_type_frais_display }}</span>
+            </td>
+            <td class="px-5 py-4 text-slate-400 text-xs">{{ frais.etablissement.nom }}</td>
+            <td class="px-5 py-4 text-right">
+              <span class="text-white font-semibold">{{ frais.montant|floatformat:0 }}</span>
+              <span class="text-slate-500 text-xs"> FCFA</span>
+            </td>
+            <td class="px-5 py-4 text-center">
+              {% if frais.is_actif %}
+              <span class="text-xs px-2 py-0.5 rounded-full" style="background:#059669;color:#fff;">Actif</span>
+              {% else %}
+              <span class="text-xs px-2 py-0.5 rounded-full" style="background:#475569;color:#cbd5e1;">Inactif</span>
+              {% endif %}
+              {% if not frais.est_obligatoire %}
+              <span class="text-xs px-2 py-0.5 rounded-full ml-1" style="background:#1e40af;color:#bfdbfe;">Optionnel</span>
+              {% endif %}
+            </td>
+            <td class="px-5 py-4 text-center">
+              <div class="flex items-center justify-center gap-2">
+                <a href="{% url 'payments:admin_frais_edit' frais.id %}"
+                   class="text-xs px-3 py-1.5 rounded-lg font-medium text-indigo-400 hover:text-indigo-300 transition"
+                   style="background: rgba(99,102,241,0.1); border: 1px solid rgba(99,102,241,0.3);">
+                  Modifier
+                </a>
+                <form method="post" action="{% url 'payments:admin_frais_delete' frais.id %}"
+                      onsubmit="return confirm('Supprimer « {{ frais.nom }} » ?');"
+                      style="display:inline;">
+                  {% csrf_token %}
+                  <button type="submit"
+                          class="text-xs px-3 py-1.5 rounded-lg font-medium text-red-400 hover:text-red-300 transition"
+                          style="background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3);">
+                    Supprimer
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="7" class="text-center py-16 text-slate-500">
+              <p class="text-4xl mb-3">💰</p>
+              <p class="font-semibold">Aucun frais scolaire défini</p>
+              <p class="text-sm mt-1">
+                <a href="{% url 'payments:admin_frais_create' %}" class="text-indigo-400 hover:underline">Créer le premier frais</a>
+              </p>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Résumé -->
+    {% if frais_list %}
+    <p class="text-slate-500 text-xs mt-4">{{ frais_list|length }} frais au total</p>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}

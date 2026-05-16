@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Reçu de paiement - {{ paiement.numero_paiement }}</title>
+    <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #f1f5f9; margin: 0; padding: 0; }
+        .wrapper { max-width: 600px; margin: 0 auto; background: #ffffff; }
+        .header { background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); padding: 40px 30px; text-align: center; }
+        .header .icon { font-size: 48px; margin-bottom: 10px; }
+        .header h1 { color: #fff; margin: 0; font-size: 22px; font-weight: 700; }
+        .header p { color: rgba(255,255,255,0.8); font-size: 13px; margin-top: 6px; }
+        .body { padding: 35px 30px; }
+        .greeting { font-size: 16px; color: #1e293b; margin-bottom: 20px; }
+        .amount-box { background: linear-gradient(135deg, #4f46e5, #7c3aed); border-radius: 12px; padding: 25px; text-align: center; margin-bottom: 25px; }
+        .amount-box .label { color: rgba(255,255,255,0.8); font-size: 12px; margin-bottom: 6px; }
+        .amount-box .value { color: #fff; font-size: 38px; font-weight: 800; }
+        .amount-box .devise { font-size: 16px; opacity: 0.8; }
+        .details-table { width: 100%; border-collapse: collapse; margin-bottom: 25px; }
+        .details-table th { background: #f8fafc; color: #64748b; font-size: 11px; text-transform: uppercase; padding: 10px 14px; text-align: left; border-bottom: 2px solid #e2e8f0; }
+        .details-table td { padding: 10px 14px; border-bottom: 1px solid #f1f5f9; font-size: 13px; color: #334155; }
+        .status-badge { display: inline-block; background: #dcfce7; color: #166534; font-size: 12px; font-weight: 700; padding: 5px 14px; border-radius: 20px; }
+        .info-block { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px; margin-bottom: 20px; }
+        .info-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #e2e8f0; font-size: 13px; }
+        .info-row:last-child { border-bottom: none; }
+        .info-label { color: #64748b; }
+        .info-value { color: #1e293b; font-weight: 600; }
+        .footer { background: #f8fafc; padding: 25px 30px; text-align: center; border-top: 1px solid #e2e8f0; }
+        .footer p { color: #94a3b8; font-size: 11px; margin: 3px 0; }
+    </style>
+</head>
+<body>
+<div class="wrapper">
+    <div class="header">
+        <div class="icon">🎓</div>
+        <h1>Reçu de paiement</h1>
+        <p>Académie Numérique · Cotonou, Bénin</p>
+    </div>
+    <div class="body">
+        <p class="greeting">Bonjour <strong>{{ eleve.first_name }}</strong>,</p>
+        <p style="color:#475569;font-size:14px;margin-bottom:20px;">
+            Votre paiement a été enregistré avec succès. Voici votre reçu.
+        </p>
+
+        <div class="amount-box">
+            <div class="label">Montant payé</div>
+            <div class="value">{{ paiement.montant_paye|floatformat:0 }} <span class="devise">FCFA</span></div>
+            <div style="margin-top:10px;"><span class="status-badge">✓ {{ paiement.get_statut_display }}</span></div>
+        </div>
+
+        <div class="info-block">
+            <div class="info-row">
+                <span class="info-label">N° de paiement</span>
+                <span class="info-value">{{ paiement.numero_paiement }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Date</span>
+                <span class="info-value">{{ paiement.date_paiement|date:"d/m/Y" }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Frais</span>
+                <span class="info-value">{{ paiement.frais.nom }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Mode de paiement</span>
+                <span class="info-value">{{ paiement.get_mode_paiement_display }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Établissement</span>
+                <span class="info-value">{{ etablissement.nom }}</span>
+            </div>
+        </div>
+
+        {% if paiement.montant_restant > 0 %}
+        <div style="background:#fef3c7;border:1px solid #fde68a;border-radius:10px;padding:14px;margin-bottom:20px;">
+            <p style="color:#92400e;font-size:13px;font-weight:600;margin:0;">
+                ⚠️ Solde restant : <strong>{{ paiement.montant_restant|floatformat:0 }} FCFA</strong>
+            </p>
+        </div>
+        {% endif %}
+
+        <p style="color:#64748b;font-size:13px;line-height:1.6;">
+            Conservez ce reçu comme preuve de paiement. En cas de problème, contactez l'administration de votre établissement.
+        </p>
+    </div>
+    <div class="footer">
+        <p>© 2024 Académie Numérique · Cotonou, Bénin 🇧🇯</p>
+        <p>Ce message est automatique, merci de ne pas y répondre.</p>
+    </div>
+</div>
+</body>
+</html>

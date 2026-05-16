@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+
+{% block title %}Plans d'abonnement - Admin{% endblock %}
+
+{% block content %}
+<div class="min-h-screen px-4 py-10" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);">
+    <div class="max-w-6xl mx-auto">
+
+        <div class="flex items-center justify-between mb-8">
+            <div>
+                <h1 class="text-3xl font-bold text-white">Plans d'abonnement</h1>
+                <p class="text-slate-400 mt-1">Créez et gérez les plans proposés aux élèves</p>
+            </div>
+            <button onclick="document.getElementById('modal-create').classList.remove('hidden')"
+                    class="py-2 px-5 rounded-xl font-semibold text-white text-sm"
+                    style="background: linear-gradient(135deg, #4f46e5, #7c3aed);">
+                + Créer un plan
+            </button>
+        </div>
+
+        {% if messages %}
+        <div class="mb-6 space-y-2">
+            {% for msg in messages %}
+            <div class="rounded-xl px-4 py-3 text-sm font-medium
+                {% if msg.tags == 'success' %}text-emerald-400{% elif msg.tags == 'error' %}text-red-400{% else %}text-yellow-400{% endif %}"
+                style="background: #1e293b; border: 1px solid #334155;">{{ msg }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Liste des plans -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {% for plan in plans %}
+            <div class="rounded-2xl p-6 flex flex-col" style="background: #1e293b; border: 1px solid #334155;">
+                <div class="flex items-start justify-between mb-3">
+                    <div>
+                        <span class="text-2xl">{{ plan.icone }}</span>
+                        <h3 class="text-white font-bold text-lg mt-1">{{ plan.nom }}</h3>
+                        <p class="text-slate-500 text-xs">{{ plan.etablissement.nom }}</p>
+                    </div>
+                    <div class="flex flex-col gap-1 items-end">
+                        {% if plan.is_actif %}
+                        <span class="text-xs px-2 py-0.5 rounded-full" style="background:#059669;color:#fff;">Actif</span>
+                        {% else %}
+                        <span class="text-xs px-2 py-0.5 rounded-full" style="background:#475569;color:#cbd5e1;">Inactif</span>
+                        {% endif %}
+                        {% if plan.is_populaire %}
+                        <span class="text-xs px-2 py-0.5 rounded-full" style="background:#7c3aed;color:#fff;">Populaire</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <p class="text-3xl font-bold text-white">{{ plan.prix_mensuel|floatformat:0 }} <span class="text-base text-slate-400">FCFA/mois</span></p>
+                    <p class="text-slate-500 text-xs mt-1">{{ plan.get_type_plan_display }} · {{ plan.duree_jours }} jours</p>
+                </div>
+
+                <div class="flex-1 mb-4">
+                    <p class="text-slate-400 text-xs font-semibold uppercase mb-2">Avantages</p>
+                    <ul class="space-y-1">
+                        {% for feature in plan.features %}
+                        <li class="text-slate-300 text-sm flex items-center gap-2">
+                            <span class="text-emerald-400">✓</span> {{ feature }}
+                        </li>
+                        {% empty %}
+                        <li class="text-slate-500 text-sm italic">Aucun avantage défini</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+                <div class="pt-4 border-t flex items-center justify-between gap-2" style="border-color: #334155;">
+                    <span class="text-slate-500 text-xs">{{ plan.abonnements.count }} abonné(s)</span>
+                    <div class="flex gap-2">
+                        <a href="{% url 'payments:admin_edit_plan' plan.id %}"
+                           class="text-xs px-3 py-1.5 rounded-lg font-medium text-indigo-400 hover:text-indigo-300 transition"
+                           style="background: rgba(99,102,241,0.1); border: 1px solid rgba(99,102,241,0.3);">
+                            Modifier
+                        </a>
+                        <form method="post" action="{% url 'payments:admin_delete_plan' plan.id %}"
+                              onsubmit="return confirm('Supprimer définitivement « {{ plan.nom }} » ?');"
+                              style="display:inline;">
+                            {% csrf_token %}
+                            <button type="submit"
+                                    class="text-xs px-3 py-1.5 rounded-lg font-medium text-red-400 hover:text-red-300 transition"
+                                    style="background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3);">
+                                Supprimer
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-span-3 text-center py-16 text-slate-500">
+                <p class="text-5xl mb-4">📋</p>
+                <p class="font-semibold">Aucun plan créé</p>
+                <p class="text-sm mt-1">Créez votre premier plan d'abonnement.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal création -->
+<div id="modal-create" class="hidden fixed inset-0 z-50 flex items-center justify-center px-4"
+     style="background: rgba(0,0,0,0.7);">
+    <div class="w-full max-w-2xl rounded-2xl p-8 max-h-screen overflow-y-auto" style="background: #1e293b; border: 1px solid #475569;">
+        <div class="flex items-center justify-between mb-6">
+            <h2 class="text-xl font-bold text-white">Créer un plan</h2>
+            <button onclick="document.getElementById('modal-create').classList.add('hidden')"
+                    class="text-slate-400 hover:text-white text-2xl leading-none">&times;</button>
+        </div>
+
+        <form method="post" action="{% url 'payments:admin_create_plan' %}">
+            {% csrf_token %}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label class="block text-slate-400 text-xs font-semibold mb-1 uppercase">Établissement</label>
+                    <select name="etablissement" required class="w-full rounded-lg px-3 py-2 text-sm text-white"
+                            style="background: #0f172a; border: 1px solid #475569;">
+                        {% for etab in etablissements %}
+                        <option value="{{ etab.id }}">{{ etab.nom }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-slate-400 text-xs font-semibold mb-1 uppercase">Nom du plan</label>
+                    <input type="text" name="nom" required placeholder="Ex: Plan Standard"
+                           class="w-full rounded-lg px-3 py-2 text-sm text-white"
+                           style="background: #0f172a; border: 1px solid #475569;">
+                </div>
+                <div>
+                    <label class="block text-slate-400 text-xs font-semibold mb-1 uppercase">Slug (identifiant URL)</label>
+                    <input type="text" name="slug" required placeholder="plan-standard"
+                           class="w-full rounded-lg px-3 py-2 text-sm text-white"
+                           style="background: #0f172a; border: 1px solid #475569;">
+                </div>
+                <div>
+                    <label class="block text-slate-400 text-xs font-semibold mb-1 uppercase">Niveau</label>
+                    <select name="niveau" class="w-full rounded-lg px-3 py-2 text-sm text-white"
+                            style="background: #0f172a; border: 1px solid #475569;">
+                        {% for val, label in niveaux %}
+                        <option value="{{ val }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-slate-400 text-xs font-semibold mb-1 uppercase">Type</label>
+                    <select name="type_plan" class="w-full rounded-lg px-3 py-2 text-sm text-white"
+                            style="background: #0f172a; border: 1px solid #475569;">
+                        {% for val, label in types %}
+                        <option value="{{ val }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-slate-400 text-xs font-semibold mb-1 uppercase">Prix mensuel (FCFA)</label>
+                    <input type="number" name="prix_mensuel" required min="0"
+                           class="w-full rounded-lg px-3 py-2 text-sm text-white"
+                           style="background: #0f172a; border: 1px solid #475569;">
+                </div>
+                <div>
+                    <label class="block text-slate-400 text-xs font-semibold mb-1 uppercase">Durée (jours)</label>
+                    <input type="number" name="duree_jours" value="30" min="1"
+                           class="w-full rounded-lg px-3 py-2 text-sm text-white"
+                           style="background: #0f172a; border: 1px solid #475569;">
+                </div>
+                <div>
+                    <label class="block text-slate-400 text-xs font-semibold mb-1 uppercase">Icône (emoji)</label>
+                    <input type="text" name="icone" value="🎓" maxlength="4"
+                           class="w-full rounded-lg px-3 py-2 text-sm text-white"
+                           style="background: #0f172a; border: 1px solid #475569;">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-slate-400 text-xs font-semibold mb-1 uppercase">Description courte</label>
+                    <input type="text" name="description_courte" maxlength="200"
+                           class="w-full rounded-lg px-3 py-2 text-sm text-white"
+                           style="background: #0f172a; border: 1px solid #475569;">
+                </div>
+            </div>
+
+            <div class="flex items-center gap-6 mb-6">
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" name="is_populaire" class="w-4 h-4 rounded">
+                    <span class="text-slate-300 text-sm">Plan populaire</span>
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" name="is_recommande" class="w-4 h-4 rounded">
+                    <span class="text-slate-300 text-sm">Recommandé</span>
+                </label>
+            </div>
+
+            <div class="flex gap-3 justify-end">
+                <button type="button" onclick="document.getElementById('modal-create').classList.add('hidden')"
+                        class="py-2 px-5 rounded-xl text-sm font-semibold text-slate-300"
+                        style="background: #334155;">Annuler</button>
+                <button type="submit" class="py-2 px-5 rounded-xl text-sm font-semibold text-white"
+                        style="background: linear-gradient(135deg, #4f46e5, #7c3aed);">Créer le plan</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+
+{% block title %}{{ action }} un frais scolaire{% endblock %}
+
+{% block content %}
+<div class="min-h-screen px-4 py-10" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);">
+  <div class="max-w-3xl mx-auto">
+
+    <!-- En-tête -->
+    <div class="mb-6">
+      <a href="{% url 'payments:admin_frais_list' %}"
+         class="text-slate-400 hover:text-white text-sm transition-colors flex items-center gap-1 mb-4">
+        ← Retour aux frais scolaires
+      </a>
+      <h1 class="text-3xl font-bold text-white">
+        {% if frais %}Modifier le frais{% else %}Nouveau frais scolaire{% endif %}
+      </h1>
+      {% if frais %}
+      <p class="text-slate-400 mt-1">{{ frais.nom }} · {{ frais.etablissement.nom }}</p>
+      {% endif %}
+    </div>
+
+    {% if messages %}
+    <div class="mb-6 space-y-2">
+      {% for msg in messages %}
+      <div class="rounded-xl px-4 py-3 text-sm font-medium
+          {% if msg.tags == 'success' %}text-emerald-400{% elif msg.tags == 'error' %}text-red-400{% else %}text-yellow-400{% endif %}"
+          style="background: #1e293b; border: 1px solid #334155;">{{ msg }}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <form method="post" class="rounded-2xl p-8 space-y-6" style="background: #1e293b; border: 1px solid #334155;">
+      {% csrf_token %}
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+        <!-- Établissement -->
+        <div>
+          <label class="block text-slate-400 text-xs font-semibold mb-1 uppercase">Établissement *</label>
+          <select name="etablissement" required
+                  class="w-full rounded-lg px-3 py-2 text-sm text-white"
+                  style="background: #0f172a; border: 1px solid #475569;">
+            <option value="">— Choisir —</option>
+            {% for etab in etablissements %}
+            <option value="{{ etab.id }}"
+                    {% if frais and frais.etablissement_id == etab.id %}selected{% endif %}>
+              {{ etab.nom }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Type de frais -->
+        <div>
+          <label class="block text-slate-400 text-xs font-semibold mb-1 uppercase">Type de frais *</label>
+          <select name="type_frais" required
+                  class="w-full rounded-lg px-3 py-2 text-sm text-white"
+                  style="background: #0f172a; border: 1px solid #475569;">
+            <option value="">— Choisir —</option>
+            {% for val, label in types_frais %}
+            <option value="{{ val }}"
+                    {% if frais and frais.type_frais == val %}selected{% endif %}>
+              {{ label }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Code -->
+        <div>
+          <label class="block text-slate-400 text-xs font-semibold mb-1 uppercase">Code *</label>
+          <input type="text" name="code" required maxlength="20"
+                 value="{% if frais %}{{ frais.code }}{% endif %}"
+                 placeholder="Ex : INSC-2025"
+                 class="w-full rounded-lg px-3 py-2 text-sm text-white font-mono"
+                 style="background: #0f172a; border: 1px solid #475569;">
+          <p class="text-slate-500 text-xs mt-1">Identifiant court unique (max 20 caractères)</p>
+        </div>
+
+        <!-- Nom -->
+        <div>
+          <label class="block text-slate-400 text-xs font-semibold mb-1 uppercase">Nom *</label>
+          <input type="text" name="nom" required maxlength="200"
+                 value="{% if frais %}{{ frais.nom }}{% endif %}"
+                 placeholder="Ex : Frais d'inscription 2025-2026"
+                 class="w-full rounded-lg px-3 py-2 text-sm text-white"
+                 style="background: #0f172a; border: 1px solid #475569;">
+        </div>
+
+        <!-- Montant -->
+        <div>
+          <label class="block text-slate-400 text-xs font-semibold mb-1 uppercase">Montant (FCFA) *</label>
+          <input type="number" name="montant" required min="0"
+                 value="{% if frais %}{{ frais.montant|floatformat:0 }}{% else %}0{% endif %}"
+                 class="w-full rounded-lg px-3 py-2 text-sm text-white"
+                 style="background: #0f172a; border: 1px solid #475569;">
+        </div>
+
+        <!-- Nombre d'échéances -->
+        <div>
+          <label class="block text-slate-400 text-xs font-semibold mb-1 uppercase">Nombre d'échéances</label>
+          <input type="number" name="nombre_echeances" min="1"
+                 value="{% if frais %}{{ frais.nombre_echeances }}{% else %}1{% endif %}"
+                 class="w-full rounded-lg px-3 py-2 text-sm text-white"
+                 style="background: #0f172a; border: 1px solid #475569;">
+        </div>
+
+        <!-- Description -->
+        <div class="md:col-span-2">
+          <label class="block text-slate-400 text-xs font-semibold mb-1 uppercase">Description</label>
+          <textarea name="description" rows="3"
+                    placeholder="Description optionnelle de ce frais..."
+                    class="w-full rounded-lg px-3 py-2 text-sm text-white resize-none"
+                    style="background: #0f172a; border: 1px solid #475569;">{% if frais %}{{ frais.description }}{% endif %}</textarea>
+        </div>
+
+        <!-- Classes concernées -->
+        <div class="md:col-span-2">
+          <label class="block text-slate-400 text-xs font-semibold mb-1 uppercase">
+            Classes concernées <span class="text-slate-600 normal-case font-normal">(laisser vide = toutes)</span>
+          </label>
+          <div class="rounded-lg p-3 max-h-48 overflow-y-auto space-y-1"
+               style="background: #0f172a; border: 1px solid #475569;">
+            {% for classe in classes %}
+            <label class="flex items-center gap-2 cursor-pointer px-1 py-0.5 rounded hover:bg-slate-800">
+              <input type="checkbox" name="classes_concernees" value="{{ classe.id }}"
+                     class="w-4 h-4 rounded text-indigo-500"
+                     {% if classe.id|stringformat:"s" in selected_classes %}checked{% endif %}>
+              <span class="text-slate-300 text-sm">
+                {{ classe.nom }}
+                <span class="text-slate-500 text-xs ml-1">· {{ classe.etablissement.nom }}</span>
+              </span>
+            </label>
+            {% empty %}
+            <p class="text-slate-500 text-sm italic px-1">Aucune classe disponible</p>
+            {% endfor %}
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Toggles -->
+      <div class="flex flex-wrap items-center gap-6 pt-2">
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" name="est_obligatoire" class="w-4 h-4 rounded"
+                 {% if not frais or frais.est_obligatoire %}checked{% endif %}>
+          <span class="text-slate-300 text-sm">Frais obligatoire</span>
+        </label>
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" name="est_paiement_unique" class="w-4 h-4 rounded"
+                 {% if frais and frais.est_paiement_unique %}checked{% endif %}>
+          <span class="text-slate-300 text-sm">Paiement unique (non récurrent)</span>
+        </label>
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" name="is_actif" class="w-4 h-4 rounded"
+                 {% if not frais or frais.is_actif %}checked{% endif %}>
+          <span class="text-slate-300 text-sm">Actif</span>
+        </label>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex items-center justify-between pt-4 border-t" style="border-color: #334155;">
+        {% if frais %}
+        <form method="post" action="{% url 'payments:admin_frais_delete' frais.id %}"
+              onsubmit="return confirm('Supprimer définitivement ce frais ?');">
+          {% csrf_token %}
+          <button type="submit"
+                  class="py-2 px-4 rounded-xl text-sm font-semibold text-red-400 hover:text-red-300 transition"
+                  style="background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3);">
+            Supprimer
+          </button>
+        </form>
+        {% else %}
+        <div></div>
+        {% endif %}
+
+        <div class="flex gap-3">
+          <a href="{% url 'payments:admin_frais_list' %}"
+             class="py-2 px-5 rounded-xl text-sm font-semibold text-slate-300"
+             style="background: #334155;">Annuler</a>
+          <button type="submit"
+                  class="py-2 px-5 rounded-xl text-sm font-semibold text-white"
+                  style="background: linear-gradient(135deg, #059669, #047857);">
+            {% if frais %}Enregistrer{% else %}Créer le frais{% endif %}
+          </button>
+        </div>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+<script>
+  /* Sélection multiple des classes : cocher/décocher tout par établissement */
+  document.querySelectorAll('input[name="classes_concernees"]').forEach(cb => {
+    cb.addEventListener('change', () => {});
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Reçu de paiement - {{ paiement.numero_paiement }}</title>
+    <style>
+        @page { size: A4; margin: 0; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Helvetica', 'Arial', sans-serif; font-size: 12px; line-height: 1.6; color: #333; }
+        .receipt { width: 210mm; min-height: 297mm; padding: 40px; background: #fff; }
+        .header { text-align: center; padding-bottom: 25px; border-bottom: 3px solid #4f46e5; margin-bottom: 25px; }
+        .logo-icon { font-size: 40px; margin-bottom: 8px; }
+        .company-name { font-size: 22px; font-weight: 700; color: #1e293b; }
+        .company-sub { font-size: 11px; color: #64748b; margin-top: 4px; }
+        .badge-recu { display: inline-block; background: #4f46e5; color: #fff; font-size: 13px; font-weight: 700; padding: 6px 20px; border-radius: 20px; margin-top: 12px; letter-spacing: 1px; }
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 25px; }
+        .info-block { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; }
+        .info-block h4 { font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+        .info-row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #e2e8f0; }
+        .info-row:last-child { border-bottom: none; }
+        .info-label { color: #64748b; font-size: 11px; }
+        .info-value { color: #1e293b; font-weight: 600; font-size: 11px; }
+        .montant-section { background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #fff; border-radius: 12px; padding: 25px; margin-bottom: 25px; text-align: center; }
+        .montant-label { font-size: 12px; opacity: 0.8; margin-bottom: 5px; }
+        .montant-value { font-size: 36px; font-weight: 800; }
+        .montant-devise { font-size: 16px; opacity: 0.8; margin-left: 5px; }
+        .statut-badge { display: inline-block; padding: 4px 14px; border-radius: 12px; font-size: 11px; font-weight: 700; margin-top: 8px; }
+        .statut-complet { background: rgba(255,255,255,0.2); color: #fff; }
+        .details-table { width: 100%; border-collapse: collapse; margin-bottom: 25px; }
+        .details-table th { background: #f1f5f9; color: #475569; font-size: 10px; text-transform: uppercase; padding: 8px 12px; text-align: left; border-bottom: 2px solid #e2e8f0; }
+        .details-table td { padding: 10px 12px; border-bottom: 1px solid #f1f5f9; font-size: 11px; color: #334155; }
+        .details-table tr:last-child td { border-bottom: none; font-weight: 600; }
+        .footer { text-align: center; padding-top: 20px; border-top: 1px solid #e2e8f0; color: #94a3b8; font-size: 10px; }
+        .footer p { margin-bottom: 3px; }
+        .stamp { display: inline-block; border: 3px solid #059669; color: #059669; font-weight: 800; font-size: 14px; padding: 8px 20px; border-radius: 8px; transform: rotate(-5deg); margin: 15px 0; letter-spacing: 2px; }
+    </style>
+</head>
+<body>
+<div class="receipt">
+    <!-- En-tête -->
+    <div class="header">
+        <div class="logo-icon">🎓</div>
+        <div class="company-name">Académie Numérique</div>
+        <div class="company-sub">Plateforme d'évaluation intelligente · Cotonou, Bénin</div>
+        <div class="badge-recu">REÇU DE PAIEMENT</div>
+    </div>
+
+    <!-- Montant principal -->
+    <div class="montant-section">
+        <div class="montant-label">Montant payé</div>
+        <div>
+            <span class="montant-value">{{ paiement.montant_paye|floatformat:0 }}</span>
+            <span class="montant-devise">FCFA</span>
+        </div>
+        <span class="statut-badge statut-complet">✓ {{ paiement.get_statut_display }}</span>
+    </div>
+
+    <!-- Informations -->
+    <div class="info-grid">
+        <div class="info-block">
+            <h4>Informations du paiement</h4>
+            <div class="info-row">
+                <span class="info-label">N° de paiement</span>
+                <span class="info-value">{{ paiement.numero_paiement }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Date</span>
+                <span class="info-value">{{ paiement.date_paiement|date:"d/m/Y" }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Mode</span>
+                <span class="info-value">{{ paiement.get_mode_paiement_display }}</span>
+            </div>
+            {% if paiement.reference_paiement %}
+            <div class="info-row">
+                <span class="info-label">Référence</span>
+                <span class="info-value">{{ paiement.reference_paiement }}</span>
+            </div>
+            {% endif %}
+        </div>
+        <div class="info-block">
+            <h4>Élève</h4>
+            <div class="info-row">
+                <span class="info-label">Nom complet</span>
+                <span class="info-value">{{ paiement.eleve.get_full_name }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Classe</span>
+                <span class="info-value">{{ paiement.classe }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Année scolaire</span>
+                <span class="info-value">{{ paiement.annee_scolaire }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Détails -->
+    <table class="details-table">
+        <thead>
+            <tr>
+                <th>Désignation</th>
+                <th>Montant total</th>
+                <th>Remise</th>
+                <th>Montant payé</th>
+                <th>Reste dû</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>{{ paiement.frais.nom }}</td>
+                <td>{{ paiement.montant_total|floatformat:0 }} FCFA</td>
+                <td>{{ paiement.montant_remise|floatformat:0 }} FCFA</td>
+                <td>{{ paiement.montant_paye|floatformat:0 }} FCFA</td>
+                <td>{{ paiement.montant_restant|floatformat:0 }} FCFA</td>
+            </tr>
+            <tr>
+                <td colspan="3"><strong>Total</strong></td>
+                <td><strong>{{ paiement.montant_paye|floatformat:0 }} FCFA</strong></td>
+                <td><strong>{{ paiement.montant_restant|floatformat:0 }} FCFA</strong></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- Tampon -->
+    <div style="text-align:center;">
+        <div class="stamp">PAYÉ</div>
+    </div>
+
+    <!-- Pied de page -->
+    <div class="footer">
+        <p>Établissement : {{ etablissement.nom }}</p>
+        <p>Document généré automatiquement le {% now "d/m/Y à H:i" %} · Académie Numérique</p>
+        <p>Ce document tient lieu de reçu officiel.</p>
+    </div>
+</div>
+</body>
+</html>

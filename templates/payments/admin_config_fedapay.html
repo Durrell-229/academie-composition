@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block title %}Configuration FedaPay - Admin{% endblock %}
+
+{% block content %}
+<div class="min-h-screen px-4 py-10" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);">
+    <div class="max-w-4xl mx-auto">
+
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-white">Configuration FedaPay</h1>
+            <p class="text-slate-400 mt-1">Gérez les clés API FedaPay par établissement</p>
+        </div>
+
+        {% if messages %}
+        <div class="mb-6 space-y-2">
+            {% for msg in messages %}
+            <div class="rounded-xl px-4 py-3 text-sm font-medium
+                {% if msg.tags == 'success' %}text-emerald-400{% elif msg.tags == 'error' %}text-red-400{% else %}text-yellow-400{% endif %}"
+                style="background: #1e293b; border: 1px solid #334155;">
+                {{ msg }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="space-y-6">
+            {% for item in configs %}
+            <div class="rounded-2xl p-6" style="background: #1e293b; border: 1px solid #334155;">
+                <div class="flex items-center justify-between mb-5">
+                    <div>
+                        <h2 class="text-lg font-bold text-white">{{ item.etablissement.nom }}</h2>
+                        {% if item.is_new %}
+                        <span class="text-xs px-2 py-0.5 rounded-full font-semibold" style="background:#1d4ed8;color:#bfdbfe;">Nouvelle configuration</span>
+                        {% endif %}
+                    </div>
+                    <span class="text-xs px-3 py-1 rounded-full font-semibold
+                        {% if item.config.is_actif %}text-emerald-400{% else %}text-red-400{% endif %}"
+                        style="background: #0f172a;">
+                        {% if item.config.is_actif %}● Actif{% else %}● Inactif{% endif %}
+                    </span>
+                </div>
+
+                <form method="post" action="{% url 'payments:admin_save_config_fedapay' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="config_id" value="{{ item.config.id }}">
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-slate-400 text-xs font-semibold mb-1 uppercase">Environnement</label>
+                            <select name="environnement" class="w-full rounded-lg px-3 py-2 text-sm text-white"
+                                    style="background: #0f172a; border: 1px solid #475569;">
+                                {% for val, label in environnements %}
+                                <option value="{{ val }}" {% if item.config.environnement == val %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-slate-400 text-xs font-semibold mb-1 uppercase">Nom du marchand</label>
+                            <input type="text" name="nom_marchand" value="{{ item.config.nom_marchand }}"
+                                   class="w-full rounded-lg px-3 py-2 text-sm text-white"
+                                   style="background: #0f172a; border: 1px solid #475569;">
+                        </div>
+                        <div>
+                            <label class="block text-slate-400 text-xs font-semibold mb-1 uppercase">Clé API publique</label>
+                            <input type="text" name="cle_api_publique" value="{{ item.config.cle_api_publique }}"
+                                   placeholder="pk_sandbox_..." class="w-full rounded-lg px-3 py-2 text-sm text-white"
+                                   style="background: #0f172a; border: 1px solid #475569;">
+                        </div>
+                        <div>
+                            <label class="block text-slate-400 text-xs font-semibold mb-1 uppercase">Clé API secrète</label>
+                            <input type="password" name="cle_api_secrete" value="{{ item.config.cle_api_secrete }}"
+                                   placeholder="sk_sandbox_..." class="w-full rounded-lg px-3 py-2 text-sm text-white"
+                                   style="background: #0f172a; border: 1px solid #475569;">
+                        </div>
+                        <div>
+                            <label class="block text-slate-400 text-xs font-semibold mb-1 uppercase">Email du marchand</label>
+                            <input type="email" name="email_marchand" value="{{ item.config.email_marchand }}"
+                                   class="w-full rounded-lg px-3 py-2 text-sm text-white"
+                                   style="background: #0f172a; border: 1px solid #475569;">
+                        </div>
+                        <div>
+                            <label class="block text-slate-400 text-xs font-semibold mb-1 uppercase">Secret Webhook</label>
+                            <input type="text" name="webhook_secret" value="{{ item.config.webhook_secret }}"
+                                   placeholder="whsec_..." class="w-full rounded-lg px-3 py-2 text-sm text-white"
+                                   style="background: #0f172a; border: 1px solid #475569;">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-slate-400 text-xs font-semibold mb-1 uppercase">URL Webhook</label>
+                            <input type="text" name="webhook_url" value="{{ item.config.webhook_url }}"
+                                   placeholder="https://votre-site.com/payments/webhook/fedapay/"
+                                   class="w-full rounded-lg px-3 py-2 text-sm text-white"
+                                   style="background: #0f172a; border: 1px solid #475569;">
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" name="is_actif" {% if item.config.is_actif %}checked{% endif %}
+                                   class="w-4 h-4 rounded">
+                            <span class="text-slate-300 text-sm">Activer cette configuration</span>
+                        </label>
+                        <button type="submit" class="py-2 px-6 rounded-xl text-sm font-semibold text-white transition"
+                                style="background: linear-gradient(135deg, #4f46e5, #7c3aed);">
+                            Sauvegarder
+                        </button>
+                    </div>
+                </form>
+            </div>
+            {% empty %}
+            <div class="text-center py-12 text-slate-500">Aucun établissement trouvé.</div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

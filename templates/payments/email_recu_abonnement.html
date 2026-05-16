@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Reçu d'abonnement - {{ paiement.reference_transaction }}</title>
+    <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #f1f5f9; margin: 0; padding: 0; }
+        .wrapper { max-width: 600px; margin: 0 auto; background: #ffffff; }
+        .header { background: linear-gradient(135deg, #059669 0%, #0891b2 100%); padding: 40px 30px; text-align: center; }
+        .header .icon { font-size: 52px; margin-bottom: 10px; }
+        .header h1 { color: #fff; margin: 0; font-size: 22px; font-weight: 700; }
+        .header p { color: rgba(255,255,255,0.85); font-size: 13px; margin-top: 6px; }
+        .body { padding: 35px 30px; }
+        .amount-box { background: linear-gradient(135deg, #059669, #0891b2); border-radius: 12px; padding: 25px; text-align: center; margin-bottom: 25px; }
+        .amount-box .label { color: rgba(255,255,255,0.8); font-size: 12px; margin-bottom: 6px; }
+        .amount-box .value { color: #fff; font-size: 38px; font-weight: 800; }
+        .plan-card { border: 2px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 25px; text-align: center; }
+        .plan-icon { font-size: 36px; margin-bottom: 8px; }
+        .plan-name { font-size: 20px; font-weight: 700; color: #1e293b; }
+        .plan-meta { color: #64748b; font-size: 13px; margin-top: 4px; }
+        .info-block { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px; margin-bottom: 20px; }
+        .info-row { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid #e2e8f0; font-size: 13px; }
+        .info-row:last-child { border-bottom: none; }
+        .info-label { color: #64748b; }
+        .info-value { color: #1e293b; font-weight: 600; }
+        .access-box { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 18px; margin-bottom: 20px; }
+        .access-box h4 { color: #166534; font-size: 14px; margin-bottom: 12px; }
+        .access-box ul { margin: 0; padding-left: 18px; }
+        .access-box li { color: #15803d; font-size: 13px; margin-bottom: 6px; }
+        .footer { background: #f8fafc; padding: 25px 30px; text-align: center; border-top: 1px solid #e2e8f0; }
+        .footer p { color: #94a3b8; font-size: 11px; margin: 3px 0; }
+    </style>
+</head>
+<body>
+<div class="wrapper">
+    <div class="header">
+        <div class="icon">🎉</div>
+        <h1>Abonnement activé !</h1>
+        <p>Académie Numérique · Cotonou, Bénin</p>
+    </div>
+    <div class="body">
+        <p style="font-size:16px;color:#1e293b;margin-bottom:16px;">
+            Bonjour <strong>{{ eleve.first_name }}</strong>,
+        </p>
+        <p style="color:#475569;font-size:14px;margin-bottom:24px;line-height:1.6;">
+            Votre paiement a été confirmé et votre abonnement est maintenant <strong>actif</strong>. Vous avez accès à toutes les fonctionnalités de votre plan.
+        </p>
+
+        <div class="amount-box">
+            <div class="label">Montant payé</div>
+            <div class="value">{{ paiement.montant|floatformat:0 }} <span style="font-size:16px;opacity:.8;">FCFA</span></div>
+        </div>
+
+        <div class="plan-card">
+            <div class="plan-icon">{{ abonnement.plan.icone }}</div>
+            <div class="plan-name">{{ abonnement.plan.nom }}</div>
+            <div class="plan-meta">{{ abonnement.plan.get_type_plan_display }}</div>
+        </div>
+
+        <div class="info-block">
+            <div class="info-row">
+                <span class="info-label">Référence</span>
+                <span class="info-value">{{ paiement.reference_transaction }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">N° abonnement</span>
+                <span class="info-value">{{ abonnement.numero_abonnement }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Date d'activation</span>
+                <span class="info-value">{{ abonnement.date_debut|date:"d/m/Y" }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Date d'expiration</span>
+                <span class="info-value">{{ abonnement.date_fin|date:"d/m/Y" }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Établissement</span>
+                <span class="info-value">{{ abonnement.etablissement.nom }}</span>
+            </div>
+        </div>
+
+        <div class="access-box">
+            <h4>✨ Vous avez maintenant accès à :</h4>
+            <ul>
+                {% for feature in abonnement.plan.features %}
+                <li>{{ feature }}</li>
+                {% empty %}
+                <li>Toutes les fonctionnalités du plan {{ abonnement.plan.nom }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <p style="color:#64748b;font-size:13px;line-height:1.6;">
+            Un reçu PDF est joint à cet email. Conservez-le comme preuve de paiement.
+        </p>
+    </div>
+    <div class="footer">
+        <p>© 2024 Académie Numérique · Cotonou, Bénin 🇧🇯</p>
+        <p>Ce message est automatique, merci de ne pas y répondre.</p>
+    </div>
+</div>
+</body>
+</html>

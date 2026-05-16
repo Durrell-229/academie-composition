@@ -37,6 +37,17 @@ urlpatterns = [
     path('admin/config-fedapay/save/', views_abonnement.admin_save_config_fedapay, name='admin_save_config_fedapay'),
     path('admin/plans-abonnement/', views_abonnement.admin_plans_abonnement, name='admin_plans_abonnement'),
     path('admin/plans-abonnement/create/', views_abonnement.admin_create_plan, name='admin_create_plan'),
+    path('admin/plans-abonnement/<uuid:plan_id>/edit/', views_abonnement.admin_edit_plan, name='admin_edit_plan'),
+    path('admin/plans-abonnement/<uuid:plan_id>/delete/', views_abonnement.admin_delete_plan, name='admin_delete_plan'),
+
+    # Paywall — correction unitaire
+    path('correction/initier/<uuid:session_id>/', views_abonnement.initier_paiement_correction, name='initier_paiement_correction'),
+
+    # Frais scolaires (CRUD admin)
+    path('admin/frais-scolaires/', views_abonnement.admin_frais_list, name='admin_frais_list'),
+    path('admin/frais-scolaires/create/', views_abonnement.admin_frais_create, name='admin_frais_create'),
+    path('admin/frais-scolaires/<uuid:frais_id>/edit/', views_abonnement.admin_frais_edit, name='admin_frais_edit'),
+    path('admin/frais-scolaires/<uuid:frais_id>/delete/', views_abonnement.admin_frais_delete, name='admin_frais_delete'),
 ]
 
 # Note: Inclure ces URLs dans payments/urls.py principal avec:
