@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+
+{% block title %}Modifier le plan — {{ plan.nom }}{% endblock %}
+
+{% block content %}
+<div class="min-h-screen px-4 py-10" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);">
+  <div class="max-w-3xl mx-auto">
+
+    <!-- En-tête -->
+    <div class="flex items-center gap-4 mb-8">
+      <a href="{% url 'payments:admin_plans_abonnement' %}"
+         class="text-slate-400 hover:text-white transition-colors text-sm flex items-center gap-1">
+        ← Retour aux plans
+      </a>
+    </div>
+    <h1 class="text-3xl font-bold text-white mb-1">Modifier le plan</h1>
+    <p class="text-slate-400 mb-8">{{ plan.nom }} · {{ plan.etablissement.nom }}</p>
+
+    {% if messages %}
+    <div class="mb-6 space-y-2">
+      {% for msg in messages %}
+      <div class="rounded-xl px-4 py-3 text-sm font-medium
+          {% if msg.tags == 'success' %}text-emerald-400{% elif msg.tags == 'error' %}text-red-400{% else %}text-yellow-400{% endif %}"
+          style="background: #1e293b; border: 1px solid #334155;">{{ msg }}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <form method="post" class="rounded-2xl p-8 space-y-6" style="background: #1e293b; border: 1px solid #334155;">
+      {% csrf_token %}
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+        <!-- Établissement -->
+        <div>
+          <label class="block text-slate-400 text-xs font-semibold mb-1 uppercase">Établissement</label>
+          <select name="etablissement" required class="w-full rounded-lg px-3 py-2 text-sm text-white"
+                  style="background: #0f172a; border: 1px solid #475569;">
+            {% for etab in etablissements %}
+            <option value="{{ etab.id }}" {% if etab.id == plan.etablissement_id %}selected{% endif %}>{{ etab.nom }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Nom -->
+        <div>
+          <label class="block text-slate-400 text-xs font-semibold mb-1 uppercase">Nom du plan</label>
+          <input type="text" name="nom" required value="{{ plan.nom }}"
+                 class="w-full rounded-lg px-3 py-2 text-sm text-white"
+                 style="background: #0f172a; border: 1px solid #475569;">
+        </div>
+
+        <!-- Slug -->
+        <div>
+          <label class="block text-slate-400 text-xs font-semibold mb-1 uppercase">Slug (URL)</label>
+          <input type="text" name="slug" required value="{{ plan.slug }}"
+                 class="w-full rounded-lg px-3 py-2 text-sm text-white"
+                 style="background: #0f172a; border: 1px solid #475569;">
+        </div>
+
+        <!-- Niveau -->
+        <div>
+          <label class="block text-slate-400 text-xs font-semibold mb-1 uppercase">Niveau</label>
+          <select name="niveau" class="w-full rounded-lg px-3 py-2 text-sm text-white"
+                  style="background: #0f172a; border: 1px solid #475569;">
+            {% for val, label in niveaux %}
+            <option value="{{ val }}" {% if val == plan.niveau %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Type -->
+        <div>
+          <label class="block text-slate-400 text-xs font-semibold mb-1 uppercase">Type</label>
+          <select name="type_plan" class="w-full rounded-lg px-3 py-2 text-sm text-white"
+                  style="background: #0f172a; border: 1px solid #475569;">
+            {% for val, label in types %}
+            <option value="{{ val }}" {% if val == plan.type_plan %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Prix mensuel -->
+        <div>
+          <label class="block text-slate-400 text-xs font-semibold mb-1 uppercase">Prix mensuel (FCFA)</label>
+          <input type="number" name="prix_mensuel" required min="0" value="{{ plan.prix_mensuel|floatformat:0 }}"
+                 class="w-full rounded-lg px-3 py-2 text-sm text-white"
+                 style="background: #0f172a; border: 1px solid #475569;">
+        </div>
+
+        <!-- Prix annuel -->
+        <div>
+          <label class="block text-slate-400 text-xs font-semibold mb-1 uppercase">Prix annuel (FCFA, optionnel)</label>
+          <input type="number" name="prix_annuel" min="0" value="{{ plan.prix_annuel|default:'' }}"
+                 class="w-full rounded-lg px-3 py-2 text-sm text-white"
+                 style="background: #0f172a; border: 1px solid #475569;">
+        </div>
+
+        <!-- Réduction annuelle -->
+        <div>
+          <label class="block text-slate-400 text-xs font-semibold mb-1 uppercase">Réduction annuelle (%)</label>
+          <input type="number" name="reduction" min="0" max="100" step="0.01"
+                 value="{{ plan.reduction_annuelle_pourcentage }}"
+                 class="w-full rounded-lg px-3 py-2 text-sm text-white"
+                 style="background: #0f172a; border: 1px solid #475569;">
+        </div>
+
+        <!-- Durée -->
+        <div>
+          <label class="block text-slate-400 text-xs font-semibold mb-1 uppercase">Durée (jours)</label>
+          <input type="number" name="duree_jours" min="1" value="{{ plan.duree_jours }}"
+                 class="w-full rounded-lg px-3 py-2 text-sm text-white"
+                 style="background: #0f172a; border: 1px solid #475569;">
+        </div>
+
+        <!-- Ordre -->
+        <div>
+          <label class="block text-slate-400 text-xs font-semibold mb-1 uppercase">Ordre d'affichage</label>
+          <input type="number" name="ordre" min="1" value="{{ plan.ordre_affichage }}"
+                 class="w-full rounded-lg px-3 py-2 text-sm text-white"
+                 style="background: #0f172a; border: 1px solid #475569;">
+        </div>
+
+        <!-- Icône -->
+        <div>
+          <label class="block text-slate-400 text-xs font-semibold mb-1 uppercase">Icône (emoji)</label>
+          <input type="text" name="icone" maxlength="4" value="{{ plan.icone }}"
+                 class="w-full rounded-lg px-3 py-2 text-sm text-white"
+                 style="background: #0f172a; border: 1px solid #475569;">
+        </div>
+
+        <!-- Couleur -->
+        <div>
+          <label class="block text-slate-400 text-xs font-semibold mb-1 uppercase">Couleur (hex)</label>
+          <div class="flex gap-2">
+            <input type="color" name="couleur" value="{{ plan.couleur }}"
+                   class="h-10 w-12 rounded cursor-pointer border-0"
+                   style="background: #0f172a; border: 1px solid #475569;">
+            <input type="text" id="couleur-text" value="{{ plan.couleur }}" maxlength="7" readonly
+                   class="flex-1 rounded-lg px-3 py-2 text-sm text-slate-300"
+                   style="background: #0f172a; border: 1px solid #475569;">
+          </div>
+        </div>
+
+        <!-- Badge spécial -->
+        <div>
+          <label class="block text-slate-400 text-xs font-semibold mb-1 uppercase">Badge spécial</label>
+          <input type="text" name="badge_special" maxlength="50" value="{{ plan.badge_special }}"
+                 placeholder="Ex : Offre limitée"
+                 class="w-full rounded-lg px-3 py-2 text-sm text-white"
+                 style="background: #0f172a; border: 1px solid #475569;">
+        </div>
+
+        <!-- Description courte -->
+        <div class="md:col-span-2">
+          <label class="block text-slate-400 text-xs font-semibold mb-1 uppercase">Description courte</label>
+          <input type="text" name="description_courte" maxlength="200" value="{{ plan.description_courte }}"
+                 class="w-full rounded-lg px-3 py-2 text-sm text-white"
+                 style="background: #0f172a; border: 1px solid #475569;">
+        </div>
+
+        <!-- Description complète -->
+        <div class="md:col-span-2">
+          <label class="block text-slate-400 text-xs font-semibold mb-1 uppercase">Description complète</label>
+          <textarea name="description_complete" rows="3"
+                    class="w-full rounded-lg px-3 py-2 text-sm text-white resize-none"
+                    style="background: #0f172a; border: 1px solid #475569;">{{ plan.description_complete }}</textarea>
+        </div>
+
+        <!-- Features -->
+        <div class="md:col-span-2">
+          <label class="block text-slate-400 text-xs font-semibold mb-1 uppercase">
+            Avantages (une ligne par avantage)
+          </label>
+          <textarea name="features_text" rows="5"
+                    placeholder="Accès illimité aux cours&#10;Certificats premium&#10;Support prioritaire"
+                    class="w-full rounded-lg px-3 py-2 text-sm text-white font-mono resize-y"
+                    style="background: #0f172a; border: 1px solid #475569;">{{ features_text }}</textarea>
+          <p class="text-slate-500 text-xs mt-1">Chaque ligne deviendra un avantage affiché avec ✓</p>
+        </div>
+
+      </div>
+
+      <!-- Toggles -->
+      <div class="flex flex-wrap items-center gap-6 pt-2">
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" name="is_populaire" class="w-4 h-4 rounded"
+                 {% if plan.is_populaire %}checked{% endif %}>
+          <span class="text-slate-300 text-sm">Plan populaire</span>
+        </label>
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" name="is_recommande" class="w-4 h-4 rounded"
+                 {% if plan.is_recommande %}checked{% endif %}>
+          <span class="text-slate-300 text-sm">Recommandé</span>
+        </label>
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" name="is_actif" class="w-4 h-4 rounded"
+                 {% if plan.is_actif %}checked{% endif %}>
+          <span class="text-slate-300 text-sm">Actif</span>
+        </label>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex items-center justify-between pt-4 border-t" style="border-color: #334155;">
+        <!-- Suppression -->
+        <form method="post" action="{% url 'payments:admin_delete_plan' plan.id %}"
+              onsubmit="return confirm('Supprimer définitivement ce plan ?');">
+          {% csrf_token %}
+          <button type="submit"
+                  class="py-2 px-4 rounded-xl text-sm font-semibold text-red-400 hover:text-red-300 transition"
+                  style="background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3);">
+            Supprimer le plan
+          </button>
+        </form>
+
+        <div class="flex gap-3">
+          <a href="{% url 'payments:admin_plans_abonnement' %}"
+             class="py-2 px-5 rounded-xl text-sm font-semibold text-slate-300"
+             style="background: #334155;">Annuler</a>
+          <button type="submit"
+                  class="py-2 px-5 rounded-xl text-sm font-semibold text-white"
+                  style="background: linear-gradient(135deg, #4f46e5, #7c3aed);">
+            Enregistrer les modifications
+          </button>
+        </div>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+<script>
+  const colorInput = document.querySelector('input[type="color"]');
+  const colorText = document.getElementById('couleur-text');
+  colorInput.addEventListener('input', () => { colorText.value = colorInput.value; });
+</script>
+{% endblock %}

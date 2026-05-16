@@ -5,6 +5,7 @@ Adapté au contexte béninois (Francs CFA - XOF)
 
 import uuid
 from django.db import models
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django.conf import settings
 from schools.models import Etablissement, Classe
@@ -735,3 +736,48 @@ class PayoutCommission(models.Model):
 
     def __str__(self):
         return f"{self.get_beneficiaire_display()} — {self.montant:,.0f} FCFA ({self.get_statut_display()})"
+
+
+class PaiementCorrectionUnitaire(models.Model):
+    """
+    Paiement ponctuel pour débloquer la correction IA d'UNE composition.
+    Créé quand un élève sans abonnement actif clique sur "Payer maintenant"
+    depuis la page paywall.
+    """
+
+    class Statut(models.TextChoices):
+        EN_ATTENTE = 'en_attente', _('En attente')
+        EN_COURS = 'en_cours', _('En cours')
+        SUCCES = 'succes', _('Succès')
+        ECHEC = 'echec', _('Échec')
+        ANNULE = 'annule', _('Annulé')
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    reference = models.CharField(_('référence'), max_length=100, unique=True)
+    eleve = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='paiements_corrections'
+    )
+    session = models.ForeignKey(
+        'compositions.CompositionSession', on_delete=models.CASCADE, related_name='paiements_correction'
+    )
+    montant = models.DecimalField(_('montant (XOF)'), max_digits=10, decimal_places=0)
+    statut = models.CharField(_('statut'), max_length=20, choices=Statut.choices, default=Statut.EN_ATTENTE)
+    fedapay_transaction_id = models.CharField(_('FedaPay Transaction ID'), max_length=100, blank=True)
+    fedapay_url_paiement = models.URLField(_('URL de paiement'), blank=True)
+    fedapay_webhook_data = models.JSONField(_('données webhook'), blank=True, null=True)
+    date_creation = models.DateTimeField(auto_now_add=True)
+    date_paiement = models.DateTimeField(_('date de paiement'), blank=True, null=True)
+
+    class Meta:
+        verbose_name = _('Paiement correction unitaire')
+        verbose_name_plural = _('Paiements correction unitaire')
+        ordering = ['-date_creation']
+
+    def __str__(self):
+        return f"{self.reference} — {self.montant:,.0f} FCFA ({self.get_statut_display()})"
+
+    def save(self, *args, **kwargs):
+        if not self.reference:
+            import random
+            self.reference = f"COR-{timezone.now().year}-{''.join([str(random.randint(0,9)) for _ in range(6)])}"
+        super().save(*args, **kwargs)

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>⚠️ Votre abonnement expire dans 3 jours</title>
+    <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #f1f5f9; margin: 0; padding: 0; }
+        .wrapper { max-width: 600px; margin: 0 auto; background: #ffffff; }
+        .header { background: linear-gradient(135deg, #d97706 0%, #ef4444 100%); padding: 40px 30px; text-align: center; }
+        .header .icon { font-size: 52px; margin-bottom: 10px; }
+        .header h1 { color: #fff; margin: 0; font-size: 22px; font-weight: 700; }
+        .header p { color: rgba(255,255,255,0.85); font-size: 13px; margin-top: 6px; }
+        .body { padding: 35px 30px; }
+        .urgent-box { background: linear-gradient(135deg, #fef3c7, #fde68a); border-left: 5px solid #d97706; border-radius: 10px; padding: 20px; margin-bottom: 25px; }
+        .urgent-box h2 { color: #92400e; font-size: 16px; margin: 0 0 8px 0; }
+        .urgent-box p { color: #78350f; font-size: 13px; margin: 0; line-height: 1.6; }
+        .countdown { text-align: center; margin: 25px 0; padding: 20px; background: #fff7ed; border-radius: 12px; border: 2px dashed #fed7aa; }
+        .countdown-number { font-size: 72px; font-weight: 800; color: #ea580c; line-height: 1; }
+        .countdown-label { font-size: 16px; color: #64748b; margin-top: 6px; }
+        .info-block { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px; margin-bottom: 20px; }
+        .info-row { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid #e2e8f0; font-size: 13px; }
+        .info-row:last-child { border-bottom: none; }
+        .info-label { color: #64748b; }
+        .info-value { color: #1e293b; font-weight: 600; }
+        .cta-button { display: block; background: linear-gradient(135deg, #d97706, #ef4444); color: #fff; text-decoration: none; padding: 16px 40px; border-radius: 50px; font-weight: 700; font-size: 15px; text-align: center; margin: 25px 0; }
+        .warning-list { background: #fff1f2; border: 1px solid #fecdd3; border-radius: 10px; padding: 18px; margin-bottom: 20px; }
+        .warning-list h4 { color: #be123c; font-size: 13px; margin: 0 0 10px 0; }
+        .warning-list ul { margin: 0; padding-left: 18px; }
+        .warning-list li { color: #9f1239; font-size: 13px; margin-bottom: 6px; }
+        .footer { background: #f8fafc; padding: 25px 30px; text-align: center; border-top: 1px solid #e2e8f0; }
+        .footer p { color: #94a3b8; font-size: 11px; margin: 3px 0; }
+    </style>
+</head>
+<body>
+<div class="wrapper">
+    <div class="header">
+        <div class="icon">⚠️</div>
+        <h1>ACTION REQUISE</h1>
+        <p>Votre abonnement expire dans 3 jours</p>
+    </div>
+    <div class="body">
+        <p style="font-size:16px;color:#1e293b;margin-bottom:16px;">
+            Bonjour <strong>{{ eleve.first_name }}</strong>,
+        </p>
+
+        <div class="urgent-box">
+            <h2>🔔 Rappel urgent</h2>
+            <p>Votre abonnement <strong>{{ abonnement.plan.nom }}</strong> expire dans <strong>{{ jours_restants }} jours</strong>. Renouvelez maintenant pour éviter toute interruption.</p>
+        </div>
+
+        <div class="countdown">
+            <div class="countdown-number">{{ jours_restants }}</div>
+            <div class="countdown-label">jours restants</div>
+        </div>
+
+        <div class="info-block">
+            <div class="info-row">
+                <span class="info-label">Plan</span>
+                <span class="info-value">{{ abonnement.plan.nom }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">N° abonnement</span>
+                <span class="info-value">{{ abonnement.numero_abonnement }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Expire le</span>
+                <span class="info-value">{{ abonnement.date_fin|date:"d/m/Y à H:i" }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Montant renouvellement</span>
+                <span class="info-value">{{ abonnement.plan.prix_mensuel|floatformat:0 }} FCFA/mois</span>
+            </div>
+        </div>
+
+        <a href="{{ url_renouvellement }}" class="cta-button">⚡ Renouveler maintenant</a>
+
+        <div class="warning-list">
+            <h4>🚫 Sans renouvellement, vous perdrez l'accès à :</h4>
+            <ul>
+                <li>Vos cours et compositions enregistrés</li>
+                <li>Les corrections IA de vos devoirs</li>
+                <li>Votre historique de progression</li>
+                <li>Vos certificats et diplômes numériques</li>
+            </ul>
+        </div>
+
+        <p style="color:#64748b;font-size:13px;line-height:1.6;">
+            Besoin d'aide ? Contactez-nous à <a href="mailto:support@academie-numerique.bj" style="color:#4f46e5;">support@academie-numerique.bj</a>
+        </p>
+    </div>
+    <div class="footer">
+        <p>© 2024 Académie Numérique · Cotonou, Bénin 🇧🇯</p>
+        <p>Ce message est automatique, merci de ne pas y répondre.</p>
+    </div>
+</div>
+</body>
+</html>

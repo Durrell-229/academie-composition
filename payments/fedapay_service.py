@@ -305,8 +305,8 @@ class FedaPayService:
             # Notification de succès
             try:
                 from notifications.utils import send_notification
-                send_notification.delay(
-                    user_id=paiement.eleve.id,
+                send_notification(
+                    user=paiement.eleve,
                     title="Paiement confirmé !",
                     message=f"Votre abonnement {abonnement.plan.nom} est maintenant actif."
                 )
@@ -448,8 +448,8 @@ class FedaPayService:
         
         # Notification d'échec
         from notifications.utils import send_notification
-        send_notification.delay(
-            user_id=paiement.eleve.id,
+        send_notification(
+            user=paiement.eleve,
             title="❌ Paiement refusé",
             message="Votre paiement n'a pas pu être traité. Veuillez réessayer."
         )

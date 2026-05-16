@@ -152,17 +152,80 @@ def submit_paper_view(request, session_id):
 
 @login_required
 def result_view(request, session_id):
-    # Admin peut voir toutes les sessions
-    if request.user.is_staff or getattr(request.user, 'role', '') == 'admin':
+    from .access import verifier_acces_correction, debloquer_correction
+
+    # Récupération sécurisée — admins/profs voient tout
+    role = getattr(request.user, 'role', '')
+    if request.user.is_staff or role in ('admin', 'directeur', 'professeur'):
         session = get_object_or_404(CompositionSession, id=session_id)
     else:
-        # Élève ne voit que ses propres sessions
         session = get_object_or_404(CompositionSession, id=session_id, eleve=request.user)
-    
+
     resultat = getattr(session, 'resultat', None)
+
+    # ── GARDE PAYWALL ──
+    # Seulement pour les élèves dont la correction est terminée mais verrouillée
+    if (resultat is not None
+            and role == 'eleve'
+            and not resultat.correction_complete):
+
+        a_acces, raison = verifier_acces_correction(request.user, session)
+
+        if a_acces:
+            # L'accès vient d'être confirmé → déverrouiller définitivement
+            debloquer_correction(session)
+            resultat.refresh_from_db()
+        else:
+            # ─── PAGE PAYWALL ───
+            from subscriptions.models import SubscriptionPlan
+            from django.conf import settings
+
+            plans_pro = SubscriptionPlan.objects.filter(
+                is_active=True,
+                level__in=('PRO', 'ELITE'),
+            ).order_by('price')
+
+            prix_unitaire = getattr(settings, 'PRIX_CORRECTION_UNITAIRE', 500)
+
+            config = {
+                'badge_urgence': '',
+                'titre_accroche': 'Votre correction est prête !',
+                'sous_titre': (
+                    'Votre copie a été analysée par notre IA. '
+                    'Déverrouillez la correction complète avec votre note, '
+                    'vos points forts et votre bulletin PDF.'
+                ),
+                'label_correction_unitaire': 'Correction unique',
+                'description_correction_unitaire': (
+                    'Accédez immédiatement à la correction complète de cette '
+                    'composition : note finale, détails par critère et bulletin PDF.'
+                ),
+                'prix_correction_unitaire': prix_unitaire,
+                'label_btn_abonnement': 'Souscrire maintenant',
+            }
+
+            apercu = resultat.apercu_correction or {
+                'pourcentage_apercu': 30,
+                'nb_details_apercu': 0,
+                'nb_details_total': 0,
+                'details': [],
+                'points_forts': '',
+                'note_sur': float(resultat.note_sur),
+            }
+
+            return render(request, 'compositions/paywall.html', {
+                'session': session,
+                'exam': session.exam,
+                'config': config,
+                'apercu': apercu,
+                'plans_pro': plans_pro,
+            })
+
+    # ── VUE RÉSULTAT NORMAL ──
     circle_offset = 94
     if resultat and resultat.note_sur:
         circle_offset = round(94 * (1 - float(resultat.note) / float(resultat.note_sur)), 2)
+
     return render(request, 'compositions/result.html', {
         'session': session,
         'resultat': resultat,
@@ -590,12 +653,23 @@ def bulletin_composition_pdf(request, session_id):
     """
     Génère le bulletin d'une composition au format PDF officiel béninois.
     URL : /compositions/<session_id>/bulletin/pdf/
+    Bloqué si correction_complete=False (paywall).
     """
     from django.template.loader import render_to_string
+    from .access import verifier_acces_correction
 
     session = get_object_or_404(CompositionSession, id=session_id)
     if request.user.role == 'eleve' and session.eleve != request.user:
         return HttpResponseForbidden("Accès non autorisé.")
+
+    # Vérification paywall sur le bulletin aussi
+    if request.user.role == 'eleve':
+        resultat = getattr(session, 'resultat', None)
+        if resultat and not resultat.correction_complete:
+            a_acces, _ = verifier_acces_correction(request.user, session)
+            if not a_acces:
+                from django.shortcuts import redirect
+                return redirect('result_detail', session_id=session_id)
 
     resultat = get_object_or_404(Resultat, session=session)
     context = _build_composition_bulletin_context(resultat)

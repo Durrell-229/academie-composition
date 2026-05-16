@@ -38,7 +38,7 @@ def traiter_paiement_mobile(paiement_id, telephone, operateur):
             operateur=operateur,
             numero_telephone=telephone,
             est_reussi=True,
-            reference_transaction=f"TXN-{operateur.upper()}-{paiement.id[:8]}"
+            reference_transaction=f"TXN-{operateur.upper()}-{str(paiement.id)[:8]}"
         )
         
         # Mettre à jour le statut du paiement
@@ -50,8 +50,8 @@ def traiter_paiement_mobile(paiement_id, telephone, operateur):
         
         # Envoyer notification
         from notifications.utils import send_notification
-        send_notification.delay(
-            user_id=paiement.eleve.id,
+        send_notification(
+            user=paiement.eleve,
             title="Paiement confirmé",
             message=f"Votre paiement de {paiement.montant_paye:,.0f} FCFA a été confirmé"
         )
@@ -168,8 +168,8 @@ def verifier_echeances_retard():
             eleve = paiement.eleve
             
             # Envoyer notification
-            send_notification.delay(
-                user_id=eleve.id,
+            send_notification(
+                user=eleve,
                 title="Rappel de paiement",
                 message=f"Votre échéance de {echeance.montant:,.0f} FCFA arrive à échéance le {echeance.date_echeance}"
             )
@@ -203,7 +203,8 @@ def generer_rapport_financier(etablissement_id, date_debut, date_fin, rapport_id
         from django.shortcuts import get_object_or_404
         from decimal import Decimal
         
-        etablissement = get_object_or_404('schools.Etablissement', id=etablissement_id)
+        from schools.models import Etablissement as EtablissementModel
+        etablissement = get_object_or_404(EtablissementModel, id=etablissement_id)
         
         # Calculer les statistiques
         paiements = Paiement.objects.filter(
@@ -294,8 +295,9 @@ def traiter_paiement_fedapay(paiement_id, customer_data=None):
             
     except Exception as e:
         logger.error(f"❌ Erreur paiement FedaPay {paiement_id}: {e}")
-        paiement.derniere_erreur = str(e)
-        paiement.save()
+        if 'paiement' in locals():
+            paiement.derniere_erreur = str(e)
+            paiement.save()
         raise
 
 
@@ -398,8 +400,8 @@ def rappel_abonnement_7j(abonnement_id):
             )
             
             # Notification push
-            send_notification.delay(
-                user_id=eleve.id,
+            send_notification(
+                user=eleve,
                 title=f"⏰ Abonnement expire dans {jours} jours",
                 message=f"Renouvelez votre abonnement {abonnement.plan.nom} pour ne pas perdre l'accès"
             )
@@ -451,11 +453,10 @@ def rappel_abonnement_3j(abonnement_id):
             )
             
             # Notification push urgente
-            send_notification.delay(
-                user_id=eleve.id,
+            send_notification(
+                user=eleve,
                 title="⚠️ Abonnement expire bientôt !",
-                message=f"Plus que {abonnement.jours_restants} jours. Renouvelez maintenant !",
-                priority='high'
+                message=f"Plus que {abonnement.jours_restants} jours. Renouvelez maintenant !"
             )
             
             abonnement.rappel_3j_envoye = True
@@ -504,11 +505,10 @@ def rappel_abonnement_1j(abonnement_id):
             )
             
             # Notification push critique
-            send_notification.delay(
-                user_id=eleve.id,
+            send_notification(
+                user=eleve,
                 title="🚨 DERNIER JOUR !",
-                message="Votre abonnement expire demain. Renouvelez immédiatement !",
-                priority='critical'
+                message="Votre abonnement expire demain. Renouvelez immédiatement !"
             )
             
             abonnement.rappel_1j_envoye = True
@@ -543,8 +543,8 @@ def verifier_abonnements_expires():
             abonnement.save()
             
             # Notifier l'élève
-            send_notification.delay(
-                user_id=abonnement.eleve.id,
+            send_notification(
+                user=abonnement.eleve,
                 title="⛔ Abonnement expiré",
                 message=f"Votre abonnement {abonnement.plan.nom} a expiré. Renouvelez pour retrouver l'accès."
             )

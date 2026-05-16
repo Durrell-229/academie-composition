@@ -18,6 +18,7 @@ class CompositionSession(models.Model):
         SOUMIS = 'soumis', _('Soumis')
         EN_CORRECTION = 'en_correction', _('En correction')
         CORRIGE = 'corrige', _('Corrigé')
+        BLOQUE = 'bloque', _('Correction verrouillée (paywall)')
         EXCLU = 'exclu', _('Exclu (triche)')
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -124,6 +125,11 @@ class Resultat(models.Model):
     corrigeur = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='corrections_effectuees')
     corrige_at = models.DateTimeField(_('date de correction'), blank=True, null=True)
     bulletin_pdf = models.FileField(_('bulletin PDF'), upload_to='bulletins/%Y/%m/', blank=True, null=True)
+    # Paywall — aperçu partiel visible avant paiement
+    correction_complete = models.BooleanField(_('correction complète visible'), default=True,
+        help_text="False = paywall actif, seul l'aperçu est affiché")
+    apercu_correction = models.JSONField(_('aperçu correction (paywall)'), blank=True, null=True,
+        help_text='Données partielles montrées avant paiement')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
