@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+{% block title %}Créer des questions QCM{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-8 space-y-6">
+
+  <div class="flex items-center justify-between">
+    <h1 class="text-2xl font-black text-gray-800">Créer des questions QCM</h1>
+    <a href="{% url 'qcm_prof_liste' %}" class="text-gray-500 hover:text-gray-700 text-sm">← Retour à la liste</a>
+  </div>
+
+  <form method="post" id="qcm-form" class="space-y-6">
+    {% csrf_token %}
+
+    <!-- Paramètres globaux -->
+    <div class="bg-white rounded-2xl shadow-lg p-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div>
+        <label class="block text-sm font-bold text-gray-700 mb-1">Matière</label>
+        <select name="matiere_id" class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-400 focus:outline-none">
+          <option value="">— Choisir —</option>
+          {% for m in matieres %}
+          <option value="{{ m.id }}">{{ m.nom }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-bold text-gray-700 mb-1">Difficulté</label>
+        <select name="difficulte" class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-400 focus:outline-none">
+          <option value="facile">Facile</option>
+          <option value="moyen" selected>Moyen</option>
+          <option value="difficile">Difficile</option>
+        </select>
+      </div>
+      <div class="flex items-end">
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" name="est_publique" class="w-4 h-4 rounded accent-emerald-600">
+          <span class="text-sm text-gray-700 font-medium">Rendre public (partagé avec d'autres profs)</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Questions dynamiques -->
+    <div id="questions-container" class="space-y-6">
+      <!-- Question 1 par défaut -->
+      <div class="question-block bg-white rounded-2xl shadow-lg p-6 border-l-4 border-emerald-500">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="font-bold text-gray-700">Question <span class="q-num">1</span></h3>
+          <button type="button" onclick="removeQuestion(this)"
+                  class="text-red-400 hover:text-red-600 text-sm font-bold hidden remove-btn">✕ Supprimer</button>
+        </div>
+        <textarea name="texte_question[]" rows="2" placeholder="Texte de la question..."
+                  class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm mb-4 focus:ring-2 focus:ring-emerald-400 focus:outline-none" required></textarea>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {% for label in "ABCD" %}
+          <div class="flex items-center gap-2">
+            <span class="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-xs font-black text-gray-500">{{ label }}</span>
+            <input type="text" name="choix_{{ label|lower }}[]" placeholder="Choix {{ label }}"
+                   class="flex-1 border border-gray-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-400 focus:outline-none" required>
+          </div>
+          {% endfor %}
+        </div>
+        <div class="mt-4">
+          <label class="text-sm font-bold text-gray-700 mr-3">Bonne réponse :</label>
+          {% for label in "ABCD" %}
+          <label class="inline-flex items-center gap-1 mr-4 cursor-pointer">
+            <input type="radio" name="correcte[]" value="{{ label }}" {% if label == "A" %}checked{% endif %}
+                   class="accent-emerald-600">
+            <span class="text-sm font-bold text-gray-700">{{ label }}</span>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Bouton ajouter question -->
+    <button type="button" onclick="addQuestion()"
+            class="w-full border-2 border-dashed border-emerald-300 text-emerald-600 hover:border-emerald-500 hover:bg-emerald-50 py-4 rounded-2xl font-bold transition">
+      + Ajouter une question
+    </button>
+
+    <div class="flex justify-end gap-4">
+      <a href="{% url 'qcm_prof_liste' %}" class="bg-gray-100 text-gray-700 font-bold px-6 py-3 rounded-xl hover:bg-gray-200 transition">
+        Annuler
+      </a>
+      <button type="submit" class="bg-emerald-600 text-white font-bold px-8 py-3 rounded-xl hover:bg-emerald-700 transition">
+        Enregistrer les questions
+      </button>
+    </div>
+  </form>
+</div>
+
+<script>
+let qCount = 1;
+
+function addQuestion() {
+  qCount++;
+  const container = document.getElementById('questions-container');
+  const block = document.querySelector('.question-block').cloneNode(true);
+
+  block.querySelector('.q-num').textContent = qCount;
+  block.querySelector('.remove-btn').classList.remove('hidden');
+  block.querySelectorAll('textarea, input[type=text]').forEach(el => el.value = '');
+  block.querySelectorAll('input[type=radio]').forEach((r, i) => r.checked = (i === 0));
+
+  container.appendChild(block);
+  updateRemoveButtons();
+}
+
+function removeQuestion(btn) {
+  const block = btn.closest('.question-block');
+  block.remove();
+  renumberQuestions();
+  updateRemoveButtons();
+}
+
+function renumberQuestions() {
+  document.querySelectorAll('.question-block').forEach((b, i) => {
+    b.querySelector('.q-num').textContent = i + 1;
+  });
+}
+
+function updateRemoveButtons() {
+  const blocks = document.querySelectorAll('.question-block');
+  blocks.forEach(b => {
+    b.querySelector('.remove-btn').classList.toggle('hidden', blocks.length === 1);
+  });
+}
+</script>
+{% endblock %}

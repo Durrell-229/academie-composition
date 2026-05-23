@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+{% block title %}{{ etablissement.nom }} | Académie Numérique{% endblock %}
+{% block breadcrumb %}
+<a href="{% url 'dashboard' %}" class="text-text-muted hover:text-text-primary">Dashboard</a>
+<span class="mx-2 text-text-muted">/</span>
+<a href="{% url 'schools:etablissement_list' %}" class="text-text-muted hover:text-text-primary">Établissements</a>
+<span class="mx-2 text-text-muted">/</span>
+<span class="text-text-primary font-semibold">{{ etablissement.nom }}</span>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- Header -->
+  <div class="animate-in relative overflow-hidden rounded-2xl p-6 bg-bg-card border border-border-standard">
+    <div class="absolute inset-0 bg-gradient-to-br from-primary/5 to-accent/5 pointer-events-none"></div>
+    <div class="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div class="flex items-center gap-4">
+        {% if etablissement.logo %}
+        <img src="{{ etablissement.logo.url }}" class="w-16 h-16 rounded-xl object-cover border border-border-standard" alt="{{ etablissement.nom }}">
+        {% else %}
+        <div class="w-16 h-16 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-black text-2xl">
+          {{ etablissement.nom|slice:":1" }}
+        </div>
+        {% endif %}
+        <div>
+          <div class="flex items-center gap-2 mb-1">
+            <h1 class="text-xl font-black text-text-primary">{{ etablissement.nom }}</h1>
+            {% if etablissement.is_verified %}<span class="text-success text-sm"><i class="fa-solid fa-circle-check"></i></span>{% endif %}
+          </div>
+          <p class="text-sm text-text-muted">{{ etablissement.code }} · {{ etablissement.get_type_etablissement_display }}</p>
+          {% if etablissement.ville %}<p class="text-xs text-text-muted mt-0.5"><i class="fa-solid fa-location-dot mr-1"></i>{{ etablissement.ville }}, {{ etablissement.pays }}</p>{% endif %}
+        </div>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <a href="{% url 'schools:membres_list' etablissement.id %}" class="px-4 py-2 bg-accent/10 text-accent text-xs font-bold rounded-lg hover:bg-accent/20 transition flex items-center gap-2">
+          <i class="fa-solid fa-users"></i> Membres
+        </a>
+        <a href="{% url 'schools:etablissement_update' etablissement.id %}" class="px-4 py-2 bg-primary/10 text-primary text-xs font-bold rounded-lg hover:bg-primary/20 transition flex items-center gap-2">
+          <i class="fa-solid fa-pen"></i> Modifier
+        </a>
+        <a href="{% url 'schools:configuration_edit' etablissement.id %}" class="px-4 py-2 bg-bg-card border border-border-standard text-text-muted text-xs font-bold rounded-lg hover:text-text-primary transition flex items-center gap-2">
+          <i class="fa-solid fa-gear"></i> Config
+        </a>
+        <a href="{% url 'schools:etablissement_delete' etablissement.id %}" class="px-4 py-2 bg-danger/10 text-danger text-xs font-bold rounded-lg hover:bg-danger/20 transition">
+          <i class="fa-solid fa-trash"></i>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPI -->
+  <div class="animate-in delay-1 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+    {% for label, value, color in "Campus,stats.nombre_campus,primary|Classes,stats.nombre_classes,accent|Niveaux,stats.nombre_niveaux,warning|Élèves,stats.total_eleves,success|Profs,stats.total_professeurs,info|Occupation,stats.taux_occupation,danger"|split:"|" %}
+    {% endfor %}
+    <div class="p-4 rounded-xl bg-bg-card border border-border-standard text-center">
+      <p class="text-2xl font-black text-primary">{{ stats.nombre_campus }}</p>
+      <p class="text-[10px] text-text-muted mt-1 uppercase tracking-widest">Campus</p>
+    </div>
+    <div class="p-4 rounded-xl bg-bg-card border border-border-standard text-center">
+      <p class="text-2xl font-black text-accent">{{ stats.nombre_classes }}</p>
+      <p class="text-[10px] text-text-muted mt-1 uppercase tracking-widest">Classes</p>
+    </div>
+    <div class="p-4 rounded-xl bg-bg-card border border-border-standard text-center">
+      <p class="text-2xl font-black text-warning">{{ stats.nombre_niveaux }}</p>
+      <p class="text-[10px] text-text-muted mt-1 uppercase tracking-widest">Niveaux</p>
+    </div>
+    <div class="p-4 rounded-xl bg-bg-card border border-border-standard text-center">
+      <p class="text-2xl font-black text-success">{{ stats.total_eleves }}</p>
+      <p class="text-[10px] text-text-muted mt-1 uppercase tracking-widest">Élèves</p>
+    </div>
+    <div class="p-4 rounded-xl bg-bg-card border border-border-standard text-center">
+      <p class="text-2xl font-black text-text-primary">{{ stats.total_professeurs }}</p>
+      <p class="text-[10px] text-text-muted mt-1 uppercase tracking-widest">Profs</p>
+    </div>
+    <div class="p-4 rounded-xl bg-bg-card border border-border-standard text-center">
+      <p class="text-2xl font-black {% if stats.taux_occupation > 80 %}text-danger{% elif stats.taux_occupation > 50 %}text-warning{% else %}text-success{% endif %}">{{ stats.taux_occupation }}%</p>
+      <p class="text-[10px] text-text-muted mt-1 uppercase tracking-widest">Occupation</p>
+    </div>
+  </div>
+
+  <div class="animate-in delay-2 grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Campus -->
+    <div class="bg-bg-card border border-border-standard rounded-2xl p-5">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="font-bold text-text-primary flex items-center gap-2"><i class="fa-solid fa-building text-primary"></i> Campus</h2>
+        <a href="{% url 'schools:campus_create' etablissement.id %}" class="text-xs text-primary hover:underline font-bold">+ Ajouter</a>
+      </div>
+      {% for campus in campus_list %}
+      <a href="{% url 'schools:campus_detail' etablissement.id campus.id %}" class="flex items-center justify-between p-3 rounded-xl hover:bg-primary/5 transition group mb-2">
+        <div>
+          <p class="text-sm font-bold text-text-primary group-hover:text-primary transition">{{ campus.nom }}</p>
+          <p class="text-xs text-text-muted">{{ campus.code }}{% if campus.ville %} · {{ campus.ville }}{% endif %}</p>
+        </div>
+        {% if campus.is_principal %}<span class="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold">Principal</span>{% endif %}
+      </a>
+      {% empty %}
+      <p class="text-sm text-text-muted text-center py-4">Aucun campus encore. <a href="{% url 'schools:campus_create' etablissement.id %}" class="text-primary hover:underline">Créer le premier</a></p>
+      {% endfor %}
+    </div>
+
+    <!-- Classes -->
+    <div class="bg-bg-card border border-border-standard rounded-2xl p-5">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="font-bold text-text-primary flex items-center gap-2"><i class="fa-solid fa-chalkboard text-accent"></i> Classes</h2>
+        <a href="{% url 'schools:classe_create' etablissement.id %}" class="text-xs text-accent hover:underline font-bold">+ Ajouter</a>
+      </div>
+      {% for classe in classes_list %}
+      <a href="{% url 'schools:classe_detail' etablissement.id classe.id %}" class="flex items-center justify-between p-3 rounded-xl hover:bg-accent/5 transition group mb-2">
+        <div>
+          <p class="text-sm font-bold text-text-primary group-hover:text-accent transition">{{ classe.nom }}</p>
+          <p class="text-xs text-text-muted">{{ classe.code }}{% if classe.niveau %} · {{ classe.niveau.nom }}{% endif %}</p>
+        </div>
+        <span class="text-xs text-text-muted">{{ classe.capacite_max }} places</span>
+      </a>
+      {% empty %}
+      <p class="text-sm text-text-muted text-center py-4">Aucune classe. <a href="{% url 'schools:classe_create' etablissement.id %}" class="text-accent hover:underline">Créer la première</a></p>
+      {% endfor %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}

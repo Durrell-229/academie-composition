@@ -111,50 +111,98 @@ class NVIDIAOCRService:
                 'language_detected': language
             }
     
+    # nemotron-ocr-v1 n'accepte QUE du base64 inline (pas l'Assets API NVCF).
+    # Limite empirique : ~175 000 chars base64 (~130 KB JPEG).
+    _BASE64_MAX_CHARS = 175_000
+
+    def _compress_for_ocr(self, image_data: bytes) -> bytes:
+        """
+        Redimensionner/recompresser une image jusqu'à ce que sa représentation
+        base64 tienne sous _BASE64_MAX_CHARS, sans détruire la lisibilité OCR.
+        Paliers : qualité 85 -> 75, puis résolution 2000px -> 1500px -> 1000px.
+        """
+        from PIL import Image as PILImage
+
+        attempts = [
+            (None,  85),
+            (None,  75),
+            (2000,  85),
+            (2000,  75),
+            (1500,  80),
+            (1000,  75),
+        ]
+        for max_side, quality in attempts:
+            try:
+                img = PILImage.open(io.BytesIO(image_data))
+                if max_side:
+                    img.thumbnail((max_side, max_side), PILImage.LANCZOS)
+                buf = io.BytesIO()
+                img.convert('RGB').save(buf, format='JPEG', quality=quality, optimize=True)
+                compressed = buf.getvalue()
+                b64_len = len(base64.b64encode(compressed))
+                if b64_len <= self._BASE64_MAX_CHARS:
+                    logger.info(
+                        "[OCR] Compression: max_side=%s quality=%s -> %d KB (%d chars b64)",
+                        max_side, quality, len(compressed) // 1024, b64_len,
+                    )
+                    return compressed
+            except Exception as e:
+                logger.warning("[OCR] Compression palier %s/%s echouee: %s", max_side, quality, e)
+        # Dernier recours — on renvoie tel quel et l'API décidera
+        logger.warning("[OCR] Impossible de compresser sous %d chars", self._BASE64_MAX_CHARS)
+        return image_data
+
+    def _parse_ocr_response(self, result: dict) -> tuple:
+        """Extraire texte et confiance depuis la réponse nemotron-ocr-v1."""
+        texts = []
+        confidences = []
+        if 'data' in result and result['data']:
+            detections = result['data'][0].get('text_detections', [])
+            for det in detections:
+                pred = det.get('text_prediction', {})
+                t = pred.get('text', '').strip()
+                if t:
+                    texts.append(t)
+                    confidences.append(pred.get('confidence', 0.9))
+        extracted_text = '\n'.join(texts)
+        avg_conf = (sum(confidences) / len(confidences) * 100) if confidences else 0.0
+        return extracted_text, avg_conf
+
     def extract_text_from_bytes(self, image_data: bytes, language: str = 'fr') -> Dict:
-        """Extraire le texte de bytes d'image avec Nemotron OCR v1"""
+        """
+        Extraire le texte d'une image avec Nemotron OCR v1.
+        Toujours en base64 inline (l'endpoint n'accepte pas l'Assets API NVCF).
+        Les images volumineuses sont recompressees/redimensionnees automatiquement.
+        """
         try:
             if not self.is_configured():
                 return self._demo_ocr(image_data, language)
-            
+
             processed_image = self.preprocess_image(image_data)
+
+            # Vérifier la taille base64 — compresser si nécessaire
             image_base64 = base64.b64encode(processed_image).decode('utf-8')
-            
-            # Vérifier la taille de l'image
-            assert len(image_base64) < 180_000, "Image trop grande pour l'API OCR"
-            
+            if len(image_base64) > self._BASE64_MAX_CHARS:
+                logger.info(
+                    "[OCR] Image volumineuse (%d chars b64) -> compression en cours",
+                    len(image_base64),
+                )
+                processed_image = self._compress_for_ocr(processed_image)
+                image_base64 = base64.b64encode(processed_image).decode('utf-8')
+
             headers = {
                 "Authorization": f"Bearer {self.api_key}",
-                "Accept": "application/json"
+                "Accept": "application/json",
             }
-            
-            # Payload spécifique pour l'endpoint OCR NVIDIA
             payload = {
-                "input": [
-                    {
-                        "type": "image_url",
-                        "url": f"data:image/png;base64,{image_base64}"
-                    }
-                ]
+                "input": [{"type": "image_url", "url": f"data:image/jpeg;base64,{image_base64}"}]
             }
-            
-            response = requests.post(
-                self.base_url,
-                headers=headers,
-                json=payload,
-                timeout=60
-            )
-            
+
+            response = requests.post(self.base_url, headers=headers, json=payload, timeout=90)
+
             if response.status_code == 200:
-                result = response.json()
-                
-                # Extraire le texte depuis la réponse OCR
-                extracted_text = ""
-                if 'data' in result and len(result['data']) > 0:
-                    extracted_text = result['data'][0].get('text', '')
-                
-                confidence_score = self._calculate_confidence(extracted_text)
-                
+                extracted_text, avg_confidence = self._parse_ocr_response(response.json())
+                confidence_score = avg_confidence if avg_confidence > 0 else self._calculate_confidence(extracted_text)
                 return {
                     'text': extracted_text.strip(),
                     'confidence': confidence_score,
@@ -162,18 +210,17 @@ class NVIDIAOCRService:
                     'language_detected': language,
                     'model_used': self.model_name,
                     'processing_time': response.elapsed.total_seconds() if hasattr(response, 'elapsed') else 0,
-                    'raw_response': result
                 }
             else:
-                logger.error(f"Erreur API Nemotron OCR: {response.status_code} - {response.text}")
+                logger.error(f"Erreur API Nemotron OCR: {response.status_code} - {response.text[:300]}")
                 return {
                     'text': '',
                     'confidence': 0,
                     'success': False,
                     'error': f"API Error: {response.status_code}",
-                    'language_detected': language
+                    'language_detected': language,
                 }
-                
+
         except Exception as e:
             logger.error(f"Erreur OCR Nemotron: {e}")
             return {

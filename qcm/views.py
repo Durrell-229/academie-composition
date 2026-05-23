@@ -8,15 +8,28 @@ from django.contrib import messages
 from django.utils import timezone
 from django.db import transaction
 from core.models import Matiere
-from .models import QuestionBank, Choice, QCMExam, QCMExamQuestion, QCMAnswer, QCMAnswer
+from .models import QuestionBank, Choice, QCMExam, QCMExamQuestion, QCMAnswer
 from compositions.models import CompositionSession
 from exams.models import Exam
 from ai_engine.multi_ai import multi_ai
+from subscriptions.decorators import qcm_pro_required, prof_required
 
 logger = logging.getLogger(__name__)
 
 
 @login_required
+def qcm_paywall(request):
+    """Page paywall : l'élève n'a pas d'abonnement actif."""
+    from payments.models import PlanAbonnementScolaire
+    etablissement = getattr(request.user, 'etablissement', None)
+    plans = PlanAbonnementScolaire.objects.filter(is_actif=True, visible_sur_site=True).order_by('prix_mensuel')
+    if etablissement:
+        plans = plans.filter(etablissement=etablissement)
+    return render(request, 'qcm/paywall.html', {'plans': plans})
+
+
+@login_required
+@qcm_pro_required
 def start_qcm(request):
     """Page de configuration et génération d'un QCM par IA."""
     if request.method == 'POST':
@@ -71,6 +84,7 @@ def start_qcm(request):
 
 
 @login_required
+@qcm_pro_required
 def take_qcm(request):
     """Page de réponse au QCM avec interface de clic."""
     ctx = request.session.get('qcm_context')
@@ -88,10 +102,9 @@ def take_qcm(request):
 
 
 @login_required
+@qcm_pro_required
 def submit_qcm(request):
     """Soumission et correction du QCM avec génération de bulletin professionnel."""
-    from bulletins.models import Bulletin, BulletinLigne
-    from bulletins.services import BulletinService
     from .models import QCMResultat
     from django.utils import timezone
 
@@ -180,65 +193,19 @@ def submit_qcm(request):
         })
 
     try:
-        with transaction.atomic():
-            from bulletins.coefficients_benin import get_coefficient
-            from bulletins.services import BulletinService
-
-            # Récupérer la classe et déterminer la série
-            classe_nom = ctx.get('classe', '')
-            serie = BulletinService._extract_serial(classe_nom)
-            matiere_nom = ctx.get('matiere', '')
-
-            # Calculer le coefficient exact de la matière pour cette série/classe
-            coefficient = get_coefficient(matiere_nom, serie)
-
-            # 1. Créer le Bulletin professionnel
-            annee_scolaire = timezone.now().strftime('%Y-%Y')
-            bulletin = Bulletin.objects.create(
-                eleve=request.user,
-                classe=classe_nom,
-                annee_scolaire=annee_scolaire,
-                periode=Bulletin.Periode.QCM,
-                type_bulletin=Bulletin.TypeBulletin.QCM,
-                moyenne_generale=note,
-                rang=1,
-                effectif_total=1,
-                appreciation_ia=feedback.get('appreciation', '') or feedback.get('remediation', ''),
-                decision_conseil='Évaluation QCM complétée',
-            )
-
-            # 2. Créer la ligne du bulletin AVEC le coefficient exact
-            BulletinLigne.objects.create(
-                bulletin=bulletin,
-                matiere=matiere_nom,
-                note=note,
-                note_max=20,
-                coefficient=coefficient,
-                moyenne_classe=note,
-                appreciation=feedback.get('remediation', ''),
-            )
-
-            # 3. Générer le PDF
-            try:
-                BulletinService.generate_bulletin_qcm_pdf(bulletin)
-            except Exception as e:
-                logger.error(f"Erreur génération PDF bulletin QCM: {e}")
-
-            # 4. Créer le QCMResultat
-            resultat = QCMResultat.objects.create(
-                eleve=request.user,
-                matiere=matiere_nom,
-                classe=classe_nom,
-                theme=ctx.get('theme', ''),
-                note_sur_20=note,
-                bonnes_reponses=bonnes_reponses_count,
-                total_questions=len(questions),
-                questions_data={'questions': details_questions, 'reponses': reponses},
-                feedback_ia=feedback,
-                bulletin=bulletin,
-            )
+        resultat = QCMResultat.objects.create(
+            eleve=request.user,
+            matiere=ctx.get('matiere', ''),
+            classe=ctx.get('classe', ''),
+            theme=ctx.get('theme', ''),
+            note_sur_20=note,
+            bonnes_reponses=bonnes_reponses_count,
+            total_questions=len(questions),
+            questions_data={'questions': details_questions, 'reponses': reponses},
+            feedback_ia=feedback,
+        )
     except Exception as e:
-        logger.error(f"Erreur création bulletin QCM: {e}")
+        logger.error(f"Erreur création résultat QCM: {e}")
         resultat = None
 
     # Nettoyer la session
@@ -343,76 +310,317 @@ def _check_answer(question, reponse):
     return reponse.strip().upper() == correcte
 
 
+# ═══════════════════════════════════════════
+#  DASHBOARD PROFESSEUR — GESTION DES QCM
+# ═══════════════════════════════════════════
+
+@login_required
+@prof_required
+def prof_liste_qcm(request):
+    """Liste des QCM créés par ce professeur."""
+    questions = (
+        QuestionBank.objects
+        .filter(createur=request.user)
+        .prefetch_related('choices')
+        .order_by('-created_at')
+    )
+    return render(request, 'qcm/prof_liste.html', {'questions': questions})
+
+
+@login_required
+@prof_required
+def prof_creer_qcm(request):
+    """Créer un QCM manuellement (questions + choix + corrigé type)."""
+    matieres = Matiere.objects.all().order_by('nom')
+
+    if request.method == 'POST':
+        matiere_id = request.POST.get('matiere_id')
+        difficulte = request.POST.get('difficulte', 'moyen')
+        est_publique = request.POST.get('est_publique') == 'on'
+
+        matiere = Matiere.objects.filter(id=matiere_id).first()
+
+        textes = request.POST.getlist('texte_question[]')
+        choix_a = request.POST.getlist('choix_a[]')
+        choix_b = request.POST.getlist('choix_b[]')
+        choix_c = request.POST.getlist('choix_c[]')
+        choix_d = request.POST.getlist('choix_d[]')
+        correctes = request.POST.getlist('correcte[]')
+
+        if not textes or not any(t.strip() for t in textes):
+            messages.error(request, "Ajoutez au moins une question.")
+            return render(request, 'qcm/prof_creer.html', {'matieres': matieres})
+
+        created = 0
+        with transaction.atomic():
+            for i, texte in enumerate(textes):
+                if not texte.strip():
+                    continue
+                question = QuestionBank.objects.create(
+                    matiere=matiere,
+                    createur=request.user,
+                    texte=texte.strip(),
+                    difficulte=difficulte,
+                    est_publique=est_publique,
+                    generee_par_ia=False,
+                )
+                correcte = correctes[i].upper() if i < len(correctes) else 'A'
+                for ordre, (label, choix_list) in enumerate([
+                    ('A', choix_a), ('B', choix_b), ('C', choix_c), ('D', choix_d)
+                ]):
+                    texte_choix = choix_list[i].strip() if i < len(choix_list) else f'Choix {label}'
+                    Choice.objects.create(
+                        question=question,
+                        texte=texte_choix or f'Choix {label}',
+                        est_correct=(label == correcte),
+                        ordre=ordre,
+                    )
+                created += 1
+
+        messages.success(request, f"{created} question(s) créée(s) avec succès.")
+        return redirect('qcm_prof_liste')
+
+    return render(request, 'qcm/prof_creer.html', {'matieres': matieres})
+
+
+@login_required
+@prof_required
+def prof_editer_qcm(request, question_id):
+    """Éditer une question QCM existante."""
+    question = get_object_or_404(QuestionBank, id=question_id, createur=request.user)
+    matieres = Matiere.objects.all().order_by('nom')
+    choices = list(question.choices.order_by('ordre'))
+
+    if request.method == 'POST':
+        matiere_id = request.POST.get('matiere_id')
+        question.texte = request.POST.get('texte', question.texte).strip()
+        question.difficulte = request.POST.get('difficulte', question.difficulte)
+        question.est_publique = request.POST.get('est_publique') == 'on'
+        question.matiere = Matiere.objects.filter(id=matiere_id).first() or question.matiere
+        question.save()
+
+        correcte = request.POST.get('correcte', 'A').upper()
+        labels = ['A', 'B', 'C', 'D']
+        for i, choice in enumerate(choices):
+            label = labels[i] if i < len(labels) else ''
+            new_texte = request.POST.get(f'choix_{label.lower()}', '').strip()
+            if new_texte:
+                choice.texte = new_texte
+            choice.est_correct = (label == correcte)
+            choice.save()
+
+        messages.success(request, "Question mise à jour.")
+        return redirect('qcm_prof_liste')
+
+    correcte_actuelle = next((c for c in choices if c.est_correct), None)
+    correcte_label = ''
+    if correcte_actuelle:
+        idx = choices.index(correcte_actuelle)
+        correcte_label = ['A', 'B', 'C', 'D'][idx] if idx < 4 else 'A'
+
+    return render(request, 'qcm/prof_editer.html', {
+        'question': question,
+        'choices': choices,
+        'matieres': matieres,
+        'correcte_label': correcte_label,
+    })
+
+
+@login_required
+@prof_required
+def prof_supprimer_qcm(request, question_id):
+    """Supprimer une question QCM."""
+    question = get_object_or_404(QuestionBank, id=question_id, createur=request.user)
+    if request.method == 'POST':
+        question.delete()
+        messages.success(request, "Question supprimée.")
+    return redirect('qcm_prof_liste')
+
+
+@login_required
+@prof_required
+def prof_upload_qcm(request):
+    """
+    Upload un fichier (PDF, TXT, image) contenant un QCM.
+    L'IA extrait les questions, les choix et le corrigé type, puis les sauvegarde en base.
+    """
+    matieres = Matiere.objects.all().order_by('nom')
+
+    if request.method == 'POST':
+        fichier = request.FILES.get('fichier')
+        matiere_id = request.POST.get('matiere_id')
+        difficulte = request.POST.get('difficulte', 'moyen')
+        est_publique = request.POST.get('est_publique') == 'on'
+        matiere = Matiere.objects.filter(id=matiere_id).first()
+        classe = request.POST.get('classe', '')
+
+        if not fichier:
+            messages.error(request, "Veuillez sélectionner un fichier.")
+            return render(request, 'qcm/prof_upload.html', {'matieres': matieres})
+
+        ext = fichier.name.lower().rsplit('.', 1)[-1] if '.' in fichier.name else ''
+        raw_text = ''
+
+        try:
+            if ext == 'txt':
+                raw_text = fichier.read().decode('utf-8', errors='replace')
+
+            elif ext == 'pdf':
+                import fitz
+                import tempfile, os
+                with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp:
+                    for chunk in fichier.chunks():
+                        tmp.write(chunk)
+                    tmp_path = tmp.name
+                try:
+                    doc = fitz.open(tmp_path)
+                    raw_text = '\n'.join(page.get_text() for page in doc)
+                    doc.close()
+                finally:
+                    os.unlink(tmp_path)
+
+            elif ext in ('jpg', 'jpeg', 'png', 'webp', 'bmp'):
+                import tempfile, os, base64
+                from ai_engine.ocr_service import OCRCorrectionService
+                with tempfile.NamedTemporaryFile(delete=False, suffix=f'.{ext}') as tmp:
+                    for chunk in fichier.chunks():
+                        tmp.write(chunk)
+                    tmp_path = tmp.name
+                try:
+                    ocr = OCRCorrectionService()
+                    result = ocr.extraire_texte_ocr(tmp_path)
+                    raw_text = result.get('texte_extrait', '') or result.get('text', '')
+                finally:
+                    os.unlink(tmp_path)
+
+            else:
+                messages.error(request, "Format non supporté. Utilisez PDF, TXT, JPG ou PNG.")
+                return render(request, 'qcm/prof_upload.html', {'matieres': matieres})
+
+        except Exception as e:
+            logger.error(f"Erreur extraction texte QCM upload: {e}")
+            messages.error(request, f"Impossible de lire le fichier : {e}")
+            return render(request, 'qcm/prof_upload.html', {'matieres': matieres})
+
+        if not raw_text.strip():
+            messages.error(request, "Le fichier ne contient pas de texte lisible.")
+            return render(request, 'qcm/prof_upload.html', {'matieres': matieres})
+
+        # Demander à l'IA de structurer le QCM
+        try:
+            qcm_json_text = multi_ai.parse_qcm_from_text(
+                raw_text,
+                matiere=matiere.nom if matiere else '',
+                classe=classe,
+            )
+            questions_data = _parse_qcm_text(qcm_json_text, nb_questions=100)
+        except Exception as e:
+            logger.error(f"Erreur parsing IA QCM upload: {e}")
+            messages.error(request, "L'IA n'a pas pu analyser le QCM. Vérifiez le format du fichier.")
+            return render(request, 'qcm/prof_upload.html', {'matieres': matieres})
+
+        if not questions_data:
+            messages.error(request, "Aucune question détectée dans le fichier.")
+            return render(request, 'qcm/prof_upload.html', {'matieres': matieres})
+
+        created = 0
+        with transaction.atomic():
+            for q in questions_data:
+                texte_q = q.get('question', '').strip()
+                if not texte_q or 'non générée' in texte_q:
+                    continue
+                question = QuestionBank.objects.create(
+                    matiere=matiere,
+                    createur=request.user,
+                    texte=texte_q,
+                    difficulte=difficulte,
+                    est_publique=est_publique,
+                    generee_par_ia=True,
+                )
+                correcte = q.get('correcte', 'A').upper()
+                for ordre, choix in enumerate(q.get('choix', [])):
+                    label = choix.get('label', ['A', 'B', 'C', 'D'][ordre] if ordre < 4 else 'A')
+                    Choice.objects.create(
+                        question=question,
+                        texte=choix.get('texte', f'Choix {label}'),
+                        est_correct=(label.upper() == correcte),
+                        ordre=ordre,
+                    )
+                created += 1
+
+        messages.success(request, f"{created} question(s) importée(s) depuis {fichier.name}.")
+        return redirect('qcm_prof_liste')
+
+    return render(request, 'qcm/prof_upload.html', {'matieres': matieres})
+
+
 @login_required
 def download_qcm_bulletin(request, resultat_id):
-    """Télécharger le bulletin PDF d'un résultat QCM."""
+    """Générer et télécharger le bulletin PDF d'un résultat QCM."""
     from .models import QCMResultat
-    from django.http import FileResponse, Http404
-    from bulletins.services import BulletinService
-    from bulletins.models import Bulletin, BulletinLigne
-    from bulletins.coefficients_benin import get_coefficient
+    from django.http import HttpResponse, Http404
+    from django.template.loader import render_to_string
     from django.utils import timezone
-    from django.db import transaction
 
     resultat = get_object_or_404(QCMResultat, id=resultat_id, eleve=request.user)
 
-    # Créer le bulletin s'il n'existe pas
-    if not resultat.bulletin:
-        try:
-            with transaction.atomic():
-                # Récupérer la série
-                serie = BulletinService._extract_serial(resultat.classe)
-                coefficient = get_coefficient(resultat.matiere, serie)
+    note = float(resultat.note_sur_20)
+    if note >= 18:
+        mention = 'Excellent'
+    elif note >= 16:
+        mention = 'Très Bien'
+    elif note >= 14:
+        mention = 'Bien'
+    elif note >= 12:
+        mention = 'Assez Bien'
+    elif note >= 10:
+        mention = 'Passable'
+    else:
+        mention = 'Insuffisant'
 
-                # Créer le bulletin
-                annee_scolaire = timezone.now().strftime('%Y-%Y')
-                bulletin = Bulletin.objects.create(
-                    eleve=resultat.eleve,
-                    classe=resultat.classe,
-                    annee_scolaire=annee_scolaire,
-                    periode=Bulletin.Periode.QCM,
-                    type_bulletin=Bulletin.TypeBulletin.QCM,
-                    moyenne_generale=resultat.note_sur_20,
-                    rang=1,
-                    effectif_total=1,
-                    appreciation_ia=resultat.feedback_ia.get('appreciation', '') or resultat.feedback_ia.get('remediation', ''),
-                    decision_conseil='Évaluation QCM complétée',
-                )
+    now = timezone.now()
+    context = {
+        'eleve': {
+            'nom': resultat.eleve.last_name or resultat.eleve.email,
+            'prenoms': resultat.eleve.first_name or '',
+            'matricule': getattr(resultat.eleve, 'matricule', ''),
+            'classe': resultat.classe,
+        },
+        'matiere': {
+            'nom': resultat.matiere,
+            'coef': 1,
+            'note': resultat.note_sur_20,
+            'observations': resultat.feedback_ia.get('remediation', '') if resultat.feedback_ia else '',
+            'mention': mention,
+        },
+        'annee_scolaire': f"{now.year - 1}/{now.year}",
+        'periode': 'QCM',
+        'observations_classe': resultat.feedback_ia.get('appreciation', '') if resultat.feedback_ia else '',
+        'date_jour': now.day,
+        'date_mois': now.month,
+        'date_annee': now.year,
+    }
 
-                # Créer la ligne du bulletin
-                BulletinLigne.objects.create(
-                    bulletin=bulletin,
-                    matiere=resultat.matiere,
-                    note=resultat.note_sur_20,
-                    note_max=20,
-                    coefficient=coefficient,
-                    moyenne_classe=resultat.note_sur_20,
-                    appreciation=resultat.feedback_ia.get('remediation', ''),
-                )
+    html = render_to_string('bulletins/bulletin_qcm.html', context, request=request)
 
-                # Lier le bulletin au résultat QCM
-                resultat.bulletin = bulletin
-                resultat.save()
+    try:
+        from xhtml2pdf import pisa
+        import io
+        buffer = io.BytesIO()
+        pisa.CreatePDF(html.encode('utf-8'), dest=buffer, encoding='utf-8')
+        pdf_bytes = buffer.getvalue()
+        buffer.close()
+        return HttpResponse(pdf_bytes, content_type='application/pdf',
+                            headers={'Content-Disposition': f'attachment; filename="bulletin_qcm_{resultat.id}.pdf"'})
+    except ImportError:
+        pass
 
-                logger.info(f"Bulletin QCM créé pour {resultat.eleve.email}: {bulletin.id}")
-        except Exception as e:
-            logger.error(f"Erreur création bulletin QCM: {e}")
-            raise Http404("Erreur lors de la création du bulletin")
+    try:
+        import weasyprint
+        pdf_bytes = weasyprint.HTML(string=html).write_pdf()
+        return HttpResponse(pdf_bytes, content_type='application/pdf',
+                            headers={'Content-Disposition': f'attachment; filename="bulletin_qcm_{resultat.id}.pdf"'})
+    except ImportError:
+        pass
 
-    # Régénérer le PDF si le fichier n'existe pas
-    if not resultat.bulletin.file_pdf:
-        try:
-            BulletinService.generate_bulletin_qcm_pdf(resultat.bulletin)
-            if not resultat.bulletin.file_pdf:
-                logger.error(f"PDF généré mais file_pdf est vide pour bulletin {resultat.bulletin.id}")
-                raise Http404("Erreur lors de la génération du PDF")
-        except Exception as e:
-            logger.error(f"Erreur régénération PDF bulletin QCM: {e}", exc_info=True)
-            raise Http404(f"Erreur lors de la génération du PDF: {str(e)}")
-
-    return FileResponse(
-        resultat.bulletin.file_pdf.open('rb'),
-        content_type='application/pdf',
-        as_attachment=True,
-        filename=resultat.bulletin.file_pdf.name.split('/')[-1]
-    )
+    return HttpResponse(html, content_type='text/html')

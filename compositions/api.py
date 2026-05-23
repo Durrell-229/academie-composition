@@ -38,6 +38,7 @@ class AnswerIn(Schema):
 class CheatEventSchema(Schema):
     type_event: str
     description: Optional[str] = None
+    severity: Optional[str] = 'medium'
 
 
 class MessageOut(Schema):

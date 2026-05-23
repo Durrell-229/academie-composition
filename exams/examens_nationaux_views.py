@@ -7,9 +7,11 @@ from .models import (
     ExamenNational, ExamenComposition, ExamenBulletin, ExamenBulletinLigne,
     ExamenReponseEleve
 )
-from bulletins.reportlab_generator import generer_bulletin_examen, add_qr_to_pdf
-from bulletins.coefficients_benin import get_coefficient as get_benin_coefficient
-from bulletins.services import BulletinService
+# bulletins supprimé — fonctions PDF désactivées
+generer_bulletin_examen = None
+add_qr_to_pdf = None
+get_benin_coefficient = lambda *a, **k: 1
+BulletinService = None
 
 
 @login_required

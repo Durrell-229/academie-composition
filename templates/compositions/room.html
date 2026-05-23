@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}Composition — {{ exam.titre }} | Académie Numérique{% endblock %}
+{% block title %}{{ exam.get_type_exam_display }} — {{ exam.titre }} | Académie Numérique{% endblock %}
 
 {% block content %}
 <div class="fixed inset-0 bg-bg-primary z-[100] flex flex-col overflow-hidden animate-in">
@@ -15,7 +15,11 @@
             </div>
             <div>
                 <span class="text-[10px] font-black uppercase tracking-[0.3em] text-primary flex items-center gap-2">
-                    <span class="live-dot"></span> Session Active
+                    <span class="live-dot"></span>
+                    {% if exam.type_exam == 'composition' %}Composition en cours
+                    {% elif exam.type_exam == 'devoir' %}Devoir Surveillé
+                    {% elif exam.type_exam == 'interrogation' %}Interrogation
+                    {% else %}{{ exam.get_type_exam_display }}{% endif %}
                 </span>
                 <h1 class="text-lg md:text-xl font-black text-white tracking-tighter truncate max-w-xs md:max-w-md">{{ exam.titre }}</h1>
             </div>
@@ -43,6 +47,26 @@
                 Abandonner
             </a>
         </div>
+    </div>
+
+    <!-- Bandeau type d'épreuve -->
+    <div class="flex items-center justify-center gap-4 px-6 py-2 text-xs font-black uppercase tracking-widest
+        {% if exam.type_exam == 'composition' %}bg-primary/20 text-primary border-b border-primary/30
+        {% elif exam.type_exam == 'devoir' %}bg-accent/20 text-accent border-b border-accent/30
+        {% elif exam.type_exam == 'interrogation' %}bg-warning/20 text-warning border-b border-warning/30
+        {% else %}bg-bg-tertiary/30 text-text-muted border-b border-border-standard{% endif %}">
+        <span>
+            {% if exam.type_exam == 'composition' %}<i class="fa-solid fa-scroll mr-1"></i>Composition Trimestrielle
+            {% elif exam.type_exam == 'devoir' %}<i class="fa-solid fa-pen-to-square mr-1"></i>Devoir Surveillé
+            {% elif exam.type_exam == 'interrogation' %}<i class="fa-solid fa-circle-question mr-1"></i>Interrogation
+            {% else %}<i class="fa-solid fa-file-pen mr-1"></i>{{ exam.get_type_exam_display }}{% endif %}
+        </span>
+        <span class="opacity-50">|</span>
+        <span><i class="fa-solid fa-book mr-1 opacity-60"></i>{{ exam.matiere.nom|default:"Matière non précisée" }}</span>
+        <span class="opacity-50">|</span>
+        <span><i class="fa-solid fa-hourglass-half mr-1 opacity-60"></i>{{ exam.duree_minutes }} min</span>
+        {% if exam.coefficient %}<span class="opacity-50">|</span>
+        <span><i class="fa-solid fa-xmark mr-1 opacity-60"></i>Coeff. {{ exam.coefficient }}</span>{% endif %}
     </div>
 
     <!-- Interface Split-Screen -->
@@ -81,15 +105,15 @@
                         <h3 class="text-lg font-black text-white mb-4">Documents</h3>
                         <div class="space-y-3">
                             {% for f in files %}
-                                <div class="flex items-center justify-between p-3 bg-bg-secondary/50 rounded-xl border border-border-standard hover:border-accent/50 transition-colors">
-                                    <div class="flex items-center gap-3">
+                                <div class="flex flex-col gap-2 bg-bg-secondary/50 rounded-xl border border-border-standard hover:border-accent/50 transition-colors overflow-hidden">
+                                    <div class="flex items-center gap-3 px-3 pt-3 pb-2">
                                         <i class="fa-solid fa-file-pdf text-danger text-lg"></i>
                                         <div>
                                             <p class="text-sm font-medium text-white">{{ f.nom_original }}</p>
                                             <p class="text-[10px] text-text-muted">{{ f.type_fichier|title }}</p>
                                         </div>
                                     </div>
-                                    <iframe src="{% url 'serve_exam_file' f.id %}" class="w-full h-96 rounded-lg border border-border-standard"></iframe>
+                                    <iframe src="{% url 'compositions:serve_exam_file' f.id %}" class="w-full h-96 border-t border-border-standard"></iframe>
                                 </div>
                             {% endfor %}
                         </div>
@@ -121,7 +145,7 @@
             </div>
 
             <!-- Zone de Composition -->
-            <form action="{% url 'submit_paper' session.id %}" method="POST" enctype="multipart/form-data" class="flex-grow flex flex-col gap-4">
+            <form action="{% url 'compositions:submit_paper' session.id %}" method="POST" enctype="multipart/form-data" class="flex-grow flex flex-col gap-4">
                 {% csrf_token %}
                 <div class="flex items-center justify-between">
                     <h3 class="text-lg font-black flex items-center gap-2">
@@ -160,7 +184,12 @@
                 <button type="button" onclick="confirmSubmit()" class="relative bg-button-gradient py-4 px-4 rounded-xl text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-primary/20 hover:scale-[1.02] hover:shadow-primary/40 transition flex items-center justify-center gap-2 overflow-hidden group">
                     <span class="absolute inset-0 bg-bg-tertiary/30 translate-y-full group-hover:translate-y-0 transition-transform"></span>
                     <i class="fa-solid fa-paper-plane relative z-10"></i>
-                    <span class="relative z-10">Soumettre l'examen</span>
+                    <span class="relative z-10">
+                        {% if exam.type_exam == 'composition' %}Soumettre la composition
+                        {% elif exam.type_exam == 'devoir' %}Remettre le devoir
+                        {% elif exam.type_exam == 'interrogation' %}Soumettre l'interrogation
+                        {% else %}Soumettre{% endif %}
+                    </span>
                 </button>
             </form>
         </div>
@@ -173,7 +202,12 @@
         <div class="w-16 h-16 rounded-full bg-warning/10 flex items-center justify-center mx-auto mb-4 border border-warning/20">
             <i class="fa-solid fa-triangle-exclamation text-2xl text-warning"></i>
         </div>
-        <h3 class="text-xl font-black text-center mb-2">Terminer l'examen ?</h3>
+        <h3 class="text-xl font-black text-center mb-2">
+            {% if exam.type_exam == 'composition' %}Terminer la composition ?
+            {% elif exam.type_exam == 'devoir' %}Remettre le devoir ?
+            {% elif exam.type_exam == 'interrogation' %}Terminer l'interrogation ?
+            {% else %}Terminer l'épreuve ?{% endif %}
+        </h3>
         <p class="text-sm text-text-muted text-center mb-6">Vous êtes sur le point de soumettre définitivement votre copie. Cette action est irréversible.</p>
         <div class="flex gap-3">
             <button onclick="closeModal()" class="flex-1 py-3 rounded-xl glass border border-border-standard text-xs font-bold hover:bg-bg-tertiary/30 transition">Annuler</button>
@@ -261,6 +295,7 @@ let fullscreenActive = false;
 let videoStream = null;
 let cameraCheckInterval = null;
 let screenshotInterval = null;
+let nemotronInterval = null;
 let mainCountdown = null;
 let alertVisible = false;
 let alertDismissTimeout = null;
@@ -282,12 +317,14 @@ function formatTime(s, mobile) {
 mainCountdown = setInterval(() => {
     if (timerDesktop) timerDesktop.textContent = formatTime(duration, false);
     if (timerMobile)  timerMobile.textContent  = formatTime(duration, true);
-    if (duration === 600 || duration === 300 || duration === 60) {
+    if (duration === 600 || duration === 300 || duration === 60 || duration === 10) {
         [timerDesktop, timerMobile].forEach(el => {
             if (el) { el.style.color = '#dc2626'; el.parentElement.classList.add('animate-pulse'); }
         });
-        const mins = duration === 600 ? '10 minutes' : duration === 300 ? '5 minutes' : '1 minute';
-        if (duration === 60) speakAlert(`Attention, il vous reste ${mins} pour terminer votre composition.`);
+        if (duration === 600) speakAlert('Attention. Il vous reste 10 minutes pour terminer votre composition.');
+        if (duration === 300) speakAlert('Attention. Il vous reste 5 minutes pour terminer votre composition.');
+        if (duration === 60)  speakAlert('Attention. Il vous reste 1 minute pour terminer votre composition.');
+        if (duration === 10)  speakAlert('Dix secondes. Votre composition va être soumise automatiquement.');
     }
     if (duration <= 0) { clearInterval(mainCountdown); submitForm(); }
     duration--;
@@ -296,11 +333,25 @@ mainCountdown = setInterval(() => {
 // ════════════════════════════════════════════════════════════
 // ALERTE VOCALE (Web Speech API)
 // ════════════════════════════════════════════════════════════
+let _frVoice = null;
+
+function _loadFrVoice() {
+    const voices = window.speechSynthesis.getVoices();
+    _frVoice = voices.find(v => v.lang.startsWith('fr')) || null;
+}
+
+if ('speechSynthesis' in window) {
+    // Les voix sont disponibles immédiatement ou après l'événement
+    _loadFrVoice();
+    window.speechSynthesis.onvoiceschanged = _loadFrVoice;
+}
+
 function speakAlert(text) {
     if (!('speechSynthesis' in window)) return;
     window.speechSynthesis.cancel();
     const utter = new SpeechSynthesisUtterance(text);
     utter.lang = 'fr-FR';
+    if (_frVoice) utter.voice = _frVoice;
     utter.rate = 0.88;
     utter.pitch = 1.15;
     utter.volume = 1.0;
@@ -331,10 +382,10 @@ function triggerAlertOverlay(cheatCount, message, isFinal = false) {
     overlay.classList.add('opacity-100');
     overlay.style.pointerEvents = 'none';
 
-    // Voix — message différent selon niveau
+    // Voix — les emojis sont retirés pour éviter qu'ils soient épelés
     const voiceText = isFinal
-        ? `ALERTE FINALE. ${cheatCount} violations détectées sur 10. La prochaine violation entraînera votre exclusion définitive de cette composition.`
-        : `Alerte. Tentative de tricherie détectée. ${cheatCount} violation${cheatCount > 1 ? 's' : ''} sur 10. Vous risquez d'être banni de cette composition.`;
+        ? `Alerte finale. ${cheatCount} violations détectées sur 10. La prochaine violation entraînera votre exclusion définitive.`
+        : `Alerte. Tentative de tricherie détectée. ${cheatCount} violation${cheatCount > 1 ? 's' : ''} sur 10.`;
     speakAlert(voiceText);
 
     // Mise à jour du badge
@@ -374,6 +425,7 @@ function triggerBanScreen(reason) {
     clearInterval(mainCountdown);
     clearInterval(screenshotInterval);
     clearInterval(cameraCheckInterval);
+    clearInterval(nemotronInterval);
 
     // Afficher l'écran
     const ban = document.getElementById('ban-screen');
@@ -385,7 +437,7 @@ function triggerBanScreen(reason) {
     overlay.classList.add('opacity-0');
 
     // Annonce vocale solennelle
-    speakAlert('Attention. Vous avez été banni de cette composition pour tentatives de tricherie répétées. Votre professeur sera notifié immédiatement. Vous serez redirigé dans dix secondes.');
+    speakAlert('Vous avez été exclu de cette composition pour tentatives de tricherie. Votre professeur sera notifié. Redirection dans dix secondes.');
 
     // Compte à rebours de redirection
     let sec = 10;
@@ -599,6 +651,12 @@ async function analyzeWithNemotron() {
 // SOUMISSION
 // ════════════════════════════════════════════════════════════
 function submitForm() {
+    const texte = document.getElementById('composition-textarea');
+    const fichiers = document.querySelector('input[name="copies"]');
+    if (texte && fichiers && !texte.value.trim() && fichiers.files.length === 0) {
+        alert('Vous devez rédiger une réponse ou scanner votre copie avant de soumettre.');
+        return;
+    }
     clearInterval(mainCountdown);
     document.querySelector('form').submit();
 }
@@ -625,7 +683,7 @@ window.addEventListener('DOMContentLoaded', () => {
     initCamera();
     requestFullscreen();
     screenshotInterval = setInterval(captureScreenshot, 15000);
-    setInterval(analyzeWithNemotron, 30000);
+    nemotronInterval = setInterval(analyzeWithNemotron, 30000);
     setTimeout(analyzeWithNemotron, 12000);
 });
 </script>

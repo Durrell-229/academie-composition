@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+{% block title %}Bourses Scolaires — Admin{% endblock %}
+{% block content %}
+<div class="min-h-screen px-4 py-8" style="background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);">
+<div class="max-w-6xl mx-auto space-y-6">
+
+  <div class="flex items-center gap-4">
+    <a href="/gestion/" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-arrow-left"></i></a>
+    <div>
+      <h1 class="text-2xl font-black text-white">Bourses Scolaires</h1>
+      <p class="text-slate-400 text-sm">Traitement des demandes de bourse des élèves</p>
+    </div>
+  </div>
+
+  {% if messages %}
+  <div class="space-y-2">{% for msg in messages %}
+    <div class="rounded-xl px-4 py-3 text-sm font-medium {% if msg.tags == 'success' %}text-emerald-400{% elif msg.tags == 'error' %}text-red-400{% else %}text-yellow-400{% endif %}" style="background:#1e293b;border:1px solid #334155;">{{ msg }}</div>
+  {% endfor %}</div>
+  {% endif %}
+
+  <!-- KPI Stats -->
+  <div class="grid grid-cols-3 gap-4">
+    <div class="rounded-2xl p-4 text-center" style="background:#1c0a00;border:1px solid #f97316;">
+      <p class="text-3xl font-black text-orange-400">{{ stats.en_attente }}</p>
+      <p class="text-slate-400 text-xs mt-1 font-semibold uppercase">En attente</p>
+    </div>
+    <div class="rounded-2xl p-4 text-center" style="background:#0f2a1d;border:1px solid #059669;">
+      <p class="text-3xl font-black text-emerald-400">{{ stats.approuvee }}</p>
+      <p class="text-slate-400 text-xs mt-1 font-semibold uppercase">Approuvées</p>
+    </div>
+    <div class="rounded-2xl p-4 text-center" style="background:#1c0a0a;border:1px solid #dc2626;">
+      <p class="text-3xl font-black text-red-400">{{ stats.refusee }}</p>
+      <p class="text-slate-400 text-xs mt-1 font-semibold uppercase">Refusées</p>
+    </div>
+  </div>
+
+  <!-- Filtres de statut -->
+  <div class="flex gap-1 p-1 rounded-2xl w-fit" style="background:#0f172a;border:1px solid #1e293b;">
+    {% for slug, label, color in statuts_list %}
+    <a href="?statut={{ slug }}"
+       class="px-5 py-2 rounded-xl text-sm font-bold transition {% if statut_filtre == slug %}text-white{% else %}text-slate-500 hover:text-slate-300{% endif %}"
+       style="{% if statut_filtre == slug %}background:{{ color }};{% endif %}">
+      {{ label }}
+    </a>
+    {% endfor %}
+  </div>
+
+  <!-- Liste des bourses -->
+  {% if bourses %}
+  <div class="space-y-3">
+    {% for bourse in bourses %}
+    <div class="rounded-2xl p-5" style="background:#1e293b;border:1px solid {% if bourse.statut == 'en_attente' %}#f97316{% elif bourse.statut == 'approuvee' %}#059669{% elif bourse.statut == 'refusee' %}#dc2626{% else %}#334155{% endif %};">
+      <div class="flex flex-wrap items-start gap-4">
+
+        <!-- Info élève + bourse -->
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 mb-1 flex-wrap">
+            <p class="text-white font-black text-lg">{{ bourse.eleve.get_full_name }}</p>
+            <!-- Badge statut -->
+            {% if bourse.statut == 'en_attente' %}
+            <span class="text-xs px-2 py-0.5 rounded-full font-bold" style="background:#7c2d12;color:#fdba74;">En attente</span>
+            {% elif bourse.statut == 'approuvee' %}
+            <span class="text-xs px-2 py-0.5 rounded-full font-bold" style="background:#065f46;color:#6ee7b7;">Approuvée</span>
+            {% elif bourse.statut == 'refusee' %}
+            <span class="text-xs px-2 py-0.5 rounded-full font-bold" style="background:#7f1d1d;color:#fca5a5;">Refusée</span>
+            {% else %}
+            <span class="text-xs px-2 py-0.5 rounded-full font-bold" style="background:#1e293b;color:#64748b;border:1px solid #334155;">{{ bourse.statut }}</span>
+            {% endif %}
+            <!-- Type de bourse -->
+            <span class="text-xs px-2 py-0.5 rounded-full" style="background:#1e293b;color:#94a3b8;">{{ bourse.get_type_bourse_display }}</span>
+          </div>
+
+          <p class="text-slate-400 text-xs">{{ bourse.eleve.email }} · Demande le {{ bourse.date_demande|date:"d/m/Y" }}</p>
+
+          <!-- Montants -->
+          <div class="flex gap-3 mt-2 flex-wrap">
+            <span class="text-sm font-bold text-amber-400">{{ bourse.montant_mensuel|floatformat:0 }} XOF / mois</span>
+            <span class="text-slate-500 text-xs self-center">· {{ bourse.duree_mois }} mois ·</span>
+            <span class="text-sm font-semibold text-slate-300">Total : {{ bourse.montant_total|floatformat:0 }} XOF</span>
+          </div>
+
+          <!-- Motivation (tronquée) -->
+          {% if bourse.motivation %}
+          <p class="text-slate-500 text-xs mt-2 line-clamp-2">{{ bourse.motivation }}</p>
+          {% endif %}
+
+          <!-- Décision déjà rendue -->
+          {% if bourse.decision_comite %}
+          <p class="text-slate-400 text-xs mt-1 italic">"{{ bourse.decision_comite }}"
+            {% if bourse.date_decision %}<span class="not-italic text-slate-500">— {{ bourse.date_decision|date:"d/m/Y" }}</span>{% endif %}
+          </p>
+          {% endif %}
+        </div>
+
+        <!-- Actions -->
+        <div class="flex flex-col gap-2 flex-shrink-0">
+          <!-- Bouton Détails / Motivation complète -->
+          <button onclick="voirMotivation('{{ bourse.id }}', '{{ bourse.eleve.get_full_name|escapejs }}', '{{ bourse.motivation|escapejs }}', '{{ bourse.type_bourse }}')"
+                  class="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-300" style="border:1px solid #475569;">
+            Voir détails
+          </button>
+
+          {% if bourse.statut == 'en_attente' %}
+          <!-- Approuver -->
+          <button onclick="showDecisionModal('{{ bourse.id }}', '{{ bourse.eleve.get_full_name|escapejs }}', 'approuver')"
+                  class="px-3 py-1.5 rounded-lg text-xs font-bold text-white" style="background:linear-gradient(135deg,#059669,#047857);">
+            &#10003; Approuver
+          </button>
+          <!-- Refuser -->
+          <button onclick="showDecisionModal('{{ bourse.id }}', '{{ bourse.eleve.get_full_name|escapejs }}', 'refuser')"
+                  class="px-3 py-1.5 rounded-lg text-xs font-bold text-red-400" style="border:1px solid #dc2626;">
+            &#10007; Refuser
+          </button>
+          {% endif %}
+        </div>
+
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <div class="rounded-2xl p-10 text-center" style="background:#1e293b;border:1px solid #334155;">
+    <i class="fa-solid fa-hand-holding-dollar text-slate-600 text-4xl mb-3"></i>
+    <p class="text-white font-bold">Aucune bourse
+      {% if statut_filtre == 'en_attente' %}en attente
+      {% elif statut_filtre == 'approuvee' %}approuvée
+      {% elif statut_filtre == 'refusee' %}refusée
+      {% endif %}
+    </p>
+    <p class="text-slate-400 text-sm mt-1">Les demandes de bourse apparaîtront ici.</p>
+  </div>
+  {% endif %}
+
+</div>
+</div>
+
+<!-- Modal : Voir motivation complète -->
+<div id="modal-motivation" class="hidden fixed inset-0 z-50 flex items-center justify-center" style="background:rgba(0,0,0,0.7);">
+  <div class="rounded-2xl p-6 w-full max-w-lg mx-4" style="background:#1e293b;border:1px solid #334155;">
+    <div class="flex items-start justify-between mb-3">
+      <div>
+        <h3 id="modal-motiv-nom" class="text-white font-black"></h3>
+        <p id="modal-motiv-type" class="text-slate-400 text-sm"></p>
+      </div>
+      <button onclick="document.getElementById('modal-motivation').classList.add('hidden')" class="text-slate-500 hover:text-white text-xl leading-none">&#10007;</button>
+    </div>
+    <div class="rounded-xl p-4" style="background:#0f172a;border:1px solid #334155;">
+      <p id="modal-motiv-texte" class="text-slate-300 text-sm leading-relaxed whitespace-pre-wrap"></p>
+    </div>
+    <button onclick="document.getElementById('modal-motivation').classList.add('hidden')"
+            class="mt-4 w-full py-2.5 rounded-xl text-sm font-bold text-slate-400" style="background:#0f172a;border:1px solid #334155;">
+      Fermer
+    </button>
+  </div>
+</div>
+
+<!-- Modal : Décision bourse -->
+<div id="modal-decision" class="hidden fixed inset-0 z-50 flex items-center justify-center" style="background:rgba(0,0,0,0.7);">
+  <div id="modal-decision-inner" class="rounded-2xl p-6 w-full max-w-md mx-4" style="background:#1e293b;border:1px solid #334155;">
+    <h3 id="modal-decision-titre" class="text-white font-black mb-1"></h3>
+    <p id="modal-decision-nom" class="text-slate-400 text-sm mb-4"></p>
+    <form id="modal-decision-form" method="post">
+      {% csrf_token %}
+      <input type="hidden" id="modal-decision-action" name="action" value="">
+      <div>
+        <label class="block text-slate-400 text-xs font-semibold mb-1 uppercase">Commentaire du comité (optionnel)</label>
+        <textarea name="decision_comite" rows="3" placeholder="Motif de la décision..." class="w-full rounded-lg px-3 py-2 text-sm text-white resize-none" style="background:#0f172a;border:1px solid #475569;"></textarea>
+      </div>
+      <div class="flex gap-3 mt-4">
+        <button type="button" onclick="document.getElementById('modal-decision').classList.add('hidden')"
+                class="flex-1 py-2.5 rounded-xl text-sm font-bold text-slate-400" style="background:#0f172a;border:1px solid #334155;">Annuler</button>
+        <button id="modal-decision-btn" type="submit" class="flex-1 py-2.5 rounded-xl text-sm font-bold text-white"></button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function voirMotivation(id, nom, texte, type) {
+  document.getElementById('modal-motiv-nom').textContent = nom;
+  document.getElementById('modal-motiv-type').textContent = type;
+  document.getElementById('modal-motiv-texte').textContent = texte || 'Aucune motivation fournie.';
+  document.getElementById('modal-motivation').classList.remove('hidden');
+}
+
+function showDecisionModal(id, nom, action) {
+  const inner = document.getElementById('modal-decision-inner');
+  const titre = document.getElementById('modal-decision-titre');
+  const btn = document.getElementById('modal-decision-btn');
+
+  if (action === 'approuver') {
+    titre.textContent = 'Approuver la bourse';
+    inner.style.borderColor = '#059669';
+    btn.style.background = 'linear-gradient(135deg,#059669,#047857)';
+    btn.textContent = '✓ Confirmer l\'approbation';
+  } else {
+    titre.textContent = 'Refuser la bourse';
+    inner.style.borderColor = '#dc2626';
+    btn.style.background = 'linear-gradient(135deg,#dc2626,#b91c1c)';
+    btn.textContent = '✗ Confirmer le refus';
+  }
+
+  document.getElementById('modal-decision-nom').textContent = nom;
+  document.getElementById('modal-decision-action').value = action;
+  document.getElementById('modal-decision-form').action = '/gestion/bourses/' + id + '/decision/';
+  document.getElementById('modal-decision').classList.remove('hidden');
+}
+</script>
+{% endblock %}

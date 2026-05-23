@@ -1,375 +1,226 @@
-{% load static %}
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Bulletin QCM - {{ eleve.nom|default:"Élève" }}</title>
+    <title>Bulletin QCM — {{ eleve.nom|default:"Élève" }}</title>
     <style>
-        @page {
-            size: A4;
-            margin: 12mm;
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+        @page { size: A4 portrait; margin: 10mm 12mm 12mm 12mm; }
 
         body {
-            font-family: Arial, Helvetica, sans-serif;
-            font-size: 12px;
-            color: #000;
-            background: #fff;
-            padding: 10px;
+            font-family: 'Times New Roman', Georgia, serif;
+            font-size: 10px; color: #0d0d0d;
+            background: white; margin: 0; padding: 0;
         }
 
-        .bulletin {
-            width: 100%;
-            max-width: 720px;
-            margin: 0 auto;
-            padding: 10px 14px;
+        .bande-etat { width: 100%; background: #0f2a54; }
+        .bande-etat td { vertical-align: middle; padding: 6px 10px; color: white; }
+        .rep-nom { font-size: 13px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
+        .min-nom { font-size: 9px; color: #a8c4e0; margin-top: 2px; }
+        .devise  { font-size: 8px; color: #c9a94c; font-style: italic; margin-top: 1px; }
+        .barre-or { background: #c9a94c; height: 4px; font-size: 0; }
+
+        .flag-vert  { background: #008751; }
+        .flag-jaune { background: #fcd116; }
+        .flag-rouge { background: #e8112d; }
+        .flag-inner { border: 2px solid #c9a94c; }
+
+        .bloc-etab { text-align: center; padding: 7px 0 5px 0; border-bottom: 3px double #0f2a54; }
+        .etab-nom  { font-size: 16px; font-weight: bold; text-transform: uppercase; letter-spacing: 3px; color: #0f2a54; }
+        .etab-sous { font-size: 8px; color: #555; }
+
+        .bloc-titre {
+            text-align: center; margin: 7px 0 5px 0;
+            padding: 6px; border-top: 2px solid #c9a94c; border-bottom: 2px solid #c9a94c;
+            background: #f7f3eb;
         }
+        .titre-principal { font-size: 17px; font-weight: bold; text-transform: uppercase; letter-spacing: 3px; color: #0f2a54; }
+        .titre-sous { font-size: 9px; color: #555; }
+        .titre-annee { font-size: 8px; color: #888; font-style: italic; margin-top: 2px; }
 
-        /* ===== EN-TÊTE ===== */
-        .header {
-            display: table;
-            width: 100%;
-            margin-bottom: 4px;
-        }
+        .sect-hdr { background: #0f2a54; color: white; font-size: 9px; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; padding: 4px 8px; }
+        .sect-body { border: 1px solid #0f2a54; border-top: none; padding: 6px 8px; }
 
-        .header-left,
-        .header-center,
-        .header-right {
-            display: table-cell;
-            vertical-align: middle;
-        }
+        .info-label { color: #666; font-size: 7px; text-transform: uppercase; letter-spacing: 0.5px; display: block; }
+        .info-val   { font-weight: bold; color: #0f2a54; font-size: 11px; border-bottom: 1px solid #c9a94c; display: block; }
+        .nom-eleve  { font-size: 14px; font-weight: bold; color: #0f2a54; text-transform: uppercase; padding: 5px 8px 3px 8px; border-bottom: 1px solid #e0ddd5; }
 
-        .header-left {
-            width: 15%;
-            text-align: left;
-        }
+        .table-notes { width: 100%; border-collapse: collapse; font-size: 9px; }
+        .table-notes th { background: #0f2a54; color: white; padding: 5px 4px; border: 1px solid #0f2a54; font-size: 8px; text-transform: uppercase; }
+        .table-notes th.left { text-align: left; padding-left: 6px; }
+        .table-notes td { padding: 5px 4px; border: 1px solid #c8d0da; vertical-align: middle; text-align: center; }
+        .table-notes td.left { text-align: left; padding-left: 6px; font-weight: bold; }
+        .note-vert  { color: #166534; font-weight: bold; font-size: 12px; }
+        .note-rouge { color: #991b1b; font-weight: bold; font-size: 12px; }
 
-        .header-center {
-            width: 70%;
-            text-align: center;
-        }
+        .note-vedette { text-align: center; padding: 12px 14px; background: #0f2a54; width: 130px; vertical-align: middle; }
+        .note-big { font-size: 40px; font-weight: bold; color: white; line-height: 1; }
+        .note-sur { font-size: 14px; color: #c9a94c; font-weight: bold; }
+        .note-lbl { font-size: 7px; color: #a8c4e0; text-transform: uppercase; letter-spacing: 1px; }
+        .mention-badge { display: inline-block; margin-top: 5px; padding: 2px 8px; border: 1px solid #c9a94c; font-size: 9px; font-weight: bold; text-transform: uppercase; color: #c9a94c; }
 
-        .header-right {
-            width: 15%;
-            text-align: right;
-        }
+        .obs-bloc { border: 1px solid #c9a94c; background: #fdf9ef; padding: 8px 10px; margin-top: 6px; min-height: 28px; }
+        .obs-label { font-size: 8px; font-weight: bold; text-transform: uppercase; letter-spacing: 1.5px; color: #8a6c1f; margin-bottom: 3px; }
+        .obs-texte { font-size: 10px; line-height: 1.5; font-style: italic; color: #222; }
 
-        .header-left img,
-        .header-right img {
-            max-width: 70px;
-            max-height: 70px;
-        }
+        .sig-table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+        .sig-table td { text-align: center; padding: 0 6px; vertical-align: bottom; width: 50%; }
+        .sig-zone { height: 38px; border-bottom: 1px solid #444; margin-bottom: 3px; }
+        .sig-titre { font-size: 9px; font-weight: bold; color: #0f2a54; text-transform: uppercase; }
+        .cachet-zone { width: 70px; height: 70px; border: 2px solid #0f2a54; border-radius: 35px; text-align: center; font-size: 7px; font-weight: bold; color: #0f2a54; text-transform: uppercase; padding-top: 22px; margin: 0 auto; }
 
-        .header-left .logo-placeholder,
-        .header-right .logo-placeholder {
-            width: 65px;
-            height: 65px;
-            border: 1px dashed #999;
-            display: inline-block;
-            text-align: center;
-            line-height: 65px;
-            font-size: 9px;
-            color: #999;
-        }
-
-        .header-center .republique {
-            font-size: 14px;
-            font-weight: bold;
-        }
-
-        .header-center .ministere {
-            font-size: 12px;
-            font-weight: bold;
-            margin-top: 2px;
-            line-height: 1.3;
-        }
-
-        .academie {
-            text-align: center;
-            font-size: 26px;
-            font-weight: bold;
-            margin: 10px 0 4px;
-        }
-
-        .bulletin-title {
-            text-align: center;
-            font-size: 16px;
-            font-weight: bold;
-            margin-bottom: 8px;
-        }
-
-        .annee-periode {
-            text-align: center;
-            font-size: 13px;
-            margin-bottom: 4px;
-        }
-
-        .annee-periode .dots {
-            display: inline-block;
-            border-bottom: 1px dotted #000;
-            min-width: 160px;
-            padding: 0 4px;
-        }
-
-        /* ===== CHAMPS ÉLÈVE (boîtes arrondies) ===== */
-        .eleve-info {
-            margin-top: 14px;
-            font-size: 13px;
-        }
-
-        .eleve-info .row {
-            display: table;
-            width: 100%;
-            margin-bottom: 8px;
-        }
-
-        .eleve-info .label {
-            display: table-cell;
-            width: 80px;
-            vertical-align: middle;
-            font-weight: normal;
-        }
-
-        .eleve-info .input-box {
-            display: table-cell;
-            vertical-align: middle;
-        }
-
-        .input-box .field {
-            border: 1px solid #000;
-            border-radius: 14px;
-            padding: 4px 10px;
-            min-height: 22px;
-            display: inline-block;
-            min-width: 100%;
-            background: #fff;
-        }
-
-        .row-two .label-1,
-        .row-two .input-1,
-        .row-two .label-2,
-        .row-two .input-2 {
-            display: table-cell;
-            vertical-align: middle;
-        }
-
-        .row-two .label-1 { width: 80px; }
-        .row-two .input-1 { width: 45%; padding-right: 10px; }
-        .row-two .label-2 { width: 60px; padding-left: 10px; }
-        .row-two .input-2 { width: 30%; }
-
-        /* ===== TABLE DES MATIÈRES ===== */
-        .notes-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-            font-size: 12px;
-        }
-
-        .notes-table th,
-        .notes-table td {
-            border: 1px solid #000;
-            padding: 6px 5px;
-            text-align: center;
-            vertical-align: middle;
-            height: 30px;
-        }
-
-        .notes-table thead th {
-            background: #d9d9d9;
-            font-weight: bold;
-            font-size: 12px;
-        }
-
-        .notes-table .col-matiere      { width: 35%; text-align: left; padding-left: 10px; font-weight: bold; }
-        .notes-table .col-coef         { width: 12%; }
-        .notes-table .col-note         { width: 13%; }
-        .notes-table .col-observations { width: 40%; text-align: left; padding-left: 8px; }
-
-        /* ===== BAS DU BULLETIN ===== */
-        .moyennes-row {
-            margin-top: 10px;
-            font-size: 12px;
-        }
-
-        .moyennes-row .label {
-            display: inline-block;
-            margin-right: 8px;
-        }
-
-        .moyennes-row .small-box {
-            display: inline-block;
-            border: 1px solid #000;
-            border-radius: 10px;
-            min-width: 70px;
-            height: 22px;
-            vertical-align: middle;
-            padding: 2px 8px;
-        }
-
-        .observations-classe {
-            margin-top: 10px;
-            font-size: 12px;
-        }
-
-        .observations-classe .line {
-            border-bottom: 1px solid #000;
-            min-height: 18px;
-            margin-top: 6px;
-        }
-
-        /* ===== VISA / SIGNATURES ===== */
-        .footer {
-            display: table;
-            width: 100%;
-            margin-top: 20px;
-            font-size: 12px;
-        }
-
-        .footer .visa,
-        .footer .date-sign {
-            display: table-cell;
-            vertical-align: top;
-        }
-
-        .footer .visa {
-            width: 50%;
-        }
-
-        .footer .date-sign {
-            width: 50%;
-            text-align: left;
-        }
-
-        .footer .date-sign .line {
-            margin-bottom: 4px;
-        }
-
-        .dots-line {
-            display: inline-block;
-            border-bottom: 1px dotted #000;
-            min-width: 120px;
-        }
-
-        @media print {
-            body { padding: 0; }
-        }
+        .footer-barre { background: #0f2a54; height: 3px; font-size: 0; margin-top: 10px; }
+        .footer-txt { font-size: 7.5px; color: #888; text-align: center; margin-top: 3px; }
     </style>
 </head>
 <body>
 
-<div class="bulletin">
+<table class="bande-etat" cellpadding="0" cellspacing="0" width="100%">
+    <tr>
+        <td width="72">
+            <table class="flag-inner" cellpadding="0" cellspacing="0" width="68" height="44">
+                <tr><td class="flag-vert" rowspan="2" width="22"></td><td class="flag-jaune" height="22"></td></tr>
+                <tr><td class="flag-rouge" height="22"></td></tr>
+            </table>
+        </td>
+        <td style="text-align:center;">
+            <div class="rep-nom">République du Bénin</div>
+            <div class="min-nom">Ministère des Enseignements Secondaires, Techniques et de la Formation Professionnelle</div>
+            <div class="devise">Fraternité — Justice — Travail</div>
+        </td>
+        <td width="72">
+            <table class="flag-inner" cellpadding="0" cellspacing="0" width="68" height="44" style="margin-left:auto;">
+                <tr><td class="flag-vert" rowspan="2" width="22"></td><td class="flag-jaune" height="22"></td></tr>
+                <tr><td class="flag-rouge" height="22"></td></tr>
+            </table>
+        </td>
+    </tr>
+</table>
+<table width="100%" cellpadding="0" cellspacing="0"><tr><td class="barre-or">&nbsp;</td></tr></table>
 
-    <!-- ============ EN-TÊTE ============ -->
-    <div class="header">
-        <div class="header-left">
-            {% if logo_benin %}
-                <img src="{{ logo_benin }}" alt="Armoiries">
-            {% else %}
-                <div class="logo-placeholder">ARMOIRIES</div>
-            {% endif %}
-        </div>
-        <div class="header-center">
-            <div class="republique">RÉPUBLIQUE DU BÉNIN</div>
-            <div class="ministere">
-                MINISTÈRE DE L'ENSEIGNEMENT SECONDAIRE,<br>
-                TECHNIQUE ET DE LA FORMATION PROFESSIONNELLE
-            </div>
-        </div>
-        <div class="header-right">
-            {% if logo_academie %}
-                <img src="{{ logo_academie }}" alt="Académie Numérique">
-            {% else %}
-                <div class="logo-placeholder">ACADÉMIE</div>
-            {% endif %}
-        </div>
-    </div>
-
-    <!-- ============ TITRE ============ -->
-    <div class="academie">ACADÉMIE NUMÉRIQUE</div>
-    <div class="bulletin-title">BULLETIN SCOLAIRE - QCM</div>
-
-    <div class="annee-periode">
-        Année Scolaire :
-        <span class="dots">{{ annee_scolaire|default:"" }}</span>
-    </div>
-    <div class="annee-periode">
-        Période :
-        <span class="dots" style="min-width:120px;">{{ periode|default:"" }}</span>
-    </div>
-
-    <!-- ============ INFOS ÉLÈVE ============ -->
-    <div class="eleve-info">
-        <div class="row">
-            <div class="label">Nom :</div>
-            <div class="input-box"><span class="field">{{ eleve.nom|default:"" }}</span></div>
-        </div>
-        <div class="row">
-            <div class="label">Prénoms :</div>
-            <div class="input-box"><span class="field">{{ eleve.prenoms|default:"" }}</span></div>
-        </div>
-        <div class="row row-two">
-            <div class="label-1">Matricule :</div>
-            <div class="input-1"><span class="field">{{ eleve.matricule|default:"" }}</span></div>
-            <div class="label-2">Classe :</div>
-            <div class="input-2"><span class="field" style="background:#fff;">{{ eleve.classe|default:"" }}</span></div>
-        </div>
-    </div>
-
-    <!-- ============ TABLE QCM (UNE SEULE MATIÈRE) ============ -->
-    <table class="notes-table">
-        <thead>
-            <tr>
-                <th class="col-matiere">MATIÈRES</th>
-                <th class="col-coef">COEF.</th>
-                <th class="col-note">NOTE<br>/20</th>
-                <th class="col-observations">OBSERVATIONS</th>
-            </tr>
-        </thead>
-        <tbody>
-            <!-- Une seule ligne pour le QCM : la cellule MATIÈRE est vide par défaut -->
-            <tr>
-                <td class="col-matiere">{{ matiere.nom|default:"" }}</td>
-                <td class="col-coef">{{ matiere.coef|default:"" }}</td>
-                <td class="col-note">{{ matiere.note|default:"" }}</td>
-                <td class="col-observations">{{ matiere.observations|default:"" }}</td>
-            </tr>
-        </tbody>
-    </table>
-
-    <!-- ============ MOYENNES ============ -->
-    <div class="moyennes-row">
-        <span class="label">Moyennes d'arrivages :</span>
-        <span class="small-box">{{ moyenne_arrivage|default:"" }}</span>
-        <span class="small-box" style="margin-left:6px;">{{ moyenne_arrivage_2|default:"" }}</span>
-    </div>
-
-    <!-- ============ OBSERVATIONS DE CLASSE ============ -->
-    <div class="observations-classe">
-        <span>Observations de classe :</span>
-        <div class="line">{{ observations_classe|default:"" }}</div>
-        <div class="line"></div>
-    </div>
-
-    <!-- ============ VISA / SIGNATURE ============ -->
-    <div class="footer">
-        <div class="visa">
-            <div>Visa du Chef d'Établissement :</div>
-        </div>
-        <div class="date-sign">
-            <div class="line">Date au <span class="dots-line">{{ date_jour|default:"" }}</span>/<span class="dots-line" style="min-width:50px;">{{ date_mois|default:"" }}</span>/<span class="dots-line" style="min-width:50px;">{{ date_annee|default:"" }}</span></div>
-            <div class="line">Signature : <span class="dots-line">{{ signature_prof|default:"" }}</span></div>
-            <div class="line">Signature : <span class="dots-line">{{ signature_chef|default:"" }}</span></div>
-        </div>
-    </div>
-
+<div class="bloc-etab">
+    <div class="etab-nom">Académie Numérique Intelligente</div>
+    <div class="etab-sous">Établissement d'Enseignement Secondaire — Cotonou, Bénin</div>
 </div>
+
+<div class="bloc-titre">
+    <div class="titre-principal">Bulletin Scolaire — QCM</div>
+    <div class="titre-sous">Évaluation par Questionnaire à Choix Multiples</div>
+    <div class="titre-annee">Année scolaire {{ annee_scolaire|default:"2025–2026" }} &nbsp;|&nbsp; Période : {{ periode|default:"—" }}</div>
+</div>
+
+<div class="sect-hdr">Identité de l'élève</div>
+<div class="sect-body" style="padding:0;">
+    <div class="nom-eleve">{{ eleve.nom|upper|default:"NOM" }} &nbsp;{{ eleve.prenoms|upper|default:"PRÉNOMS" }}</div>
+    <table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+            <td width="33%" style="padding:3px 8px 7px 8px;">
+                <span class="info-label">Matricule</span>
+                <span class="info-val">{{ eleve.matricule|default:"—" }}</span>
+            </td>
+            <td width="33%" style="padding:3px 8px 7px 8px;">
+                <span class="info-label">Classe</span>
+                <span class="info-val">{{ eleve.classe|default:"—" }}</span>
+            </td>
+            <td width="34%" style="padding:3px 8px 7px 8px;">
+                <span class="info-label">Matière évaluée</span>
+                <span class="info-val">{{ matiere.nom|default:"—" }}</span>
+            </td>
+        </tr>
+    </table>
+</div>
+
+<div class="sect-hdr" style="margin-top:6px;">Résultats de l'évaluation QCM</div>
+<div class="sect-body" style="padding:0; border-top:none;">
+    <table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+            <td class="note-vedette">
+                <div class="note-big">{{ matiere.note|default:"—" }}</div>
+                <div class="note-sur">/20</div>
+                <div class="note-lbl">Score obtenu</div>
+                <div><span class="mention-badge">{{ matiere.mention|default:"—" }}</span></div>
+            </td>
+            <td style="background:#f7f3eb; vertical-align:top;">
+                <table width="100%" cellpadding="0" cellspacing="0">
+                    <tr>
+                        <td style="padding:5px 8px; border-bottom:1px solid #e2ddd0;">
+                            <span class="info-label">Coefficient</span>
+                            <span style="font-size:13px; font-weight:bold; color:#0f2a54;">{{ matiere.coef|default:"1" }}</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding:5px 8px;">
+                            <span class="info-label">Observations</span>
+                            <span style="font-size:10px; font-style:italic; color:#333;">{{ matiere.observations|default:"—"|truncatechars:80 }}</span>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</div>
+
+<div class="sect-hdr" style="margin-top:6px;">Tableau des résultats</div>
+<table class="table-notes" cellpadding="0" cellspacing="0" width="100%">
+    <thead>
+        <tr>
+            <th class="left" style="width:40%;">Matière</th>
+            <th style="width:12%;">Coeff.</th>
+            <th style="width:14%;">Note /20</th>
+            <th style="width:14%;">Mention</th>
+            <th class="left" style="width:20%;">Observations</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="left">{{ matiere.nom|default:"—" }}</td>
+            <td>{{ matiere.coef|default:"1" }}</td>
+            <td class="{% if matiere.note >= 10 %}note-vert{% else %}note-rouge{% endif %}">{{ matiere.note|default:"—" }}</td>
+            <td>{{ matiere.mention|default:"—" }}</td>
+            <td class="left" style="font-size:8px; font-style:italic;">{{ matiere.observations|default:""|truncatechars:50 }}</td>
+        </tr>
+    </tbody>
+</table>
+
+{% if observations_classe %}
+<div class="obs-bloc">
+    <div class="obs-label">Observations de la classe</div>
+    <div class="obs-texte">{{ observations_classe }}</div>
+</div>
+{% endif %}
+
+<table class="sig-table" cellpadding="0" cellspacing="0" width="100%">
+    <tr>
+        <td width="50%">
+            <div class="sig-zone"></div>
+            <div class="sig-titre">Le Directeur de l'Établissement</div>
+            <div style="font-size:8px; color:#888;">(Signature et Cachet)</div>
+        </td>
+        <td width="50%">
+            <div class="cachet-zone">
+                <div style="font-size:6px; color:#0f2a54; font-weight:bold;">Cachet Officiel</div>
+            </div>
+        </td>
+    </tr>
+    <tr>
+        <td colspan="2" style="padding-top:8px;">
+            <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                    <td width="50%" style="text-align:center;">
+                        <div class="sig-zone"></div>
+                        <div class="sig-titre">Le Professeur</div>
+                    </td>
+                    <td width="50%" style="text-align:center;">
+                        <div class="sig-zone"></div>
+                        <div class="sig-titre">Le Parent / Tuteur — Lu et approuvé</div>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+
+<table width="100%" cellpadding="0" cellspacing="0"><tr><td class="footer-barre">&nbsp;</td></tr></table>
+<div class="footer-txt">Bulletin généré automatiquement par l'IA de correction — Académie Numérique Intelligente | République du Bénin</div>
 
 </body>
 </html>

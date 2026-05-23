@@ -1,4 +1,4 @@
-{% load static %}
+﻿{% load static %}
 <!DOCTYPE html>
 <html lang="fr" class="h-full">
 <head>
@@ -308,19 +308,19 @@
                         <p class="px-3 text-[9px] font-black uppercase tracking-[0.2em] text-text-muted">Gestion</p>
                     </div>
 
-                    <a href="{% url 'exam_list' %}" class="nav-link flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-text-secondary {% if request.resolver_match.url_name == 'exam_list' %}active{% endif %}">
+                    <a href="{% url 'exams:exam_list' %}" class="nav-link flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-text-secondary {% if request.resolver_match.url_name == 'exam_list' %}active{% endif %}">
                         <i class="nav-icon fa-solid fa-layer-group text-base w-5 text-center flex-shrink-0"></i>
                         <span x-show="sidebarOpen" class="whitespace-nowrap">Banque d'épreuves</span>
                     </a>
 
                     {% if user.role == 'professeur' or user.role == 'admin' %}
-                    <a href="{% url 'exam_create' %}" class="nav-link flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-text-secondary {% if request.resolver_match.url_name == 'exam_create' %}active{% endif %}">
+                    <a href="{% url 'exams:exam_create' %}" class="nav-link flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-text-secondary {% if request.resolver_match.url_name == 'exam_create' %}active{% endif %}">
                         <i class="nav-icon fa-solid fa-file-circle-plus text-base w-5 text-center flex-shrink-0"></i>
                         <span x-show="sidebarOpen" class="whitespace-nowrap">Nouvelle épreuve</span>
                     </a>
                     {% endif %}
 
-                    <a href="{% url 'ia_corrections_list' %}" class="nav-link flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-text-secondary">
+                    <a href="{% url 'compositions:ia_corrections_list' %}" class="nav-link flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-text-secondary">
                         <i class="nav-icon fa-solid fa-robot text-base w-5 text-center flex-shrink-0"></i>
                         <span x-show="sidebarOpen" class="whitespace-nowrap">Corrections IA</span>
                     </a>
@@ -337,7 +337,7 @@
                         <p class="px-3 text-[9px] font-black uppercase tracking-[0.2em] text-text-muted">Mes compositions</p>
                     </div>
 
-                    <a href="{% url 'exam_list' %}" class="nav-link flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-text-secondary {% if request.resolver_match.url_name == 'exam_list' %}active{% endif %}">
+                    <a href="{% url 'exams:exam_list' %}" class="nav-link flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-text-secondary {% if request.resolver_match.url_name == 'exam_list' %}active{% endif %}">
                         <i class="nav-icon fa-solid fa-clipboard-list text-base w-5 text-center flex-shrink-0"></i>
                         <span x-show="sidebarOpen" class="whitespace-nowrap">Mes épreuves</span>
                     </a>
@@ -347,12 +347,12 @@
                         <span x-show="sidebarOpen" class="whitespace-nowrap">Évaluation QCM</span>
                     </a>
 
-                    <a href="{% url 'ia_corrections_list' %}" class="nav-link flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-text-secondary">
+                    <a href="{% url 'compositions:ia_corrections_list' %}" class="nav-link flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-text-secondary">
                         <i class="nav-icon fa-solid fa-chart-bar text-base w-5 text-center flex-shrink-0"></i>
                         <span x-show="sidebarOpen" class="whitespace-nowrap">Mes résultats</span>
                     </a>
 
-                    <a href="{% url 'bulletins:index' %}" class="nav-link flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-text-secondary">
+                    <a href="{% url 'compositions:ia_corrections_list' %}" class="nav-link flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-text-secondary">
                         <i class="nav-icon fa-solid fa-file-invoice text-base w-5 text-center flex-shrink-0"></i>
                         <span x-show="sidebarOpen" class="whitespace-nowrap">Mes bulletins</span>
                     </a>
@@ -511,19 +511,19 @@
                 <p class="px-3 text-[9px] font-black uppercase tracking-[0.2em] text-text-muted">Gestion</p>
             </div>
 
-            <a href="{% url 'exam_list' %}" @click="mobileMenu = false" class="flex items-center gap-3 px-3 py-3 text-sm font-semibold text-text-secondary rounded-xl {% if request.resolver_match.url_name == 'exam_list' %}bg-primary/10 text-primary{% else %}hover:bg-bg-tertiary{% endif %}">
+            <a href="{% url 'exams:exam_list' %}" @click="mobileMenu = false" class="flex items-center gap-3 px-3 py-3 text-sm font-semibold text-text-secondary rounded-xl {% if request.resolver_match.url_name == 'exam_list' %}bg-primary/10 text-primary{% else %}hover:bg-bg-tertiary{% endif %}">
                 <i class="fa-solid fa-layer-group text-base w-5 text-center flex-shrink-0"></i>
                 <span>Banque d'épreuves</span>
             </a>
 
             {% if user.role == 'professeur' or user.role == 'admin' %}
-            <a href="{% url 'exam_create' %}" @click="mobileMenu = false" class="flex items-center gap-3 px-3 py-3 text-sm font-semibold text-text-secondary rounded-xl {% if request.resolver_match.url_name == 'exam_create' %}bg-primary/10 text-primary{% else %}hover:bg-bg-tertiary{% endif %}">
+            <a href="{% url 'exams:exam_create' %}" @click="mobileMenu = false" class="flex items-center gap-3 px-3 py-3 text-sm font-semibold text-text-secondary rounded-xl {% if request.resolver_match.url_name == 'exam_create' %}bg-primary/10 text-primary{% else %}hover:bg-bg-tertiary{% endif %}">
                 <i class="fa-solid fa-file-circle-plus text-base w-5 text-center flex-shrink-0"></i>
                 <span>Nouvelle épreuve</span>
             </a>
             {% endif %}
 
-            <a href="{% url 'ia_corrections_list' %}" @click="mobileMenu = false" class="flex items-center gap-3 px-3 py-3 text-sm font-semibold text-text-secondary rounded-xl hover:bg-bg-tertiary">
+            <a href="{% url 'compositions:ia_corrections_list' %}" @click="mobileMenu = false" class="flex items-center gap-3 px-3 py-3 text-sm font-semibold text-text-secondary rounded-xl hover:bg-bg-tertiary">
                 <i class="fa-solid fa-robot text-base w-5 text-center flex-shrink-0"></i>
                 <span>Corrections IA</span>
             </a>
@@ -540,7 +540,7 @@
                 <p class="px-3 text-[9px] font-black uppercase tracking-[0.2em] text-text-muted">Mes compositions</p>
             </div>
 
-            <a href="{% url 'exam_list' %}" @click="mobileMenu = false" class="flex items-center gap-3 px-3 py-3 text-sm font-semibold text-text-secondary rounded-xl {% if request.resolver_match.url_name == 'exam_list' %}bg-primary/10 text-primary{% else %}hover:bg-bg-tertiary{% endif %}">
+            <a href="{% url 'exams:exam_list' %}" @click="mobileMenu = false" class="flex items-center gap-3 px-3 py-3 text-sm font-semibold text-text-secondary rounded-xl {% if request.resolver_match.url_name == 'exam_list' %}bg-primary/10 text-primary{% else %}hover:bg-bg-tertiary{% endif %}">
                 <i class="fa-solid fa-clipboard-list text-base w-5 text-center flex-shrink-0"></i>
                 <span>Mes épreuves</span>
             </a>
@@ -550,12 +550,12 @@
                 <span>Évaluation QCM</span>
             </a>
 
-            <a href="{% url 'ia_corrections_list' %}" @click="mobileMenu = false" class="flex items-center gap-3 px-3 py-3 text-sm font-semibold text-text-secondary rounded-xl hover:bg-bg-tertiary">
+            <a href="{% url 'compositions:ia_corrections_list' %}" @click="mobileMenu = false" class="flex items-center gap-3 px-3 py-3 text-sm font-semibold text-text-secondary rounded-xl hover:bg-bg-tertiary">
                 <i class="fa-solid fa-chart-bar text-base w-5 text-center flex-shrink-0"></i>
                 <span>Mes résultats</span>
             </a>
 
-            <a href="{% url 'bulletins:index' %}" @click="mobileMenu = false" class="flex items-center gap-3 px-3 py-3 text-sm font-semibold text-text-secondary rounded-xl hover:bg-bg-tertiary">
+            <a href="{% url 'compositions:ia_corrections_list' %}" @click="mobileMenu = false" class="flex items-center gap-3 px-3 py-3 text-sm font-semibold text-text-secondary rounded-xl hover:bg-bg-tertiary">
                 <i class="fa-solid fa-file-invoice text-base w-5 text-center flex-shrink-0"></i>
                 <span>Mes bulletins</span>
             </a>

@@ -4,6 +4,7 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.utils import timezone
 from django.contrib import messages
+from django.db.models import Count, Q
 
 from exams.models import Exam, ExamFile
 from compositions.models import CompositionSession, Resultat
@@ -19,13 +20,25 @@ logger = logging.getLogger(__name__)
 
 @login_required
 def correction_dashboard(request):
-    ai_total = AICorrection.objects.count()
-    ai_pending = AICorrection.objects.filter(statut=AICorrection.Statut.EN_ATTENTE).count()
-    ai_done = AICorrection.objects.filter(statut=AICorrection.Statut.TERMINE).count()
+    # 1 requête au lieu de 3 pour les stats IA
+    ai_stats = AICorrection.objects.aggregate(
+        ai_total=Count('id'),
+        ai_pending=Count('id', filter=Q(statut=AICorrection.Statut.EN_ATTENTE)),
+        ai_done=Count('id', filter=Q(statut=AICorrection.Statut.TERMINE)),
+    )
+    ai_total = ai_stats['ai_total']
+    ai_pending = ai_stats['ai_pending']
+    ai_done = ai_stats['ai_done']
 
-    humain_total = CorrectionHumaine.objects.count()
-    humain_pending = CorrectionHumaine.objects.filter(statut=CorrectionHumaine.Statut.ASSIGNEE).count()
-    humain_done = CorrectionHumaine.objects.filter(statut=CorrectionHumaine.Statut.TERMINEE).count()
+    # 1 requête au lieu de 3 pour les stats humaines
+    humain_stats = CorrectionHumaine.objects.aggregate(
+        humain_total=Count('id'),
+        humain_pending=Count('id', filter=Q(statut=CorrectionHumaine.Statut.ASSIGNEE)),
+        humain_done=Count('id', filter=Q(statut=CorrectionHumaine.Statut.TERMINEE)),
+    )
+    humain_total = humain_stats['humain_total']
+    humain_pending = humain_stats['humain_pending']
+    humain_done = humain_stats['humain_done']
 
     # Sessions soumises sans correction
     sessions_sans_correction = CompositionSession.objects.filter(

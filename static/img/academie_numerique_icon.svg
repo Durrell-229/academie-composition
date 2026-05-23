@@ -1,0 +1,246 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- Fond dégradé bleu identique à l'image de référence -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%"   stop-color="#5BC8F5"/>
+      <stop offset="50%"  stop-color="#1A9FD8"/>
+      <stop offset="100%" stop-color="#0066AA"/>
+    </linearGradient>
+
+    <!-- Écran dégradé -->
+    <linearGradient id="screenGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%"   stop-color="#1C2B45"/>
+      <stop offset="100%" stop-color="#0D1B2E"/>
+    </linearGradient>
+
+    <!-- Reflet brillant sur l'icône -->
+    <linearGradient id="shineGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%"   stop-color="#FFFFFF" stop-opacity="0.35"/>
+      <stop offset="60%"  stop-color="#FFFFFF" stop-opacity="0.05"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+
+    <!-- Dégradé neurones / IA -->
+    <linearGradient id="brainGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%"   stop-color="#00E5FF"/>
+      <stop offset="100%" stop-color="#7C4DFF"/>
+    </linearGradient>
+
+    <!-- Ombre portée -->
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#003366" flood-opacity="0.4"/>
+    </filter>
+
+    <!-- Ombre douce intérieure pour l'écran -->
+    <filter id="screenShadow">
+      <feDropShadow dx="0" dy="3" stdDeviation="6" flood-color="#000" flood-opacity="0.5"/>
+    </filter>
+
+    <!-- Glow bleu pour les éléments IA -->
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+
+    <clipPath id="roundedClip">
+      <rect width="512" height="512" rx="110" ry="110"/>
+    </clipPath>
+  </defs>
+
+  <!-- ══════════════════════════════════════════
+       FOND — Arrondi iOS style
+  ══════════════════════════════════════════ -->
+  <rect width="512" height="512" rx="110" ry="110" fill="url(#bgGrad)"/>
+
+  <!-- Lumière ambiante en haut à gauche -->
+  <ellipse cx="140" cy="110" rx="180" ry="120" fill="#FFFFFF" opacity="0.10"/>
+
+  <!-- ══════════════════════════════════════════
+       BUREAU / TABLE (bois clair)
+  ══════════════════════════════════════════ -->
+  <rect x="30" y="340" width="452" height="120" rx="12" fill="#C8903A" opacity="0.85"/>
+  <rect x="30" y="340" width="452" height="16" rx="8" fill="#D9A54A" opacity="0.9"/>
+
+  <!-- ══════════════════════════════════════════
+       MONITEUR PC
+  ══════════════════════════════════════════ -->
+  <!-- Pied du moniteur -->
+  <rect x="226" y="335" width="60" height="22" rx="5" fill="#D0D8E8"/>
+  <rect x="196" y="354" width="120" height="10" rx="5" fill="#B8C4D8"/>
+
+  <!-- Cadre moniteur -->
+  <rect x="100" y="130" width="312" height="215" rx="14" fill="#E8EDF5" filter="url(#screenShadow)"/>
+  <rect x="112" y="142" width="288" height="188" rx="8" fill="url(#screenGrad)"/>
+
+  <!-- ═══ CONTENU ÉCRAN — Visioconférence ═══ -->
+
+  <!-- Professeur (grande cellule gauche) -->
+  <rect x="116" y="146" width="172" height="180" rx="6" fill="#1A3A28"/>
+  <!-- Tableau noir -->
+  <rect x="122" y="152" width="160" height="130" rx="4" fill="#1D4D30"/>
+  <!-- Équations sur le tableau -->
+  <text x="136" y="185" font-family="monospace" font-size="14" fill="#F0E68C" font-weight="bold">2x + 3 = 11</text>
+  <text x="136" y="205" font-family="monospace" font-size="13" fill="#F0E68C">    x = 4</text>
+  <text x="136" y="228" font-family="monospace" font-size="13" fill="#ADFF2F">8 ÷ 2 = 4</text>
+
+  <!-- Silhouette prof -->
+  <ellipse cx="202" cy="272" rx="20" ry="20" fill="#F4C39A"/>
+  <rect x="182" y="286" width="40" height="34" rx="8" fill="#5B9BD5"/>
+
+  <!-- Cellules élèves (droite) -->
+  <rect x="292" y="146" width="104" height="58" rx="4" fill="#1A2040"/>
+  <ellipse cx="344" cy="168" rx="16" ry="16" fill="#F4C39A"/>
+  <rect x="328" y="180" width="32" height="20" rx="4" fill="#3A6EA8"/>
+
+  <rect x="292" y="208" width="104" height="58" rx="4" fill="#1A2040"/>
+  <ellipse cx="344" cy="230" rx="16" ry="16" fill="#F4C39A"/>
+  <rect x="328" y="242" width="32" height="20" rx="4" fill="#3A6EA8"/>
+
+  <rect x="292" y="270" width="104" height="56" rx="4" fill="#1A2040"/>
+  <ellipse cx="344" cy="291" rx="16" ry="16" fill="#F4C39A"/>
+  <rect x="328" y="303" width="32" height="18" rx="4" fill="#3A6EA8"/>
+
+  <!-- Barre d'appel (icônes vert/rouge) -->
+  <rect x="148" y="286" width="80" height="24" rx="12" fill="#1A2040" opacity="0.85"/>
+  <circle cx="175" cy="298" r="9" fill="#22C55E"/>
+  <circle cx="202" cy="298" r="9" fill="#EF4444"/>
+  <!-- Icône téléphone vert -->
+  <text x="170" y="303" font-family="Arial" font-size="11" fill="#fff" text-anchor="middle">📞</text>
+  <!-- Croix rouge -->
+  <line x1="197" y1="294" x2="207" y2="302" stroke="#fff" stroke-width="2"/>
+  <line x1="207" y1="294" x2="197" y2="302" stroke="#fff" stroke-width="2"/>
+
+  <!-- ══════════════════════════════════════════
+       ÉLÈVE (vue de dos, 3D simplifié)
+  ══════════════════════════════════════════ -->
+  <!-- Corps -->
+  <ellipse cx="190" cy="440" rx="75" ry="40" fill="#B8864A" opacity="0.3"/>
+  <!-- Torse - t-shirt rayé bleu/blanc -->
+  <rect x="135" y="355" width="110" height="90" rx="20" fill="#5BC8F5"/>
+  <rect x="135" y="368" width="110" height="12" fill="#FFFFFF" opacity="0.6"/>
+  <rect x="135" y="390" width="110" height="12" fill="#FFFFFF" opacity="0.6"/>
+  <rect x="135" y="412" width="110" height="12" fill="#FFFFFF" opacity="0.6"/>
+
+  <!-- Tête (vue de dos) -->
+  <ellipse cx="190" cy="335" rx="42" ry="44" fill="#D4956A"/>
+  <!-- Cheveux noirs -->
+  <ellipse cx="190" cy="308" rx="44" ry="28" fill="#1C1C1C"/>
+  <ellipse cx="148" cy="320" rx="12" ry="20" fill="#1C1C1C"/>
+  <ellipse cx="232" cy="320" rx="12" ry="20" fill="#1C1C1C"/>
+
+  <!-- Casque audio (bleu comme l'image) -->
+  <!-- Arc du casque -->
+  <path d="M 148 318 Q 190 270 232 318" fill="none" stroke="#1C1C1C" stroke-width="10" stroke-linecap="round"/>
+  <!-- Oreillette gauche -->
+  <ellipse cx="148" cy="330" rx="18" ry="20" fill="#1C1C1C"/>
+  <ellipse cx="148" cy="330" rx="13" ry="15" fill="#1A9FD8"/>
+  <!-- Oreillette droite -->
+  <ellipse cx="232" cy="330" rx="18" ry="20" fill="#1C1C1C"/>
+  <ellipse cx="232" cy="330" rx="13" ry="15" fill="#1A9FD8"/>
+
+  <!-- Bras gauche + main avec stylo -->
+  <path d="M 140 380 Q 108 400 100 440" fill="none" stroke="#D4956A" stroke-width="22" stroke-linecap="round"/>
+  <!-- Stylo -->
+  <rect x="90" y="428" width="6" height="32" rx="3" fill="#1A3A8F" transform="rotate(-20 93 444)"/>
+  <polygon points="90,458 96,458 93,470" fill="#F0C040" transform="rotate(-20 93 444)"/>
+
+  <!-- ══════════════════════════════════════════
+       PLANTE (coin gauche)
+  ══════════════════════════════════════════ -->
+  <rect x="42" y="320" width="28" height="26" rx="4" fill="#D9A54A"/>
+  <ellipse cx="46" cy="318" rx="14" ry="20" fill="#2E7D32"/>
+  <ellipse cx="56" cy="310" rx="16" ry="22" fill="#388E3C"/>
+  <ellipse cx="66" cy="318" rx="13" ry="18" fill="#2E7D32"/>
+
+  <!-- ══════════════════════════════════════════
+       CRAYONS (pot métallique — coin droit)
+  ══════════════════════════════════════════ -->
+  <rect x="408" y="318" width="52" height="32" rx="4" fill="#37474F"/>
+  <line x1="412" y1="318" x2="412" y2="348" stroke="#546E7A" stroke-width="1.5"/>
+  <line x1="425" y1="318" x2="425" y2="348" stroke="#546E7A" stroke-width="1.5"/>
+  <line x1="438" y1="318" x2="438" y2="348" stroke="#546E7A" stroke-width="1.5"/>
+  <line x1="451" y1="318" x2="451" y2="348" stroke="#546E7A" stroke-width="1.5"/>
+  <!-- Crayons qui dépassent -->
+  <rect x="415" y="288" width="7" height="34" rx="3" fill="#1565C0"/>
+  <polygon points="415,288 422,288 418.5,278" fill="#FFD54F"/>
+  <rect x="430" y="294" width="7" height="28" rx="3" fill="#1565C0"/>
+  <polygon points="430,294 437,294 433.5,284" fill="#FFD54F"/>
+  <rect x="445" y="285" width="7" height="37" rx="3" fill="#1565C0"/>
+  <polygon points="445,285 452,285 448.5,275" fill="#FFD54F"/>
+
+  <!-- ══════════════════════════════════════════
+       CLAVIER
+  ══════════════════════════════════════════ -->
+  <rect x="215" y="350" width="180" height="50" rx="8" fill="#E8EDF5" opacity="0.9"/>
+  <rect x="222" y="358" width="166" height="34" rx="5" fill="#D0D8E8"/>
+  <!-- Touches stylisées -->
+  <rect x="228" y="363" width="14" height="10" rx="2" fill="#B8C4D8"/>
+  <rect x="246" y="363" width="14" height="10" rx="2" fill="#B8C4D8"/>
+  <rect x="264" y="363" width="14" height="10" rx="2" fill="#B8C4D8"/>
+  <rect x="282" y="363" width="14" height="10" rx="2" fill="#B8C4D8"/>
+  <rect x="300" y="363" width="14" height="10" rx="2" fill="#B8C4D8"/>
+  <rect x="318" y="363" width="14" height="10" rx="2" fill="#B8C4D8"/>
+  <rect x="336" y="363" width="14" height="10" rx="2" fill="#B8C4D8"/>
+  <rect x="354" y="363" width="14" height="10" rx="2" fill="#B8C4D8"/>
+  <!-- Barre espace -->
+  <rect x="252" y="378" width="106" height="10" rx="3" fill="#B8C4D8"/>
+
+  <!-- ══════════════════════════════════════════
+       BADGE IA — Étoile / Cerveau stylisé (coin sup droit)
+  ══════════════════════════════════════════ -->
+  <circle cx="420" cy="70" r="48" fill="#0D1B2E" opacity="0.75"/>
+  <circle cx="420" cy="70" r="44" fill="none" stroke="url(#brainGrad)" stroke-width="2.5"/>
+
+  <!-- Nœuds neuronaux -->
+  <circle cx="420" cy="48" r="6" fill="url(#brainGrad)" filter="url(#glow)"/>
+  <circle cx="444" cy="60" r="5" fill="url(#brainGrad)" filter="url(#glow)"/>
+  <circle cx="444" cy="82" r="5" fill="url(#brainGrad)" filter="url(#glow)"/>
+  <circle cx="420" cy="94" r="6" fill="url(#brainGrad)" filter="url(#glow)"/>
+  <circle cx="396" cy="82" r="5" fill="url(#brainGrad)" filter="url(#glow)"/>
+  <circle cx="396" cy="60" r="5" fill="url(#brainGrad)" filter="url(#glow)"/>
+  <circle cx="420" cy="70" r="4" fill="#00E5FF" filter="url(#glow)"/>
+
+  <!-- Connexions -->
+  <line x1="420" y1="48" x2="444" y2="60" stroke="#00E5FF" stroke-width="1.5" opacity="0.7"/>
+  <line x1="444" y1="60" x2="444" y2="82" stroke="#00E5FF" stroke-width="1.5" opacity="0.7"/>
+  <line x1="444" y1="82" x2="420" y2="94" stroke="#7C4DFF" stroke-width="1.5" opacity="0.7"/>
+  <line x1="420" y1="94" x2="396" y2="82" stroke="#7C4DFF" stroke-width="1.5" opacity="0.7"/>
+  <line x1="396" y1="82" x2="396" y2="60" stroke="#7C4DFF" stroke-width="1.5" opacity="0.7"/>
+  <line x1="396" y1="60" x2="420" y2="48" stroke="#00E5FF" stroke-width="1.5" opacity="0.7"/>
+  <!-- Diagonales vers le centre -->
+  <line x1="420" y1="48" x2="420" y2="70" stroke="#FFFFFF" stroke-width="1" opacity="0.4"/>
+  <line x1="444" y1="60" x2="420" y2="70" stroke="#FFFFFF" stroke-width="1" opacity="0.4"/>
+  <line x1="444" y1="82" x2="420" y2="70" stroke="#FFFFFF" stroke-width="1" opacity="0.4"/>
+
+  <!-- Lettre IA dans le badge -->
+  <text x="420" y="75" font-family="Arial Black, sans-serif" font-size="16" font-weight="900"
+        fill="#FFFFFF" text-anchor="middle" opacity="0.85">IA</text>
+
+  <!-- ══════════════════════════════════════════
+       DRAPEAU BÉNIN — Petites bandes en bas à gauche
+  ══════════════════════════════════════════ -->
+  <rect x="30" y="454" width="10" height="28" rx="2" fill="#008751"/>
+  <rect x="42" y="454" width="14" height="28" rx="2" fill="#FCD116"/>
+  <rect x="58" y="454" width="14" height="28" rx="2" fill="#E8112D"/>
+
+  <!-- ══════════════════════════════════════════
+       TEXTE — Académie Numérique
+  ══════════════════════════════════════════ -->
+  <!-- Fond texte demi-transparent -->
+  <rect x="0" y="460" width="512" height="52" rx="0" fill="#00234A" opacity="0.62"/>
+  <rect x="0" y="458" width="512" height="4" fill="url(#brainGrad)" opacity="0.8"/>
+
+  <text x="256" y="483" font-family="Arial Black, sans-serif" font-size="19" font-weight="900"
+        fill="#FFFFFF" text-anchor="middle" letter-spacing="1.5">ACADÉMIE NUMÉRIQUE</text>
+  <text x="256" y="502" font-family="Arial, sans-serif" font-size="11" font-weight="400"
+        fill="#7CD4F5" text-anchor="middle" letter-spacing="3">BÉNIN • IA • EXCELLENCE</text>
+
+  <!-- ══════════════════════════════════════════
+       REFLET BRILLANT (style iOS)
+  ══════════════════════════════════════════ -->
+  <rect x="0" y="0" width="512" height="512" rx="110" ry="110" fill="url(#shineGrad)"/>
+
+  <!-- Contour léger -->
+  <rect x="1" y="1" width="510" height="510" rx="110" ry="110"
+        fill="none" stroke="#FFFFFF" stroke-width="1.5" opacity="0.25"/>
+</svg>

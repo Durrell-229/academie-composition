@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 {% block title %}Créer une épreuve - Académie Numérique{% endblock %}
 {% block content %}
 <div class="p-6 max-w-4xl mx-auto">
@@ -21,13 +21,24 @@
             </div>
 
             <div>
-                <label class="block text-sm font-medium mb-2 text-text-secondary">Type</label>
+                <label class="block text-sm font-medium mb-2 text-text-secondary">Type d'épreuve</label>
                 <select name="type_exam" x-model="type" class="w-full px-4 py-3 rounded-xl bg-bg-primary border border-border-standard focus:border-border-focus focus:ring-2 focus:ring-primary/20 outline-none transition">
-                    <option value="composition">Composition</option>
-                    <option value="examen">Examen</option>
-                    <option value="devoir">Devoir</option>
-                    <option value="concours">Concours</option>
-                    <option value="eval_prof">Évaluation Professeur</option>
+                    <option value="interrogation">Interrogation — bulletin note simple</option>
+                    <option value="devoir">Devoir Surveillé — bulletin scolaire</option>
+                    <option value="composition">Composition Trimestrielle — bulletin officiel béninois</option>
+                    <option value="examen">Examen — bulletin officiel</option>
+                    <option value="concours">Concours — bulletin officiel</option>
+                    <option value="eval_prof">Évaluation Professeur — bulletin simple</option>
+                </select>
+                <p class="text-xs text-text-secondary mt-1">Le type détermine le bulletin PDF remis à l'élève.</p>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium mb-2 text-text-secondary">Trimestre</label>
+                <select name="trimestre" class="w-full px-4 py-3 rounded-xl bg-bg-primary border border-border-standard focus:border-border-focus focus:ring-2 focus:ring-primary/20 outline-none transition">
+                    <option value="T1">1er Trimestre</option>
+                    <option value="T2">2ème Trimestre</option>
+                    <option value="T3">3ème Trimestre</option>
                 </select>
             </div>
 
@@ -101,7 +112,7 @@
             <button type="submit" class="px-8 py-3 rounded-xl gradient-bg text-white font-semibold hover:opacity-90 transition shadow-lg shadow-primary/30">
                 Créer l'épreuve
             </button>
-            <a href="{% url 'exam_list' %}" class="px-6 py-3 rounded-xl border border-border-standard text-text-secondary hover:bg-bg-tertiary transition">
+            <a href="{% url 'exams:exam_list' %}" class="px-6 py-3 rounded-xl border border-border-standard text-text-secondary hover:bg-bg-tertiary transition">
                 Annuler
             </a>
         </div>

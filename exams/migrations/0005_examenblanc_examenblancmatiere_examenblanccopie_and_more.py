@@ -9,7 +9,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0004_classe_schools_classe'),
+        ('core', '0003_alter_classe_niveau'),
         ('exams', '0004_exam_rejection_comment'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]

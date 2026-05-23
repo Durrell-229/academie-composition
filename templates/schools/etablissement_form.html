@@ -1,0 +1,147 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }} | Académie Numérique{% endblock %}
+{% block breadcrumb %}
+<a href="{% url 'dashboard' %}" class="text-text-muted hover:text-text-primary">Dashboard</a>
+<span class="mx-2 text-text-muted">/</span>
+<a href="{% url 'schools:etablissement_list' %}" class="text-text-muted hover:text-text-primary">Établissements</a>
+<span class="mx-2 text-text-muted">/</span>
+<span class="text-text-primary font-semibold">{{ title }}</span>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto space-y-6">
+
+  <div class="animate-in p-6 rounded-2xl bg-bg-card border border-border-standard">
+    <h1 class="text-xl font-black text-text-primary flex items-center gap-3 mb-6">
+      <i class="fa-solid fa-school text-primary"></i> {{ title }}
+    </h1>
+
+    <form method="post" enctype="multipart/form-data" class="space-y-6">
+      {% csrf_token %}
+
+      <!-- Informations principales -->
+      <div>
+        <h2 class="text-sm font-bold uppercase tracking-widest text-text-muted mb-4 flex items-center gap-2">
+          <i class="fa-solid fa-info-circle text-primary"></i> Informations générales
+        </h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-text-muted mb-1">Nom de l'établissement *</label>
+            {{ form.nom }}
+            {% if form.nom.errors %}<p class="text-danger text-xs mt-1">{{ form.nom.errors.0 }}</p>{% endif %}
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-text-muted mb-1">Code établissement *</label>
+            {{ form.code }}
+            {% if form.code.errors %}<p class="text-danger text-xs mt-1">{{ form.code.errors.0 }}</p>{% endif %}
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-text-muted mb-1">Type *</label>
+            {{ form.type_etablissement }}
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-text-muted mb-1">Logo</label>
+            {{ form.logo }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Contact -->
+      <div>
+        <h2 class="text-sm font-bold uppercase tracking-widest text-text-muted mb-4 flex items-center gap-2">
+          <i class="fa-solid fa-address-card text-accent"></i> Contact & Localisation
+        </h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="sm:col-span-2">
+            <label class="block text-xs font-bold text-text-muted mb-1">Adresse</label>
+            {{ form.adresse }}
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-text-muted mb-1">Ville</label>
+            {{ form.ville }}
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-text-muted mb-1">Pays</label>
+            {{ form.pays }}
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-text-muted mb-1">Téléphone</label>
+            {{ form.telephone }}
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-text-muted mb-1">Email</label>
+            {{ form.email }}
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-text-muted mb-1">Site web</label>
+            {{ form.site_web }}
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-text-muted mb-1">Code postal</label>
+            {{ form.code_postal }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Capacité -->
+      <div>
+        <h2 class="text-sm font-bold uppercase tracking-widest text-text-muted mb-4 flex items-center gap-2">
+          <i class="fa-solid fa-chart-bar text-success"></i> Capacité
+        </h2>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-text-muted mb-1">Capacité max</label>
+            {{ form.capacite_max }}
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-text-muted mb-1">Nombre d'élèves</label>
+            {{ form.nombre_eleves }}
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-text-muted mb-1">Nombre de profs</label>
+            {{ form.nombre_professeurs }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Admin -->
+      <div>
+        <h2 class="text-sm font-bold uppercase tracking-widest text-text-muted mb-4 flex items-center gap-2">
+          <i class="fa-solid fa-file-contract text-warning"></i> Informations administratives
+        </h2>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-text-muted mb-1">N° agrément</label>
+            {{ form.numero_agrement }}
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-text-muted mb-1">Code UAI</label>
+            {{ form.uai }}
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-text-muted mb-1">Année scolaire</label>
+            {{ form.annee_scolaire_courante }}
+          </div>
+        </div>
+        <div class="flex gap-6 mt-4">
+          <label class="flex items-center gap-2 text-sm text-text-secondary cursor-pointer">
+            {{ form.is_active }} <span>Actif</span>
+          </label>
+          <label class="flex items-center gap-2 text-sm text-text-secondary cursor-pointer">
+            {{ form.is_verified }} <span>Vérifié</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="flex gap-3 pt-4 border-t border-border-standard">
+        <button type="submit" class="px-6 py-3 bg-primary text-white font-bold rounded-xl hover:opacity-90 transition text-sm">
+          <i class="fa-solid fa-save mr-2"></i> Enregistrer
+        </button>
+        <a href="{% url 'schools:etablissement_list' %}" class="px-6 py-3 bg-bg-card border border-border-standard text-text-muted font-bold rounded-xl hover:text-text-primary transition text-sm">
+          Annuler
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

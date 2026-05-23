@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 {% block title %}Banque d'Épreuves | Académie Numérique{% endblock %}
 {% block breadcrumb %}
   <a href="{% url 'dashboard' %}" class="hover:text-primary transition">Dashboard</a>
@@ -26,7 +26,7 @@
       </div>
       {% if user.role == 'admin' or user.role == 'professeur' %}
       <div class="flex gap-3">
-        <a href="{% url 'exam_create' %}" class="px-5 py-2.5 rounded-xl bg-button-gradient text-white font-bold text-sm hover:opacity-90 transition shadow-lg shadow-primary/20 flex items-center gap-2 flex-shrink-0">
+        <a href="{% url 'exams:exam_create' %}" class="px-5 py-2.5 rounded-xl bg-button-gradient text-white font-bold text-sm hover:opacity-90 transition shadow-lg shadow-primary/20 flex items-center gap-2 flex-shrink-0">
           <i class="fa-solid fa-plus"></i> Créer une épreuve
         </a>
       </div>
@@ -108,7 +108,7 @@
           <span class="text-xs font-medium text-text-muted">{{ exam.createur.last_name|default:exam.createur.email|truncatechars:12 }}</span>
         </div>
         
-        <a href="{% url 'exam_detail' exam.id %}" class="text-xs font-black text-primary hover:text-white transition-colors uppercase tracking-widest flex items-center gap-2 group/btn">
+        <a href="{% url 'exams:exam_detail' exam.id %}" class="text-xs font-black text-primary hover:text-white transition-colors uppercase tracking-widest flex items-center gap-2 group/btn">
           Détails <i class="fa-solid fa-arrow-right-long group-hover/btn:translate-x-1 transition-transform"></i>
         </a>
       </div>
@@ -121,7 +121,7 @@
       <h3 class="text-lg font-bold text-white mb-1">Aucune épreuve trouvée</h3>
       <p class="text-sm text-text-muted mb-6">Commencez par créer votre première évaluation.</p>
       {% if user.role == 'admin' or user.role == 'professeur' %}
-      <a href="{% url 'exam_create' %}" class="inline-block px-6 py-2.5 rounded-xl bg-button-gradient text-white text-sm font-bold shadow-lg shadow-primary/20 hover:opacity-90 transition">
+      <a href="{% url 'exams:exam_create' %}" class="inline-block px-6 py-2.5 rounded-xl bg-button-gradient text-white text-sm font-bold shadow-lg shadow-primary/20 hover:opacity-90 transition">
         Créer une épreuve
       </a>
       {% endif %}

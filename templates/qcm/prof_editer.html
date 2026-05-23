@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% block title %}Éditer la question QCM{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto px-4 py-8 space-y-6">
+
+  <div class="flex items-center justify-between">
+    <h1 class="text-2xl font-black text-gray-800">Éditer la question</h1>
+    <a href="{% url 'qcm_prof_liste' %}" class="text-gray-500 hover:text-gray-700 text-sm">← Retour à la liste</a>
+  </div>
+
+  <form method="post" class="bg-white rounded-2xl shadow-lg p-6 space-y-5">
+    {% csrf_token %}
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm font-bold text-gray-700 mb-1">Matière</label>
+        <select name="matiere_id" class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-400 focus:outline-none">
+          <option value="">— Choisir —</option>
+          {% for m in matieres %}
+          <option value="{{ m.id }}" {% if question.matiere and question.matiere.id == m.id %}selected{% endif %}>{{ m.nom }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-bold text-gray-700 mb-1">Difficulté</label>
+        <select name="difficulte" class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-400 focus:outline-none">
+          <option value="facile" {% if question.difficulte == 'facile' %}selected{% endif %}>Facile</option>
+          <option value="moyen" {% if question.difficulte == 'moyen' %}selected{% endif %}>Moyen</option>
+          <option value="difficile" {% if question.difficulte == 'difficile' %}selected{% endif %}>Difficile</option>
+        </select>
+      </div>
+    </div>
+
+    <div>
+      <label class="block text-sm font-bold text-gray-700 mb-1">Texte de la question</label>
+      <textarea name="texte" rows="3"
+                class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-400 focus:outline-none">{{ question.texte }}</textarea>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      {% for label, choice in "A,B,C,D"|make_list|zip:choices %}
+      {% endfor %}
+      {% for choice in choices %}
+      {% with labels="ABCD" %}
+      <div class="flex items-center gap-2">
+        <span class="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-xs font-black text-gray-500">
+          {{ labels|slice:forloop.counter0|last }}
+        </span>
+        <input type="text" name="choix_{{ labels|slice:forloop.counter0|last|lower }}"
+               value="{{ choice.texte }}"
+               class="flex-1 border border-gray-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-400 focus:outline-none">
+      </div>
+      {% endwith %}
+      {% endfor %}
+    </div>
+
+    <div>
+      <label class="text-sm font-bold text-gray-700 mr-3">Bonne réponse (corrigé type) :</label>
+      {% for label in "ABCD" %}
+      <label class="inline-flex items-center gap-1 mr-4 cursor-pointer">
+        <input type="radio" name="correcte" value="{{ label }}"
+               {% if correcte_label == label %}checked{% endif %}
+               class="accent-emerald-600">
+        <span class="text-sm font-bold text-gray-700">{{ label }}</span>
+      </label>
+      {% endfor %}
+    </div>
+
+    <div class="flex items-center gap-2">
+      <input type="checkbox" name="est_publique" id="est_publique" class="w-4 h-4 rounded accent-emerald-600"
+             {% if question.est_publique %}checked{% endif %}>
+      <label for="est_publique" class="text-sm text-gray-700">Rendre public</label>
+    </div>
+
+    <div class="flex justify-end gap-4 pt-2">
+      <a href="{% url 'qcm_prof_liste' %}" class="bg-gray-100 text-gray-700 font-bold px-6 py-3 rounded-xl hover:bg-gray-200 transition">
+        Annuler
+      </a>
+      <button type="submit" class="bg-emerald-600 text-white font-bold px-8 py-3 rounded-xl hover:bg-emerald-700 transition">
+        Enregistrer
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}

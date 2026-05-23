@@ -3,7 +3,7 @@ URLs pour le système d'abonnement FedaPay
 """
 
 from django.urls import path
-from . import views_abonnement
+from . import views_abonnement, views_candidature
 
 urlpatterns = [
     # Pages publiques
@@ -42,12 +42,34 @@ urlpatterns = [
 
     # Paywall — correction unitaire
     path('correction/initier/<uuid:session_id>/', views_abonnement.initier_paiement_correction, name='initier_paiement_correction'),
+    path('correction/callback/<uuid:paiement_correction_id>/', views_abonnement.correction_paiement_callback, name='correction_paiement_callback'),
 
     # Frais scolaires (CRUD admin)
     path('admin/frais-scolaires/', views_abonnement.admin_frais_list, name='admin_frais_list'),
     path('admin/frais-scolaires/create/', views_abonnement.admin_frais_create, name='admin_frais_create'),
     path('admin/frais-scolaires/<uuid:frais_id>/edit/', views_abonnement.admin_frais_edit, name='admin_frais_edit'),
     path('admin/frais-scolaires/<uuid:frais_id>/delete/', views_abonnement.admin_frais_delete, name='admin_frais_delete'),
+
+    # ─── ESPACE PAIEMENT & ÉCHELONNEMENT ───────────────────────────
+    path('espace-paiement/', views_candidature.espace_paiement, name='espace_paiement'),
+    path('souscrire-echelonne/', views_candidature.initier_souscription_echelonnee, name='souscrire_echelonne'),
+    path('tranche/<uuid:tranche_id>/payer/', views_candidature.payer_tranche, name='payer_tranche'),
+    path('tranche/<uuid:tranche_id>/verifier/', views_candidature.verifier_paiement_tranche, name='verifier_tranche'),
+
+    # ─── DOSSIER DE CANDIDATURE ────────────────────────────────────
+    path('mon-dossier/', views_candidature.mon_dossier, name='mon_dossier'),
+    path('mon-dossier/soumettre/<uuid:document_id>/', views_candidature.soumettre_document, name='soumettre_document'),
+
+    # ─── ADMIN : CONFIGURATION ─────────────────────────────────────
+    path('admin/tarifs-candidature/', views_candidature.admin_config_tarifs, name='admin_config_tarifs'),
+    path('admin/documents-requis/', views_candidature.admin_documents_requis, name='admin_documents_requis'),
+    path('admin/dossiers/', views_candidature.admin_dossiers_candidature, name='admin_dossiers_candidature'),
+    path('admin/dossiers/<uuid:dossier_id>/', views_candidature.admin_detail_dossier, name='admin_detail_dossier'),
+
+    # ─── GESTION PAIEMENTS UNIFIÉE ─────────────────────────────────
+    path('admin/gestion/', views_abonnement.admin_gestion_paiements, name='admin_gestion_paiements'),
+    path('admin/gestion/abonnement/<uuid:abonnement_id>/toggle/', views_abonnement.admin_toggle_abonnement, name='admin_toggle_abonnement'),
+    path('admin/gestion/payout-correction/<uuid:payout_id>/retry/', views_abonnement.admin_retry_payout_correction, name='admin_retry_payout_correction'),
 ]
 
 # Note: Inclure ces URLs dans payments/urls.py principal avec:

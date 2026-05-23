@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+{% block title %}Établissements | Académie Numérique{% endblock %}
+{% block breadcrumb %}<a href="{% url 'dashboard' %}" class="text-text-muted hover:text-text-primary">Dashboard</a> <span class="mx-2 text-text-muted">/</span> <span class="text-text-primary font-semibold">Établissements</span>{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- Header -->
+  <div class="animate-in flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-2xl bg-bg-card border border-border-standard">
+    <div>
+      <h1 class="text-2xl font-black text-text-primary flex items-center gap-3">
+        <i class="fa-solid fa-school text-primary"></i> Établissements
+      </h1>
+      <p class="text-sm text-text-muted mt-1">{{ stats.total }} établissement{{ stats.total|pluralize }} actif{{ stats.total|pluralize }}</p>
+    </div>
+    <a href="{% url 'schools:etablissement_create' %}" class="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-white font-bold rounded-xl hover:opacity-90 transition text-sm">
+      <i class="fa-solid fa-plus"></i> Créer un établissement
+    </a>
+  </div>
+
+  <!-- Stats -->
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 animate-in delay-1">
+    {% for label, key, color in "Primaire,primaire,primary|Collège,college,accent|Lycée,lycee,warning|Université,universite,success"|split:"|" %}
+    {% endfor %}
+    <div class="p-4 rounded-xl bg-bg-card border border-border-standard text-center">
+      <p class="text-2xl font-black text-primary">{{ stats.primaire }}</p>
+      <p class="text-xs text-text-muted mt-1 uppercase tracking-widest">Primaires</p>
+    </div>
+    <div class="p-4 rounded-xl bg-bg-card border border-border-standard text-center">
+      <p class="text-2xl font-black text-accent">{{ stats.college }}</p>
+      <p class="text-xs text-text-muted mt-1 uppercase tracking-widest">Collèges</p>
+    </div>
+    <div class="p-4 rounded-xl bg-bg-card border border-border-standard text-center">
+      <p class="text-2xl font-black text-warning">{{ stats.lycee }}</p>
+      <p class="text-xs text-text-muted mt-1 uppercase tracking-widest">Lycées</p>
+    </div>
+    <div class="p-4 rounded-xl bg-bg-card border border-border-standard text-center">
+      <p class="text-2xl font-black text-success">{{ stats.universite }}</p>
+      <p class="text-xs text-text-muted mt-1 uppercase tracking-widest">Universités</p>
+    </div>
+  </div>
+
+  <!-- Recherche -->
+  <form method="get" class="animate-in delay-1">
+    <div class="flex gap-3">
+      <input type="text" name="q" value="{{ query }}" placeholder="Rechercher par nom, code, ville…"
+             class="flex-1 px-4 py-3 rounded-xl bg-bg-card border border-border-standard text-text-primary placeholder-text-muted focus:outline-none focus:border-primary transition text-sm">
+      <button type="submit" class="px-5 py-3 bg-primary text-white rounded-xl font-bold text-sm hover:opacity-90 transition">
+        <i class="fa-solid fa-search"></i>
+      </button>
+    </div>
+  </form>
+
+  <!-- Liste -->
+  <div class="animate-in delay-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    {% for etab in etablissements %}
+    <div class="group relative bg-bg-card border border-border-standard rounded-2xl p-5 hover:border-primary/40 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 overflow-hidden">
+      <div class="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-primary to-accent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+
+      <div class="flex items-start justify-between mb-3">
+        <div class="flex items-center gap-3">
+          {% if etab.logo %}
+          <img src="{{ etab.logo.url }}" class="w-10 h-10 rounded-lg object-cover" alt="{{ etab.nom }}">
+          {% else %}
+          <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-black text-lg">
+            {{ etab.nom|slice:":1" }}
+          </div>
+          {% endif %}
+          <div>
+            <h3 class="font-bold text-text-primary text-sm leading-tight">{{ etab.nom }}</h3>
+            <span class="text-[10px] text-text-muted font-mono">{{ etab.code }}</span>
+          </div>
+        </div>
+        {% if etab.is_verified %}
+        <span class="text-success text-xs"><i class="fa-solid fa-circle-check"></i></span>
+        {% endif %}
+      </div>
+
+      <div class="space-y-1 mb-4 text-xs text-text-muted">
+        {% if etab.ville %}<p><i class="fa-solid fa-location-dot w-4"></i> {{ etab.ville }}{% if etab.pays %}, {{ etab.pays }}{% endif %}</p>{% endif %}
+        <p><i class="fa-solid fa-graduation-cap w-4"></i> {{ etab.get_type_etablissement_display }}</p>
+        <p><i class="fa-solid fa-users w-4"></i> {{ etab.nombre_eleves }} élèves · {{ etab.nombre_professeurs }} profs</p>
+      </div>
+
+      <div class="flex gap-2">
+        <a href="{% url 'schools:etablissement_detail' etab.id %}" class="flex-1 text-center px-3 py-2 bg-primary/10 text-primary text-xs font-bold rounded-lg hover:bg-primary/20 transition">
+          Voir
+        </a>
+        <a href="{% url 'schools:membres_list' etab.id %}" class="flex-1 text-center px-3 py-2 bg-accent/10 text-accent text-xs font-bold rounded-lg hover:bg-accent/20 transition">
+          Membres
+        </a>
+        <a href="{% url 'schools:etablissement_update' etab.id %}" class="px-3 py-2 bg-bg-card border border-border-standard text-text-muted text-xs rounded-lg hover:text-text-primary transition">
+          <i class="fa-solid fa-pen"></i>
+        </a>
+      </div>
+    </div>
+    {% empty %}
+    <div class="col-span-3 py-16 text-center text-text-muted">
+      <i class="fa-solid fa-school text-4xl mb-3 opacity-30"></i>
+      <p class="font-bold">Aucun établissement trouvé</p>
+      {% if query %}<p class="text-sm mt-1">Essayez une autre recherche ou <a href="{% url 'schools:etablissement_list' %}" class="text-primary hover:underline">effacez le filtre</a>.</p>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+
+</div>
+{% endblock %}

@@ -149,28 +149,12 @@ from django.dispatch import receiver
 @receiver(post_save, sender=Resultat)
 def trigger_bulletin_generation(sender, instance, created, **kwargs):
     """
-    Génère automatiquement un bulletin après l'enregistrement d'un résultat.
+    Déclenche la génération du bulletin PDF via la tâche de correction IA.
+    Le module 'bulletins' n'est pas une app installée : la génération PDF
+    est gérée directement dans compositions/tasks.py (étape 5).
+    Ce signal est conservé comme point d'extension futur.
     """
-    if instance.note is not None and instance.note > 0:
-        try:
-            from bulletins.services import BulletinService
-            from bulletins.models import Bulletin
-            
-            # Logique de création de bulletin à adapter selon votre besoin de groupement (trimestre/semestre)
-            # Ici on crée ou met à jour un bulletin 'ANNUEL' par défaut comme exemple
-            bulletin, _ = Bulletin.objects.get_or_create(
-                eleve=instance.session.eleve,
-                periode='AN',
-                annee_scolaire="2025-2026",
-                defaults={'classe': instance.session.eleve.classe}
-            )
-            # Mise à jour des données du bulletin et génération PDF
-            bulletin.moyenne_generale = instance.note  # Simplification
-            bulletin.save()
-            BulletinService.generate_pdf_from_bulletin(bulletin)
-        except Exception as e:
-            import logging
-            logging.getLogger(__name__).warning(f"Erreur génération bulletin: {e}")
+    pass
 
 
 class AntiCheatLog(models.Model):

@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 {% block title %}Dashboard Professeur — {{ user.last_name }} | Académie Numérique{% endblock %}
 {% block breadcrumb %}<span class="text-text-primary font-semibold">Tableau de bord Professeur</span>{% endblock %}
 
@@ -81,7 +81,7 @@
       
       <!-- Actions rapides premium -->
       <div class="flex flex-wrap gap-2 sm:gap-3">
-        <a href="{% url 'exam_create' %}" class="group relative overflow-hidden bg-gradient-to-br from-secondary to-accent text-white font-bold px-4 sm:px-6 py-3 rounded-2xl hover:shadow-2xl hover:shadow-secondary/30 hover:-translate-y-1 transition-all duration-500 ease-out">
+        <a href="{% url 'exams:exam_create' %}" class="group relative overflow-hidden bg-gradient-to-br from-secondary to-accent text-white font-bold px-4 sm:px-6 py-3 rounded-2xl hover:shadow-2xl hover:shadow-secondary/30 hover:-translate-y-1 transition-all duration-500 ease-out">
           <div class="absolute inset-0 bg-gradient-to-t from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
           <div class="relative z-10 flex items-center gap-3">
             <i class="fa-solid fa-plus group-hover:rotate-90 transition-transform duration-300"></i>
@@ -138,7 +138,7 @@
       <div class="w-9 h-9 bg-accent/10 rounded-xl flex items-center justify-center text-accent text-sm mb-3">
         <i class="fa-solid fa-users"></i>
       </div>
-      <p class="text-xl sm:text-2xl font-black" data-stat="total_students">{{ total_students }}</p>
+      <p class="text-xl sm:text-2xl font-black" data-stat="total_eleves">{{ total_eleves }}</p>
       <p class="text-[9px] font-bold text-text-muted uppercase tracking-widest mt-1">Étudiants</p>
     </div>
 
@@ -146,7 +146,7 @@
       <div class="w-9 h-9 bg-success/10 rounded-xl flex items-center justify-center text-success text-sm mb-3">
         <i class="fa-solid fa-check-double"></i>
       </div>
-      <p class="text-xl sm:text-2xl font-black" data-stat="corrected_copies">{{ corrected_copies }}</p>
+      <p class="text-xl sm:text-2xl font-black" data-stat="corrected_count">{{ corrected_count }}</p>
       <p class="text-[9px] font-bold text-text-muted uppercase tracking-widest mt-1">Copies corrigées</p>
     </div>
 
@@ -154,7 +154,7 @@
       <div class="w-9 h-9 bg-warning/10 rounded-xl flex items-center justify-center text-warning text-sm mb-3">
         <i class="fa-solid fa-clock"></i>
       </div>
-      <p class="text-xl sm:text-2xl font-black" data-stat="avg_grade">{{ avg_grade|floatformat:1 }}</p>
+      <p class="text-xl sm:text-2xl font-black" data-stat="avg_class_score">{{ avg_class_score }}</p>
       <p class="text-[9px] font-bold text-text-muted uppercase tracking-widest mt-1">Note moyenne</p>
     </div>
 
@@ -162,14 +162,14 @@
       <div class="w-9 h-9 bg-danger/10 rounded-xl flex items-center justify-center text-danger text-sm mb-3">
         <i class="fa-solid fa-exclamation-triangle"></i>
       </div>
-      <p class="text-xl sm:text-2xl font-black" data-stat="pending_approvals">{{ pending_approvals }}</p>
+      <p class="text-xl sm:text-2xl font-black" data-stat="pending_corrections">{{ pending_corrections }}</p>
       <p class="text-[9px] font-bold text-text-muted uppercase tracking-widest mt-1">En attente</p>
     </div>
   </div>
 
   <!-- ═══ ACTIONS RAPIDES ═══ -->
   <div class="grid grid-cols-3 gap-4 animate-in delay-2">
-    <a href="{% url 'exam_create' %}" class="glass p-5 rounded-2xl border border-primary/20 hover:border-primary/50 hover:bg-primary/5 transition group flex items-center gap-4">
+    <a href="{% url 'exams:exam_create' %}" class="glass p-5 rounded-2xl border border-primary/20 hover:border-primary/50 hover:bg-primary/5 transition group flex items-center gap-4">
       <div class="w-10 h-10 rounded-xl bg-primary/10 group-hover:bg-primary/20 flex items-center justify-center text-primary flex-shrink-0 transition">
         <i class="fa-solid fa-file-circle-plus"></i>
       </div>
@@ -187,7 +187,7 @@
         <p class="text-[9px] text-text-muted">Évaluation automatique</p>
       </div>
     </a>
-    <a href="{% url 'ia_corrections_list' %}" class="glass p-5 rounded-2xl border border-success/20 hover:border-success/50 hover:bg-success/5 transition group flex items-center gap-4">
+    <a href="{% url 'compositions:ia_corrections_list' %}" class="glass p-5 rounded-2xl border border-success/20 hover:border-success/50 hover:bg-success/5 transition group flex items-center gap-4">
       <div class="w-10 h-10 rounded-xl bg-success/10 group-hover:bg-success/20 flex items-center justify-center text-success flex-shrink-0 transition">
         <i class="fa-solid fa-robot"></i>
       </div>
@@ -234,7 +234,7 @@
             </div>
           </div>
           <div class="flex items-center gap-2">
-            <a href="{% url 'result_detail' session.id %}" class="px-4 py-2 rounded-lg bg-primary/10 text-primary text-xs font-bold hover:bg-primary/20 transition">
+            <a href="{% url 'compositions:result_detail' session.id %}" class="px-4 py-2 rounded-lg bg-primary/10 text-primary text-xs font-bold hover:bg-primary/20 transition">
               <i class="fa-solid fa-eye mr-1"></i> Voir
             </a>
           </div>
@@ -263,12 +263,12 @@
             <div class="flex items-center gap-3">
               <span class="text-xs font-black text-text-muted w-5 text-center">{{ forloop.counter }}</span>
               <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white text-[10px] font-black">
-                {{ res.session.eleve.first_name|slice:":1" }}
+                {{ res.student.first_name|slice:":1" }}
               </div>
-              <p class="text-sm font-medium">{{ res.session.eleve.full_name|truncatechars:18 }}</p>
+              <p class="text-sm font-medium">{{ res.student.full_name|truncatechars:18 }}</p>
             </div>
-            <span class="text-sm font-black {% if res.note >= 16 %}note-excellent{% elif res.note >= 12 %}note-bien{% else %}note-moyen{% endif %}">
-              {{ res.note }}
+            <span class="text-sm font-black {% if res.grade >= 16 %}note-excellent{% elif res.grade >= 12 %}note-bien{% else %}note-moyen{% endif %}">
+              {{ res.grade }}
             </span>
           </div>
           {% empty %}
@@ -288,8 +288,8 @@
         <div class="divide-y divide-border-standard">
           {% for res in weak_students %}
           <div class="flex items-center justify-between px-5 py-3">
-            <p class="text-sm font-medium">{{ res.session.eleve.full_name|truncatechars:18 }}</p>
-            <span class="text-sm font-black note-insuffisant">{{ res.note }}/{{ res.note_sur }}</span>
+            <p class="text-sm font-medium">{{ res.student.full_name|truncatechars:18 }}</p>
+            <span class="text-sm font-black note-insuffisant">{{ res.grade }}/20</span>
           </div>
           {% endfor %}
         </div>
@@ -350,14 +350,14 @@
               </span>
             </td>
             <td class="py-3.5 px-6 text-right">
-              <a href="{% url 'exam_detail' exam.id %}" class="text-xs text-primary hover:text-primary/80 font-bold transition">Détails →</a>
+              <a href="{% url 'exams:exam_detail' exam.id %}" class="text-xs text-primary hover:text-primary/80 font-bold transition">Détails →</a>
             </td>
           </tr>
           {% empty %}
           <tr>
             <td colspan="7" class="py-10 text-center text-text-muted">
               <i class="fa-solid fa-folder-open text-2xl opacity-20 block mb-2"></i>
-              <p>Aucune épreuve créée. <a href="{% url 'exam_create' %}" class="text-primary hover:underline">Créer maintenant →</a></p>
+              <p>Aucune épreuve créée. <a href="{% url 'exams:exam_create' %}" class="text-primary hover:underline">Créer maintenant →</a></p>
             </td>
           </tr>
           {% endfor %}

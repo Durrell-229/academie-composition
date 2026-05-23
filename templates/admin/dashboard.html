@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 {% block content %}
 <div class="max-w-7xl mx-auto p-8">
     <!-- Header -->
@@ -37,7 +37,7 @@
                         <p class="font-semibold text-white">{{ exam.titre }}</p>
                         <p class="text-xs text-text-muted">Par: {{ exam.createur.full_name }}</p>
                     </div>
-                    <form method="post" action="{% url 'exam_approve' exam.id %}">
+                    <form method="post" action="{% url 'exams:exam_approve' exam.id %}">
                         {% csrf_token %}
                         <button class="bg-success hover:bg-success/80 px-4 py-2 rounded-lg font-bold text-sm text-white">Approuver</button>
                     </form>
@@ -60,7 +60,7 @@
                     <p class="font-semibold">Gestion Élèves</p>
                     <p class="text-xs opacity-80 mt-1">CRUD complet</p>
                 </a>
-                <a href="{% url 'exam_list' %}" 
+                <a href="{% url 'exams:exam_list' %}" 
                    class="bg-blue-500 hover:bg-blue-600 text-white p-4 rounded-2xl text-center transition-colors">
                     <i class="fa-solid fa-file-alt text-2xl mb-2"></i>
                     <p class="font-semibold">Examens</p>

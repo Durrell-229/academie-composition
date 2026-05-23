@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }} | Académie Numérique{% endblock %}
+{% block breadcrumb %}
+<a href="{% url 'schools:etablissement_list' %}" class="text-text-muted hover:text-text-primary">Établissements</a>
+<span class="mx-2 text-text-muted">/</span>
+<a href="{% url 'schools:etablissement_detail' etablissement.id %}" class="text-text-muted hover:text-text-primary">{{ etablissement.nom }}</a>
+<span class="mx-2 text-text-muted">/</span>
+<span class="text-text-primary font-semibold">Configuration</span>
+{% endblock %}
+{% block content %}
+<div class="max-w-3xl mx-auto space-y-6">
+  <div class="animate-in p-6 rounded-2xl bg-bg-card border border-border-standard">
+    <h1 class="text-xl font-black text-text-primary flex items-center gap-3 mb-6"><i class="fa-solid fa-gear text-warning"></i> {{ title }}</h1>
+    <form method="post" class="space-y-6">
+      {% csrf_token %}
+
+      <div>
+        <h2 class="text-xs font-bold uppercase tracking-widest text-text-muted mb-4 flex items-center gap-2"><i class="fa-solid fa-graduation-cap text-primary"></i> Évaluation</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div><label class="block text-xs font-bold text-text-muted mb-1">Système d'évaluation</label>{{ form.systeme_evaluation }}</div>
+          <div><label class="block text-xs font-bold text-text-muted mb-1">Note minimale de réussite</label>{{ form.note_minimale_reussite }}</div>
+          <div><label class="block text-xs font-bold text-text-muted mb-1">Coefficient max</label>{{ form.coefficient_max }}</div>
+        </div>
+      </div>
+
+      <div>
+        <h2 class="text-xs font-bold uppercase tracking-widest text-text-muted mb-4 flex items-center gap-2"><i class="fa-solid fa-clock text-accent"></i> Horaires</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div><label class="block text-xs font-bold text-text-muted mb-1">Début des cours</label>{{ form.heure_debut_cours }}</div>
+          <div><label class="block text-xs font-bold text-text-muted mb-1">Fin des cours</label>{{ form.heure_fin_cours }}</div>
+          <div><label class="block text-xs font-bold text-text-muted mb-1">Durée d'un cours (min)</label>{{ form.duree_cours }}</div>
+          <div><label class="block text-xs font-bold text-text-muted mb-1">Pause déjeuner</label>{{ form.pause_dejeuner }}</div>
+        </div>
+      </div>
+
+      <div>
+        <h2 class="text-xs font-bold uppercase tracking-widest text-text-muted mb-4 flex items-center gap-2"><i class="fa-solid fa-file-alt text-success"></i> Bulletins & Absences</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div><label class="block text-xs font-bold text-text-muted mb-1">Fréquence des bulletins</label>{{ form.frequence_bulletins }}</div>
+          <div><label class="block text-xs font-bold text-text-muted mb-1">Délai publication (jours)</label>{{ form.delai_publication_bulletins }}</div>
+          <div><label class="block text-xs font-bold text-text-muted mb-1">Tolérance retard (min)</label>{{ form.tolerance_retard }}</div>
+          <div><label class="block text-xs font-bold text-text-muted mb-1">Absences max</label>{{ form.max_absences }}</div>
+        </div>
+      </div>
+
+      <div>
+        <h2 class="text-xs font-bold uppercase tracking-widest text-text-muted mb-4 flex items-center gap-2"><i class="fa-solid fa-coins text-warning"></i> Finances</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div><label class="block text-xs font-bold text-text-muted mb-1">Devise</label>{{ form.devise }}</div>
+          <div><label class="block text-xs font-bold text-text-muted mb-1">Frais d'inscription</label>{{ form.frais_inscription }}</div>
+        </div>
+      </div>
+
+      <div>
+        <h2 class="text-xs font-bold uppercase tracking-widest text-text-muted mb-4 flex items-center gap-2"><i class="fa-solid fa-bell text-danger"></i> Notifications</h2>
+        <div class="flex flex-wrap gap-6">
+          <label class="flex items-center gap-2 text-sm text-text-secondary cursor-pointer">{{ form.notifications_parents }} Parents</label>
+          <label class="flex items-center gap-2 text-sm text-text-secondary cursor-pointer">{{ form.notifications_professeurs }} Professeurs</label>
+          <label class="flex items-center gap-2 text-sm text-text-secondary cursor-pointer">{{ form.notifications_eleves }} Élèves</label>
+        </div>
+      </div>
+
+      <div class="flex gap-3 pt-4 border-t border-border-standard">
+        <button type="submit" class="px-6 py-3 bg-warning text-white font-bold rounded-xl hover:opacity-90 transition text-sm"><i class="fa-solid fa-save mr-2"></i> Enregistrer</button>
+        <a href="{% url 'schools:etablissement_detail' etablissement.id %}" class="px-6 py-3 bg-bg-card border border-border-standard text-text-muted font-bold rounded-xl hover:text-text-primary transition text-sm">Annuler</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

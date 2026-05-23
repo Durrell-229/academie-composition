@@ -1,0 +1,167 @@
+{% extends 'app_base.html' %}
+{% block title %}Portail Parents – Académie IA{% endblock %}
+
+{% block breadcrumb %}Portail Parents{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+
+  <!-- En-tête -->
+  <div class="bg-gradient-to-r from-emerald-600 to-teal-700 p-8 rounded-2xl text-white flex flex-col md:flex-row justify-between items-center gap-6">
+    <div>
+      <h1 class="text-3xl font-black">Bonjour, {{ user.get_full_name }} 👋</h1>
+      <p class="text-emerald-100 mt-1">Portail parents – suivez la scolarité de vos enfants en temps réel</p>
+    </div>
+    <div class="flex gap-4">
+      {% if nb_non_lues %}
+      <div class="bg-white/20 rounded-2xl p-4 text-center">
+        <p class="text-3xl font-black">{{ nb_non_lues }}</p>
+        <p class="text-xs font-bold uppercase tracking-widest">Notifications</p>
+      </div>
+      {% endif %}
+      {% if messages_en_attente %}
+      <div class="bg-white/20 rounded-2xl p-4 text-center">
+        <p class="text-3xl font-black">{{ messages_en_attente }}</p>
+        <p class="text-xs font-bold uppercase tracking-widest">Réponses</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Enfants -->
+  {% if enfants_stats %}
+  <div>
+    <h2 class="text-xl font-black text-white mb-4">Mes enfants</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+      {% for item in enfants_stats %}
+      <div class="bg-bg-secondary rounded-2xl border border-bg-tertiary p-6 space-y-5 hover:border-primary/50 transition-colors">
+        <!-- Identité -->
+        <div class="flex items-center gap-4">
+          <div class="h-14 w-14 rounded-2xl bg-button-gradient flex items-center justify-center text-white text-2xl font-black shadow-lg shadow-primary/20">
+            {{ item.eleve.first_name|slice:":1"|upper }}
+          </div>
+          <div>
+            <p class="font-black text-white text-lg">{{ item.eleve.get_full_name }}</p>
+            <p class="text-text-muted text-sm">{{ item.eleve.classe|default:"Classe non assignée" }}</p>
+            {% if item.lien.is_principal %}<span class="text-[10px] font-black bg-primary/20 text-primary px-2 py-0.5 rounded-full uppercase tracking-widest">Tuteur principal</span>{% endif %}
+          </div>
+        </div>
+
+        <!-- Stats rapides -->
+        <div class="grid grid-cols-3 gap-3">
+          <div class="bg-bg-primary rounded-xl p-3 text-center">
+            <p class="text-lg font-black text-white">
+              {% if item.dernier_bulletin %}{{ item.dernier_bulletin.moyenne_generale|floatformat:1 }}{% else %}–{% endif %}
+            </p>
+            <p class="text-[10px] text-text-muted uppercase font-bold">Moy.</p>
+          </div>
+          <div class="bg-bg-primary rounded-xl p-3 text-center">
+            <p class="text-lg font-black text-white">
+              {% if item.dernier_bulletin %}{{ item.dernier_bulletin.rang }}{% else %}–{% endif %}
+            </p>
+            <p class="text-[10px] text-text-muted uppercase font-bold">Rang</p>
+          </div>
+          <div class="bg-bg-primary rounded-xl p-3 text-center">
+            <p class="text-lg font-black {% if item.absences_mois > 0 %}text-danger{% else %}text-success{% endif %}">
+              {{ item.absences_mois }}
+            </p>
+            <p class="text-[10px] text-text-muted uppercase font-bold">Abs.</p>
+          </div>
+        </div>
+
+        {% if item.derniere_note %}
+        <div class="bg-primary/10 rounded-xl p-3 flex justify-between items-center">
+          <div>
+            <p class="text-xs text-text-muted font-bold">Dernière note</p>
+            <p class="text-sm font-black text-white">{{ item.derniere_note.evaluation.matiere_classe.matiere.nom }}</p>
+          </div>
+          <span class="text-2xl font-black text-primary">{{ item.derniere_note.note_sur_20 }}/20</span>
+        </div>
+        {% endif %}
+
+        <!-- Actions -->
+        <div class="grid grid-cols-2 gap-2">
+          <a href="{% url 'parents:notes' item.eleve.id %}" class="bg-bg-primary hover:bg-primary/20 border border-bg-tertiary hover:border-primary/50 text-text-secondary hover:text-white rounded-xl p-2 text-xs font-bold text-center transition-all flex items-center justify-center gap-1">
+            <i class="fa-solid fa-star-half-stroke"></i> Notes
+          </a>
+          <a href="{% url 'parents:bulletins' item.eleve.id %}" class="bg-bg-primary hover:bg-primary/20 border border-bg-tertiary hover:border-primary/50 text-text-secondary hover:text-white rounded-xl p-2 text-xs font-bold text-center transition-all flex items-center justify-center gap-1">
+            <i class="fa-solid fa-file-lines"></i> Bulletins
+          </a>
+          <a href="{% url 'parents:progression' item.eleve.id %}" class="bg-bg-primary hover:bg-primary/20 border border-bg-tertiary hover:border-primary/50 text-text-secondary hover:text-white rounded-xl p-2 text-xs font-bold text-center transition-all flex items-center justify-center gap-1">
+            <i class="fa-solid fa-chart-line"></i> Progression
+          </a>
+          <a href="{% url 'parents:calendrier' item.eleve.id %}" class="bg-bg-primary hover:bg-primary/20 border border-bg-tertiary hover:border-primary/50 text-text-secondary hover:text-white rounded-xl p-2 text-xs font-bold text-center transition-all flex items-center justify-center gap-1">
+            <i class="fa-solid fa-calendar-check"></i> Calendrier
+          </a>
+          <a href="{% url 'parents:messagerie' item.eleve.id %}" class="col-span-2 bg-primary/20 hover:bg-primary/40 border border-primary/30 text-primary rounded-xl p-2 text-xs font-bold text-center transition-all flex items-center justify-center gap-1">
+            <i class="fa-solid fa-envelope"></i> Messagerie enseignant
+          </a>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% else %}
+  <div class="bg-bg-secondary rounded-2xl border border-bg-tertiary p-12 text-center">
+    <i class="fa-solid fa-child text-5xl text-text-muted mb-4"></i>
+    <p class="text-white font-bold text-lg">Aucun enfant associé à votre compte</p>
+    <p class="text-text-muted mt-2">Contactez l'administration pour lier votre compte à vos enfants.</p>
+  </div>
+  {% endif %}
+
+  <!-- Notifications récentes -->
+  {% if notifications_recentes %}
+  <div class="bg-bg-secondary rounded-2xl border border-bg-tertiary p-6">
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-xl font-black text-white flex items-center gap-2">
+        <i class="fa-solid fa-bell text-primary"></i> Notifications récentes
+      </h2>
+      {% if nb_non_lues %}
+      <a href="{% url 'parents:notifs_toutes_lues' %}" class="text-xs text-text-muted hover:text-white font-bold transition">
+        Tout marquer comme lu
+      </a>
+      {% endif %}
+    </div>
+    <div class="space-y-3">
+      {% for notif in notifications_recentes %}
+      <div class="flex items-start gap-4 p-4 rounded-xl {% if not notif.is_lue %}bg-primary/10 border border-primary/20{% else %}bg-bg-primary{% endif %} transition-all" id="notif-{{ notif.id }}">
+        <div class="mt-0.5 shrink-0">
+          {% if notif.type_notification == 'note' %}<i class="fa-solid fa-star text-yellow-400"></i>
+          {% elif notif.type_notification == 'bulletin' %}<i class="fa-solid fa-file-lines text-blue-400"></i>
+          {% elif notif.type_notification == 'absence' %}<i class="fa-solid fa-triangle-exclamation text-orange-400"></i>
+          {% elif notif.type_notification == 'retard' %}<i class="fa-solid fa-clock text-purple-400"></i>
+          {% elif notif.type_notification == 'discipline' %}<i class="fa-solid fa-shield-exclamation text-red-400"></i>
+          {% else %}<i class="fa-solid fa-circle-info text-text-muted"></i>{% endif %}
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="font-bold text-white text-sm">{{ notif.titre }}</p>
+          <p class="text-text-muted text-xs mt-0.5 truncate">{{ notif.contenu }}</p>
+          <p class="text-text-muted text-[10px] mt-1">{{ notif.date_notification|timesince }} · {{ notif.eleve.get_full_name }}</p>
+        </div>
+        {% if not notif.is_lue %}
+        <button onclick="marquerLue('{{ notif.id }}')" class="shrink-0 text-[10px] text-primary hover:text-white font-bold transition">Lu</button>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+
+<script>
+async function marquerLue(notifId) {
+  const resp = await fetch(`/parents/notification/${notifId}/lue/`, {
+    headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+  });
+  if (resp.ok) {
+    const el = document.getElementById(`notif-${notifId}`);
+    if (el) {
+      el.classList.remove('bg-primary/10', 'border', 'border-primary/20');
+      el.classList.add('bg-bg-primary');
+      el.querySelector('button')?.remove();
+    }
+  }
+}
+</script>
+{% endblock %}

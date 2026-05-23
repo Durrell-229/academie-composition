@@ -1,0 +1,271 @@
+{% extends "base.html" %}
+{% block title %}Classes &amp; Matières — Admin{% endblock %}
+{% block content %}
+<div class="min-h-screen px-4 py-8" style="background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);">
+<div class="max-w-6xl mx-auto space-y-6">
+
+  <div class="flex items-center gap-4">
+    <a href="/gestion/" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-arrow-left"></i></a>
+    <div>
+      <h1 class="text-2xl font-black text-white">Classes &amp; Matières</h1>
+      <p class="text-slate-400 text-sm">Gérez la structure pédagogique de la plateforme</p>
+    </div>
+  </div>
+
+  {% if messages %}
+  <div class="space-y-2">{% for msg in messages %}
+    <div class="rounded-xl px-4 py-3 text-sm font-medium {% if msg.tags == 'success' %}text-emerald-400{% elif msg.tags == 'error' %}text-red-400{% else %}text-yellow-400{% endif %}" style="background:#1e293b;border:1px solid #334155;">{{ msg }}</div>
+  {% endfor %}</div>
+  {% endif %}
+
+  <!-- Onglets -->
+  <div class="flex gap-1 p-1 rounded-2xl w-fit" style="background:#0f172a;border:1px solid #1e293b;">
+    <a href="?tab=classes" class="px-6 py-2.5 rounded-xl text-sm font-bold transition {% if tab == 'classes' %}text-white{% else %}text-slate-500 hover:text-slate-300{% endif %}"
+       style="{% if tab == 'classes' %}background:linear-gradient(135deg,#059669,#047857);{% endif %}">
+      Classes ({{ classes.count }})
+    </a>
+    <a href="?tab=matieres" class="px-6 py-2.5 rounded-xl text-sm font-bold transition {% if tab == 'matieres' %}text-white{% else %}text-slate-500 hover:text-slate-300{% endif %}"
+       style="{% if tab == 'matieres' %}background:linear-gradient(135deg,#7c3aed,#6d28d9);{% endif %}">
+      Matières ({{ matieres.count }})
+    </a>
+  </div>
+
+  {% if tab == 'classes' %}
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+    <!-- Formulaire création -->
+    <div class="rounded-2xl p-6" style="background:#1e293b;border:1px solid #334155;">
+      <h2 class="text-white font-black mb-4">Nouvelle Classe</h2>
+      <form method="post" action="/gestion/classes-matieres/classe/create/" class="space-y-4">
+        {% csrf_token %}
+        <div>
+          <label class="block text-slate-400 text-xs font-semibold mb-1 uppercase">Nom *</label>
+          <input name="nom" placeholder="ex: 6e A" required class="w-full rounded-lg px-3 py-2 text-sm text-white" style="background:#0f172a;border:1px solid #475569;">
+        </div>
+        <div>
+          <label class="block text-slate-400 text-xs font-semibold mb-1 uppercase">Niveau *</label>
+          <select name="niveau" required class="w-full rounded-lg px-3 py-2 text-sm text-white" style="background:#0f172a;border:1px solid #475569;">
+            {% for n in niveaux %}<option value="{{ n }}">{{ n }}</option>{% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="block text-slate-400 text-xs font-semibold mb-1 uppercase">Section</label>
+          <input name="section" placeholder="Scientifique, Littéraire..." class="w-full rounded-lg px-3 py-2 text-sm text-white" style="background:#0f172a;border:1px solid #475569;">
+        </div>
+        <div>
+          <label class="block text-slate-400 text-xs font-semibold mb-1 uppercase">Année académique</label>
+          <input name="annee_academique" placeholder="2025-2026" class="w-full rounded-lg px-3 py-2 text-sm text-white" style="background:#0f172a;border:1px solid #475569;">
+        </div>
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" name="is_active" checked class="rounded">
+          <span class="text-slate-300 text-sm">Active</span>
+        </label>
+        <button type="submit" class="w-full py-2.5 rounded-xl font-bold text-white text-sm" style="background:linear-gradient(135deg,#059669,#047857);">
+          + Créer la classe
+        </button>
+      </form>
+    </div>
+
+    <!-- Liste des classes -->
+    <div class="lg:col-span-2 rounded-2xl overflow-hidden" style="border:1px solid #334155;">
+      <div class="px-5 py-4" style="background:#0f172a;">
+        <h3 class="text-white font-black text-sm uppercase">Toutes les classes</h3>
+      </div>
+      <div class="divide-y" style="divide-color:#1e293b;">
+        {% for c in classes %}
+        <div class="flex items-center gap-4 px-5 py-3 hover:bg-slate-800/30 transition" style="background:#1e293b;">
+          <div class="flex-1">
+            <p class="text-white font-semibold">{{ c.nom }}</p>
+            <p class="text-slate-400 text-xs">{{ c.niveau }}{% if c.section %} · {{ c.section }}{% endif %}{% if c.annee_academique %} · {{ c.annee_academique }}{% endif %}</p>
+          </div>
+          <span class="text-xs px-2 py-0.5 rounded-full font-bold {% if c.is_active %}text-emerald-400{% else %}text-slate-500{% endif %}" style="{% if c.is_active %}background:#065f46;{% else %}background:#1e293b;border:1px solid #334155;{% endif %}">
+            {{ c.is_active|yesno:"Actif,Inactif" }}
+          </span>
+          <div class="flex gap-2">
+            <button onclick="editClasse({{ c.id }}, '{{ c.nom|escapejs }}', '{{ c.niveau|escapejs }}', '{{ c.section|escapejs }}', '{{ c.annee_academique|escapejs }}', {{ c.is_active|yesno:'true,false' }})"
+                    class="text-xs px-3 py-1.5 rounded-lg font-semibold text-blue-400 hover:bg-blue-900/30 transition" style="border:1px solid #2563eb;">
+              Modifier
+            </button>
+            <form method="post" action="/gestion/classes-matieres/classe/{{ c.id }}/delete/" onsubmit="return confirm('Désactiver cette classe ?');">
+              {% csrf_token %}
+              <button type="submit" class="text-xs px-3 py-1.5 rounded-lg font-semibold text-red-400 hover:bg-red-900/30 transition" style="border:1px solid #dc2626;">
+                Désactiver
+              </button>
+            </form>
+          </div>
+        </div>
+        {% empty %}
+        <div class="py-10 text-center text-slate-500" style="background:#1e293b;">Aucune classe créée</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal édition classe -->
+  <div id="modal-edit-classe" class="hidden fixed inset-0 z-50 flex items-center justify-center" style="background:rgba(0,0,0,0.7);">
+    <div class="rounded-2xl p-6 w-full max-w-md mx-4" style="background:#1e293b;border:1px solid #334155;">
+      <h3 class="text-white font-black mb-4">Modifier la classe</h3>
+      <form id="form-edit-classe" method="post" class="space-y-4">
+        {% csrf_token %}
+        <div>
+          <label class="block text-slate-400 text-xs font-semibold mb-1 uppercase">Nom *</label>
+          <input id="edit-classe-nom" name="nom" required class="w-full rounded-lg px-3 py-2 text-sm text-white" style="background:#0f172a;border:1px solid #475569;">
+        </div>
+        <div>
+          <label class="block text-slate-400 text-xs font-semibold mb-1 uppercase">Niveau *</label>
+          <select id="edit-classe-niveau" name="niveau" required class="w-full rounded-lg px-3 py-2 text-sm text-white" style="background:#0f172a;border:1px solid #475569;">
+            {% for n in niveaux %}<option value="{{ n }}">{{ n }}</option>{% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="block text-slate-400 text-xs font-semibold mb-1 uppercase">Section</label>
+          <input id="edit-classe-section" name="section" class="w-full rounded-lg px-3 py-2 text-sm text-white" style="background:#0f172a;border:1px solid #475569;">
+        </div>
+        <div>
+          <label class="block text-slate-400 text-xs font-semibold mb-1 uppercase">Année académique</label>
+          <input id="edit-classe-annee" name="annee_academique" class="w-full rounded-lg px-3 py-2 text-sm text-white" style="background:#0f172a;border:1px solid #475569;">
+        </div>
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" id="edit-classe-active" name="is_active" class="rounded">
+          <span class="text-slate-300 text-sm">Active</span>
+        </label>
+        <div class="flex gap-3 pt-2">
+          <button type="button" onclick="document.getElementById('modal-edit-classe').classList.add('hidden')" class="flex-1 py-2.5 rounded-xl text-sm font-bold text-slate-400" style="background:#0f172a;border:1px solid #334155;">Annuler</button>
+          <button type="submit" class="flex-1 py-2.5 rounded-xl text-sm font-bold text-white" style="background:linear-gradient(135deg,#2563eb,#1d4ed8);">Enregistrer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if tab == 'matieres' %}
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+    <!-- Formulaire création matière -->
+    <div class="rounded-2xl p-6" style="background:#1e293b;border:1px solid #334155;">
+      <h2 class="text-white font-black mb-4">Nouvelle Matière</h2>
+      <form method="post" action="/gestion/classes-matieres/matiere/create/" class="space-y-4">
+        {% csrf_token %}
+        <div>
+          <label class="block text-slate-400 text-xs font-semibold mb-1 uppercase">Nom *</label>
+          <input name="nom" placeholder="ex: Mathématiques" required class="w-full rounded-lg px-3 py-2 text-sm text-white" style="background:#0f172a;border:1px solid #475569;">
+        </div>
+        <div>
+          <label class="block text-slate-400 text-xs font-semibold mb-1 uppercase">Code *</label>
+          <input name="code" placeholder="MATH" required class="w-full rounded-lg px-3 py-2 text-sm text-white uppercase" style="background:#0f172a;border:1px solid #475569;">
+        </div>
+        <div>
+          <label class="block text-slate-400 text-xs font-semibold mb-1 uppercase">Icône</label>
+          <input name="icone" value="📚" class="w-full rounded-lg px-3 py-2 text-sm text-white" style="background:#0f172a;border:1px solid #475569;">
+        </div>
+        <div>
+          <label class="block text-slate-400 text-xs font-semibold mb-1 uppercase">Couleur</label>
+          <input type="color" name="couleur" value="#3b82f6" class="w-full h-10 rounded-lg cursor-pointer" style="background:#0f172a;border:1px solid #475569;">
+        </div>
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" name="is_active" checked class="rounded">
+          <span class="text-slate-300 text-sm">Active</span>
+        </label>
+        <button type="submit" class="w-full py-2.5 rounded-xl font-bold text-white text-sm" style="background:linear-gradient(135deg,#7c3aed,#6d28d9);">
+          + Créer la matière
+        </button>
+      </form>
+    </div>
+
+    <!-- Liste matières -->
+    <div class="lg:col-span-2 rounded-2xl overflow-hidden" style="border:1px solid #334155;">
+      <div class="px-5 py-4" style="background:#0f172a;">
+        <h3 class="text-white font-black text-sm uppercase">Toutes les matières</h3>
+      </div>
+      <div class="divide-y" style="divide-color:#1e293b;">
+        {% for m in matieres %}
+        <div class="flex items-center gap-4 px-5 py-3 hover:bg-slate-800/30 transition" style="background:#1e293b;">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center text-lg flex-shrink-0" style="background:{{ m.couleur }}22;border:1px solid {{ m.couleur }}44;">
+            {{ m.icone }}
+          </div>
+          <div class="flex-1">
+            <p class="text-white font-semibold">{{ m.nom }}</p>
+            <p class="text-slate-400 text-xs font-mono">{{ m.code }}</p>
+          </div>
+          <span class="text-xs px-2 py-0.5 rounded-full font-bold {% if m.is_active %}text-emerald-400{% else %}text-slate-500{% endif %}" style="{% if m.is_active %}background:#065f46;{% else %}background:#1e293b;border:1px solid #334155;{% endif %}">
+            {{ m.is_active|yesno:"Actif,Inactif" }}
+          </span>
+          <div class="flex gap-2">
+            <button onclick="editMatiere({{ m.id }}, '{{ m.nom|escapejs }}', '{{ m.code|escapejs }}', '{{ m.icone|escapejs }}', '{{ m.couleur|escapejs }}', {{ m.is_active|yesno:'true,false' }})"
+                    class="text-xs px-3 py-1.5 rounded-lg font-semibold text-blue-400 hover:bg-blue-900/30 transition" style="border:1px solid #2563eb;">
+              Modifier
+            </button>
+            <form method="post" action="/gestion/classes-matieres/matiere/{{ m.id }}/delete/" onsubmit="return confirm('Désactiver cette matière ?');">
+              {% csrf_token %}
+              <button type="submit" class="text-xs px-3 py-1.5 rounded-lg font-semibold text-red-400 hover:bg-red-900/30 transition" style="border:1px solid #dc2626;">
+                Désactiver
+              </button>
+            </form>
+          </div>
+        </div>
+        {% empty %}
+        <div class="py-10 text-center text-slate-500" style="background:#1e293b;">Aucune matière créée</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal édition matière -->
+  <div id="modal-edit-matiere" class="hidden fixed inset-0 z-50 flex items-center justify-center" style="background:rgba(0,0,0,0.7);">
+    <div class="rounded-2xl p-6 w-full max-w-md mx-4" style="background:#1e293b;border:1px solid #334155;">
+      <h3 class="text-white font-black mb-4">Modifier la matière</h3>
+      <form id="form-edit-matiere" method="post" class="space-y-4">
+        {% csrf_token %}
+        <div>
+          <label class="block text-slate-400 text-xs font-semibold mb-1 uppercase">Nom *</label>
+          <input id="edit-matiere-nom" name="nom" required class="w-full rounded-lg px-3 py-2 text-sm text-white" style="background:#0f172a;border:1px solid #475569;">
+        </div>
+        <div>
+          <label class="block text-slate-400 text-xs font-semibold mb-1 uppercase">Code *</label>
+          <input id="edit-matiere-code" name="code" required class="w-full rounded-lg px-3 py-2 text-sm text-white uppercase" style="background:#0f172a;border:1px solid #475569;">
+        </div>
+        <div>
+          <label class="block text-slate-400 text-xs font-semibold mb-1 uppercase">Icône</label>
+          <input id="edit-matiere-icone" name="icone" class="w-full rounded-lg px-3 py-2 text-sm text-white" style="background:#0f172a;border:1px solid #475569;">
+        </div>
+        <div>
+          <label class="block text-slate-400 text-xs font-semibold mb-1 uppercase">Couleur</label>
+          <input type="color" id="edit-matiere-couleur" name="couleur" class="w-full h-10 rounded-lg cursor-pointer" style="background:#0f172a;border:1px solid #475569;">
+        </div>
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" id="edit-matiere-active" name="is_active" class="rounded">
+          <span class="text-slate-300 text-sm">Active</span>
+        </label>
+        <div class="flex gap-3 pt-2">
+          <button type="button" onclick="document.getElementById('modal-edit-matiere').classList.add('hidden')" class="flex-1 py-2.5 rounded-xl text-sm font-bold text-slate-400" style="background:#0f172a;border:1px solid #334155;">Annuler</button>
+          <button type="submit" class="flex-1 py-2.5 rounded-xl text-sm font-bold text-white" style="background:linear-gradient(135deg,#7c3aed,#6d28d9);">Enregistrer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+</div>
+
+<script>
+function editClasse(id, nom, niveau, section, annee, isActive) {
+  document.getElementById('edit-classe-nom').value = nom;
+  document.getElementById('edit-classe-niveau').value = niveau;
+  document.getElementById('edit-classe-section').value = section;
+  document.getElementById('edit-classe-annee').value = annee;
+  document.getElementById('edit-classe-active').checked = isActive;
+  document.getElementById('form-edit-classe').action = '/gestion/classes-matieres/classe/' + id + '/edit/';
+  document.getElementById('modal-edit-classe').classList.remove('hidden');
+}
+function editMatiere(id, nom, code, icone, couleur, isActive) {
+  document.getElementById('edit-matiere-nom').value = nom;
+  document.getElementById('edit-matiere-code').value = code;
+  document.getElementById('edit-matiere-icone').value = icone;
+  document.getElementById('edit-matiere-couleur').value = couleur;
+  document.getElementById('edit-matiere-active').checked = isActive;
+  document.getElementById('form-edit-matiere').action = '/gestion/classes-matieres/matiere/' + id + '/edit/';
+  document.getElementById('modal-edit-matiere').classList.remove('hidden');
+}
+</script>
+{% endblock %}

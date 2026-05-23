@@ -125,7 +125,6 @@ class QCMResultat(models.Model):
     total_questions = models.PositiveIntegerField(default=0)
     questions_data = models.JSONField(_('détails des questions/réponses'), default=dict)
     feedback_ia = models.JSONField(_('feedback IA'), default=dict)
-    bulletin = models.ForeignKey('bulletins.Bulletin', on_delete=models.SET_NULL, null=True, blank=True, related_name='qcm_resultats')
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

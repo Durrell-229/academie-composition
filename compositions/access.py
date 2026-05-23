@@ -37,6 +37,27 @@ def verifier_acces_correction(eleve, session) -> tuple[bool, str | None]:
         if role not in ('eleve', ''):
             return True, ACCES_LIBRE
 
+        # ── 0. Mode gratuit : prix à 0 ou non configuré ──
+        # Si PRIX_CORRECTION_UNITAIRE vaut 0 (ou n'est pas défini), tout est gratuit.
+        try:
+            from django.conf import settings
+            prix = getattr(settings, 'PRIX_CORRECTION_UNITAIRE', 0)
+            if not prix or int(prix) <= 0:
+                logger.debug(f"Mode gratuit (prix=0) — élève {eleve.id}")
+                return True, ACCES_LIBRE
+        except Exception:
+            pass
+
+        # ── 0b. Mode gratuit : FedaPay non configuré pour l'établissement ──
+        try:
+            from payments.utils import paiements_actifs
+            etablissement = getattr(eleve, 'etablissement', None)
+            if etablissement and not paiements_actifs(etablissement):
+                logger.debug(f"Mode gratuit (FedaPay inactif) — élève {eleve.id}")
+                return True, ACCES_LIBRE
+        except Exception:
+            pass
+
         # ── 1. subscriptions.UserSubscription PRO/ELITE ──
         try:
             sub = eleve.subscription          # OneToOneField
@@ -91,7 +112,8 @@ def debloquer_correction(session):
         resultat.correction_complete = True
         resultat.save(update_fields=['correction_complete'])
 
-        session.statut = 'corrige'
+        from compositions.models import CompositionSession
+        session.statut = CompositionSession.Statut.CORRIGE
         session.save(update_fields=['statut'])
 
         logger.info(f"Correction débloquée — session {session.id}")

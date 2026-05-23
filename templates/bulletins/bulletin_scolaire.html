@@ -1,557 +1,441 @@
-{% load static %}
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Bulletin Scolaire - {{ eleve.nom_prenoms|default:"Élève" }}</title>
+    <title>Bulletin — {{ eleve.nom_prenoms|default:"Élève" }}</title>
     <style>
-        @page {
-            size: A4;
-            margin: 10mm;
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+        @page { size: A4 portrait; margin: 10mm 12mm 12mm 12mm; }
 
         body {
-            font-family: Arial, Helvetica, sans-serif;
-            font-size: 11px;
-            color: #000;
-            background: #fff;
-            padding: 10px;
+            font-family: 'Times New Roman', Georgia, serif;
+            font-size: 10px;
+            color: #0d0d0d;
+            background: white;
+            margin: 0; padding: 0;
         }
 
-        .bulletin {
-            width: 100%;
-            max-width: 780px;
+        /* ── BANDEAU ÉTAT ── */
+        .bande-etat { width: 100%; background: #0f2a54; }
+        .bande-etat td { vertical-align: middle; padding: 6px 10px; color: white; }
+        .rep-nom { font-size: 13px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
+        .min-nom { font-size: 9px; color: #a8c4e0; margin-top: 2px; }
+        .devise   { font-size: 8px; color: #c9a94c; font-style: italic; letter-spacing: 1.5px; margin-top: 1px; }
+        .barre-or { background: #c9a94c; height: 4px; font-size: 0; }
+
+        /* ── ÉTABLISSEMENT ── */
+        .bloc-etab { text-align: center; padding: 8px 0 6px 0; border-bottom: 3px double #0f2a54; }
+        .etab-nom  { font-size: 17px; font-weight: bold; text-transform: uppercase; letter-spacing: 3px; color: #0f2a54; }
+        .etab-sous { font-size: 9px; color: #555; letter-spacing: 1px; }
+        .etab-lieu { font-size: 8px; color: #888; font-style: italic; }
+
+        /* ── TITRE ── */
+        .bloc-titre {
+            text-align: center; margin: 8px 0 6px 0;
+            padding: 7px; border-top: 2px solid #c9a94c; border-bottom: 2px solid #c9a94c;
+            background: #f7f3eb;
+        }
+        .titre-principal { font-size: 18px; font-weight: bold; text-transform: uppercase; letter-spacing: 3px; color: #0f2a54; }
+        .titre-sous { font-size: 10px; color: #444; letter-spacing: 1px; }
+        .titre-annee {
+            font-size: 9px; color: #777; margin-top: 2px;
+        }
+        .trim-badge {
+            display: inline-block; padding: 1px 6px;
+            border: 1px solid #0f2a54; font-weight: bold; color: #0f2a54;
+            margin: 0 2px;
+        }
+        .trim-badge.actif { background: #0f2a54; color: white; }
+
+        /* ── SECTION HEADER ── */
+        .sect-hdr {
+            background: #0f2a54; color: white;
+            font-size: 9px; font-weight: bold; text-transform: uppercase; letter-spacing: 2px;
+            padding: 4px 8px;
+        }
+        .sect-body { border: 1px solid #0f2a54; border-top: none; padding: 6px 8px; }
+
+        /* ── INFOS ÉLÈVE ── */
+        .info-grid { width: 100%; border-collapse: collapse; font-size: 10px; }
+        .info-grid td { padding: 3px 6px; }
+        .info-label { color: #555; font-size: 8px; text-transform: uppercase; letter-spacing: 0.5px; display: block; }
+        .info-val { font-weight: bold; color: #0f2a54; font-size: 11px; border-bottom: 1px solid #c9a94c; display: block; }
+        .nom-eleve { font-size: 14px; font-weight: bold; color: #0f2a54; text-transform: uppercase; padding: 6px 8px 4px 8px; border-bottom: 1px solid #e0ddd5; }
+
+        /* ── TABLE NOTES ── */
+        .table-notes { width: 100%; border-collapse: collapse; font-size: 9px; }
+        .table-notes th {
+            background: #0f2a54; color: white;
+            padding: 5px 4px; text-align: center;
+            border: 1px solid #0f2a54; font-size: 8px;
+            text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .table-notes th.left { text-align: left; padding-left: 6px; }
+        .table-notes td { padding: 5px 4px; border: 1px solid #c8d0da; vertical-align: middle; text-align: center; }
+        .table-notes td.left { text-align: left; padding-left: 6px; font-weight: bold; }
+        .table-notes tr.alt td { background: #f5f7fa; }
+        .table-notes tr.total td { background: #eef0f6; font-weight: bold; }
+        .table-notes tr.moy td { background: #0f2a54; color: white; font-weight: bold; }
+
+        .note-vert  { color: #166534; font-weight: bold; font-size: 12px; }
+        .note-rouge { color: #991b1b; font-weight: bold; font-size: 12px; }
+        .note-norm  { color: #0f2a54; font-weight: bold; font-size: 12px; }
+
+        /* ── RÉSULTATS GLOBAUX ── */
+        .res-table { width: 100%; border-collapse: collapse; }
+        .res-table td { padding: 4px 8px; font-size: 10px; border-bottom: 1px solid #e2ddd0; }
+        .res-label { color: #666; font-size: 8px; text-transform: uppercase; display: block; }
+        .res-val { font-weight: bold; color: #0f2a54; font-size: 13px; }
+
+        /* Bloc résultat vedette */
+        .vedette-table { width: 100%; border-collapse: collapse; }
+        .vedette-note {
+            background: #0f2a54; color: white;
+            text-align: center; padding: 10px 14px;
+            border-right: 2px solid #c9a94c; width: 130px;
+            vertical-align: middle;
+        }
+        .vedette-note .big { font-size: 38px; font-weight: bold; line-height: 1; }
+        .vedette-note .sur { font-size: 14px; color: #c9a94c; font-weight: bold; }
+        .vedette-note .lbl { font-size: 7px; color: #a8c4e0; text-transform: uppercase; letter-spacing: 1px; }
+        .mention-txt {
+            display: inline-block; margin-top: 5px;
+            padding: 2px 8px; border: 1px solid #c9a94c;
+            font-size: 9px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; color: #c9a94c;
+        }
+        .vedette-stats { background: #f7f3eb; padding: 0; vertical-align: top; }
+        .vstat { width: 100%; border-collapse: collapse; }
+        .vstat td { padding: 5px 8px; border-bottom: 1px solid #e2ddd0; font-size: 9px; vertical-align: middle; }
+        .vstat td.right { border-left: 1px solid #e2ddd0; }
+
+        /* ── AVIS ── */
+        .avis-table { width: 100%; border-collapse: collapse; font-size: 9.5px; }
+        .avis-table td { padding: 3px 8px; }
+        .check-box { font-family: 'Courier New', monospace; font-size: 10px; font-weight: bold; color: #0f2a54; }
+
+        /* ── DÉCISION ── */
+        .dec-table { width: 100%; border-collapse: collapse; font-size: 10px; }
+        .dec-table td { padding: 4px 8px; }
+        .dec-box { font-family: 'Courier New', monospace; font-size: 11px; color: #0f2a54; font-weight: bold; }
+        .dec-active { color: #166534; }
+
+        /* ── SIGNATURES ── */
+        .sig-table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+        .sig-table td { text-align: center; padding: 0 6px; vertical-align: bottom; width: 50%; }
+        .sig-zone { height: 40px; border-bottom: 1px solid #444; margin-bottom: 3px; }
+        .sig-titre { font-size: 9px; font-weight: bold; color: #0f2a54; text-transform: uppercase; letter-spacing: 1px; }
+        .sig-detail { font-size: 8px; color: #888; }
+        .cachet-zone {
+            width: 70px; height: 70px; border: 2px solid #0f2a54;
+            border-radius: 35px; text-align: center;
+            font-size: 7px; font-weight: bold; color: #0f2a54;
+            text-transform: uppercase; padding-top: 22px;
             margin: 0 auto;
-            border: 1px solid #000;
-            padding: 8px;
         }
 
-        /* ===== EN-TÊTE ===== */
-        .header {
-            display: table;
-            width: 100%;
-            border-bottom: 1px solid #000;
-            padding-bottom: 6px;
-            margin-bottom: 6px;
-        }
+        /* ── FOOTER ── */
+        .footer-barre { background: #0f2a54; height: 3px; font-size: 0; margin-top: 10px; }
+        .footer-table { width: 100%; border-collapse: collapse; margin-top: 3px; }
+        .footer-table td { font-size: 7.5px; color: #777; padding: 0 2px; }
+        .verif { font-family: 'Courier New', monospace; font-size: 7px; color: #555; letter-spacing: 1px; }
 
-        .header-left,
-        .header-right {
-            display: table-cell;
-            width: 50%;
-            vertical-align: top;
-        }
-
-        .header-left {
-            text-align: left;
-            padding-left: 6px;
-        }
-
-        .header-right {
-            text-align: left;
-            padding-left: 10px;
-            border-left: 1px solid #000;
-        }
-
-        .header .logo {
-            display: inline-block;
-            vertical-align: middle;
-            width: 45px;
-            height: 45px;
-            margin-right: 6px;
-        }
-
-        .header .title-block {
-            display: inline-block;
-            vertical-align: middle;
-        }
-
-        .header .title-block .big {
-            font-weight: bold;
-            font-size: 12px;
-        }
-
-        .header .title-block .small {
-            font-size: 10px;
-        }
-
-        .header-right .line {
-            font-size: 10px;
-            margin-bottom: 2px;
-        }
-
-        /* ===== TITRE PRINCIPAL ===== */
-        .main-title {
-            text-align: center;
-            font-size: 18px;
-            font-weight: bold;
-            margin: 6px 0 4px;
-        }
-
-        .annee-trimestre {
-            display: table;
-            width: 100%;
-            font-size: 11px;
-            margin-bottom: 6px;
-        }
-
-        .annee-trimestre .left,
-        .annee-trimestre .right {
-            display: table-cell;
-            width: 50%;
-            font-weight: bold;
-        }
-
-        /* ===== SECTIONS GRISES ===== */
-        .section-title {
-            background: #d9d9d9;
-            border: 1px solid #000;
-            text-align: center;
-            font-weight: bold;
-            padding: 3px;
-            font-size: 11px;
-        }
-
-        /* ===== INFOS ÉLÈVE ===== */
-        .info-eleve {
-            border: 1px solid #000;
-            border-top: none;
-            padding: 6px 8px;
-            font-size: 11px;
-        }
-
-        .info-eleve .row {
-            display: table;
-            width: 100%;
-            margin-bottom: 4px;
-        }
-
-        .info-eleve .col {
-            display: table-cell;
-            vertical-align: middle;
-        }
-
-        .info-eleve .field {
-            border-bottom: 1px solid #000;
-            display: inline-block;
-            min-width: 100px;
-            padding: 0 4px;
-        }
-
-        /* ===== TABLE NOTES ===== */
-        .notes-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 10px;
-            margin-top: 4px;
-        }
-
-        .notes-table th,
-        .notes-table td {
-            border: 1px solid #000;
-            padding: 4px 3px;
-            text-align: center;
-            vertical-align: middle;
-            height: 22px;
-        }
-
-        .notes-table thead th {
-            background: #fff;
-            font-weight: bold;
-            font-size: 9px;
-        }
-
-        .notes-table .discipline {
-            text-align: left;
-            padding-left: 6px;
-            width: 22%;
-        }
-
-        .notes-table .col-coef    { width: 6%; }
-        .notes-table .col-interro { width: 6%; }
-        .notes-table .col-dev     { width: 6%; }
-        .notes-table .col-moy     { width: 7%; }
-        .notes-table .col-rang    { width: 7%; }
-        .notes-table .col-app     { width: 19%; }
-
-        .notes-table .vertical {
-            writing-mode: vertical-rl;
-            transform: rotate(180deg);
-            white-space: nowrap;
-        }
-
-        .notes-table .total-row td,
-        .notes-table .moyenne-row td {
-            font-weight: bold;
-        }
-
-        /* ===== RÉSULTATS GLOBAUX ===== */
-        .resultats {
-            border: 1px solid #000;
-            border-top: none;
-            padding: 6px 8px;
-            font-size: 11px;
-        }
-
-        .resultats .row {
-            display: table;
-            width: 100%;
-            margin-bottom: 4px;
-        }
-
-        .resultats .col {
-            display: table-cell;
-            width: 50%;
-        }
-
-        .resultats .field {
-            border-bottom: 1px solid #000;
-            display: inline-block;
-            min-width: 90px;
-            padding: 0 4px;
-        }
-
-        /* ===== AVIS ===== */
-        .avis {
-            border: 1px solid #000;
-            border-top: none;
-            padding: 6px 8px;
-            font-size: 11px;
-        }
-
-        .avis .check-row {
-            display: table;
-            width: 100%;
-            margin-bottom: 4px;
-        }
-
-        .avis .check-col {
-            display: table-cell;
-            width: 33%;
-            padding: 2px 0;
-        }
-
-        .checkbox {
-            display: inline-block;
-            width: 11px;
-            height: 11px;
-            border: 1px solid #000;
-            vertical-align: middle;
-            margin-right: 4px;
-            text-align: center;
-            line-height: 11px;
-            font-size: 10px;
-        }
-
-        .checkbox.checked::before {
-            content: "✓";
-            font-weight: bold;
-        }
-
-        /* ===== DÉCISION ===== */
-        .decision {
-            border: 1px solid #000;
-            border-top: none;
-            padding: 6px 8px;
-            font-size: 11px;
-        }
-
-        .decision .row {
-            display: table;
-            width: 100%;
-        }
-
-        .decision .col {
-            display: table-cell;
-            width: 33%;
-            text-align: center;
-        }
-
-        .decision .box {
-            display: inline-block;
-            width: 14px;
-            height: 14px;
-            border: 1px solid #000;
-            vertical-align: middle;
-            margin-left: 4px;
-            text-align: center;
-            line-height: 14px;
-        }
-
-        .fait-a {
-            text-align: right;
-            margin-top: 6px;
-            font-size: 11px;
-        }
-
-        .fait-a .field {
-            border-bottom: 1px solid #000;
-            display: inline-block;
-            min-width: 90px;
-            padding: 0 4px;
-        }
-
-        /* ===== SIGNATURES ===== */
-        .signatures {
-            display: table;
-            width: 100%;
-            margin-top: 8px;
-        }
-
-        .signature-box {
-            display: table-cell;
-            width: 50%;
-            border: 1px solid #000;
-            padding: 6px;
-            text-align: center;
-            vertical-align: top;
-            height: 110px;
-        }
-
-        .signature-box .title {
-            font-weight: bold;
-            font-size: 11px;
-        }
-
-        .signature-box .subtitle {
-            font-style: italic;
-            font-size: 10px;
-        }
-
-        .signature-box .stamp-circle {
-            width: 55px;
-            height: 55px;
-            border: 1.5px solid #1e3a8a;
-            border-radius: 50%;
-            margin: 14px auto 0;
-        }
-
-        .signature-box.right {
-            border-left: none;
-        }
-
-        /* ===== UTILITAIRES ===== */
-        .underline {
-            border-bottom: 1px solid #000;
-            display: inline-block;
-            min-width: 60px;
-            padding: 0 3px;
-        }
-
-        @media print {
-            body { padding: 0; }
-            .bulletin { border: none; }
-        }
+        /* Drapeau Bénin en table */
+        .flag-inner { border: 2px solid #c9a94c; }
+        .flag-vert  { background: #008751; width: 24px; }
+        .flag-jaune { background: #fcd116; }
+        .flag-rouge { background: #e8112d; }
     </style>
 </head>
 <body>
 
-<div class="bulletin">
+<!-- ══ BANDEAU ÉTAT ══ -->
+<table class="bande-etat" cellpadding="0" cellspacing="0" width="100%">
+    <tr>
+        <td width="72">
+            <table class="flag-inner" cellpadding="0" cellspacing="0" width="68" height="44">
+                <tr>
+                    <td class="flag-vert" rowspan="2" width="22"></td>
+                    <td class="flag-jaune" height="22"></td>
+                </tr>
+                <tr><td class="flag-rouge" height="22"></td></tr>
+            </table>
+        </td>
+        <td style="text-align:center;">
+            <div class="rep-nom">République du Bénin</div>
+            <div class="min-nom">Ministère des Enseignements Secondaires, Techniques et de la Formation Professionnelle</div>
+            <div class="devise">Fraternité — Justice — Travail</div>
+        </td>
+        <td width="72">
+            <table class="flag-inner" cellpadding="0" cellspacing="0" width="68" height="44" style="margin-left:auto;">
+                <tr>
+                    <td class="flag-vert" rowspan="2" width="22"></td>
+                    <td class="flag-jaune" height="22"></td>
+                </tr>
+                <tr><td class="flag-rouge" height="22"></td></tr>
+            </table>
+        </td>
+    </tr>
+</table>
+<table width="100%" cellpadding="0" cellspacing="0"><tr><td class="barre-or">&nbsp;</td></tr></table>
 
-    <!-- ============ EN-TÊTE ============ -->
-    <div class="header">
-        <div class="header-left">
-            {% if logo_benin %}
-                <img src="{{ logo_benin }}" alt="Armoiries" class="logo">
-            {% else %}
-                <div class="logo" style="border:1px dashed #999;text-align:center;line-height:45px;font-size:8px;">LOGO</div>
-            {% endif %}
-            <div class="title-block">
-                <div class="big">RÉPUBLIQUE DU BÉNIN</div>
-                <div class="small">FRATERNITÉ - JUSTICE - TRAVAIL</div>
-            </div>
-        </div>
-        <div class="header-right">
-            <div class="line"><strong>ACADÉMIE NUMÉRIQUE</strong></div>
-            <div class="line">BP : {{ etablissement.bp|default:"___" }}, Tél : {{ etablissement.tel|default:"___ / ___" }}, {{ etablissement.ville|default:"Cotonou" }}</div>
-            <div class="line">DÉPARTEMENT DE L'ATLANTIQUE</div>
-            <div class="line">DIRECTION DÉPARTEMENTALE ...</div>
-        </div>
-    </div>
-
-    <!-- ============ TITRE ============ -->
-    <div class="main-title">BULLETIN SCOLAIRE ET DE NOTES</div>
-
-    <div class="annee-trimestre">
-        <div class="left">
-            ANNÉE SCOLAIRE : 20<span class="underline">{{ annee.debut|default:"__" }}</span> – 20<span class="underline">{{ annee.fin|default:"__" }}</span>
-        </div>
-        <div class="right">
-            TRIMESTRE :
-            <span {% if trimestre == 1 %}style="border:1px solid #000;border-radius:50%;padding:1px 4px;"{% endif %}>1<sup>er</sup></span> /
-            <span {% if trimestre == 2 %}style="border:1px solid #000;border-radius:50%;padding:1px 4px;"{% endif %}>2<sup>ème</sup></span> /
-            <span {% if trimestre == 3 %}style="border:1px solid #000;border-radius:50%;padding:1px 4px;"{% endif %}>3<sup>ème</sup></span>
-            (entourer)
-        </div>
-    </div>
-
-    <!-- ============ INFOS ÉLÈVE ============ -->
-    <div class="section-title">INFORMATIONS SUR L'ÉLÈVE</div>
-    <div class="info-eleve">
-        <div class="row">
-            <div class="col">Nom et Prénoms : <span class="field" style="min-width:400px;">{{ eleve.nom_prenoms|default:"" }}</span></div>
-        </div>
-        <div class="row">
-            <div class="col">
-                Né(e) le : <span class="field" style="min-width:90px;">{{ eleve.date_naissance|default:"__/__/____" }}</span>
-                à : <span class="field" style="min-width:160px;">{{ eleve.lieu_naissance|default:"" }}</span>
-                Sexe : M / F
-                {% if eleve.sexe == "M" %} <strong>(M)</strong>{% elif eleve.sexe == "F" %} <strong>(F)</strong>{% endif %}
-            </div>
-        </div>
-        <div class="row">
-            <div class="col">
-                Classe : <span class="field">{{ eleve.classe|default:"" }}</span>
-                &nbsp;&nbsp;&nbsp;
-                Effectif : <span class="field">{{ eleve.effectif|default:"" }}</span>
-            </div>
-        </div>
-        <div class="row">
-            <div class="col">
-                N° matricule : <span class="field" style="min-width:120px;">{{ eleve.matricule|default:"" }}</span>
-                &nbsp;&nbsp;&nbsp;
-                Statut : Nouveau / Redoublant (entourer)
-                {% if eleve.statut %}<strong>({{ eleve.statut }})</strong>{% endif %}
-            </div>
-        </div>
-    </div>
-
-    <!-- ============ TABLE NOTES ============ -->
-    <table class="notes-table">
-        <thead>
-            <tr>
-                <th class="discipline">DISCIPLINES</th>
-                <th class="col-coef">COEF.</th>
-                <th class="col-interro"><span class="vertical">INTERRO.</span></th>
-                <th class="col-dev"><span class="vertical">DEV. 1</span></th>
-                <th class="col-dev"><span class="vertical">DEV. 2</span></th>
-                <th class="col-dev"><span class="vertical">DEV. 3</span></th>
-                <th class="col-moy">MOY.<br>/20</th>
-                <th class="col-moy">MOY.<br>COEF.</th>
-                <th class="col-rang">RANG</th>
-                <th class="col-app">APPRÉCIATIONS<br>ET SIGNATURES DES<br>PROFESSEURS</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for matiere in matieres %}
-            <tr>
-                <td class="discipline">{{ matiere.nom }}</td>
-                <td>{{ matiere.coef|default:"" }}</td>
-                <td>{{ matiere.interro|default:"" }}</td>
-                <td>{{ matiere.dev1|default:"" }}</td>
-                <td>{{ matiere.dev2|default:"" }}</td>
-                <td>{{ matiere.dev3|default:"" }}</td>
-                <td>{{ matiere.moyenne|default:"" }}</td>
-                <td>{{ matiere.moy_coef|default:"" }}</td>
-                <td>{{ matiere.rang|default:"" }}</td>
-                <td>{{ matiere.appreciation|default:"" }}</td>
-            </tr>
-            {% empty %}
-                {# Lignes vides par défaut si aucune matière fournie #}
-                <tr><td class="discipline">Français</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
-                <tr><td class="discipline">Mathématiques</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
-                <tr><td class="discipline">Anglais</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
-                <tr><td class="discipline">Histoire et Géographie</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
-                <tr><td class="discipline">Science de la Vie et de la Terre (SVT)</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
-                <tr><td class="discipline">Physique-Chimie et Technologie (PCT)</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
-                <tr><td class="discipline">Informatique et Numérique</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
-                <tr><td class="discipline">Éducation Physique et Sportive (EPS)</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
-                <tr><td class="discipline">Modernes (Allemand/Espagnol)</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
-            {% endfor %}
-            <tr class="total-row">
-                <td class="discipline">Total</td>
-                <td>{{ totaux.coef|default:"" }}</td>
-                <td colspan="5"></td>
-                <td>{{ totaux.moy_coef|default:"" }}</td>
-                <td colspan="2"></td>
-            </tr>
-            <tr class="moyenne-row">
-                <td class="discipline">Moyenne du Trimestre</td>
-                <td colspan="9" style="text-align:center;">{{ moyenne_trimestre|default:"" }}</td>
-            </tr>
-        </tbody>
-    </table>
-
-    <!-- ============ RÉSULTATS GLOBAUX ============ -->
-    <div class="section-title" style="margin-top:6px;">RÉSULTATS GLOBAUX</div>
-    <div class="resultats">
-        <div class="row">
-            <div class="col">Moyenne de l'élève : <span class="field">{{ resultats.moyenne|default:"" }}</span></div>
-            <div class="col">Rang : <span class="field">{{ resultats.rang|default:"" }}</span></div>
-        </div>
-        <div class="row">
-            <div class="col">Plus forte moyenne : <span class="field">{{ resultats.plus_forte|default:"" }}</span></div>
-            <div class="col">Plus faible moyenne : <span class="field">{{ resultats.plus_faible|default:"" }}</span></div>
-        </div>
-        <div class="row">
-            <div class="col">Moyenne de la classe : <span class="field">{{ resultats.moyenne_classe|default:"" }}</span></div>
-            <div class="col">Mention : <span class="field" style="min-width:160px;">{{ resultats.mention|default:"" }}</span></div>
-        </div>
-    </div>
-
-    <!-- ============ AVIS DU CONSEIL ============ -->
-    <div class="section-title">AVIS DU CONSEIL DES PROFESSEURS</div>
-    <div class="avis">
-        <div class="check-row">
-            <div class="check-col">
-                <span class="checkbox {% if avis.felicitations %}checked{% endif %}"></span>Félicitations
-            </div>
-            <div class="check-col">
-                <span class="checkbox {% if avis.tableau_honneur %}checked{% endif %}"></span>Tableau d'honneur
-            </div>
-            <div class="check-col">
-                <span class="checkbox {% if avis.encouragement %}checked{% endif %}"></span>Encouragement
-            </div>
-        </div>
-        <div class="check-row">
-            <div class="check-col">
-                <span class="checkbox {% if avis.avertissement %}checked{% endif %}"></span>Avertissement de travail
-            </div>
-            <div class="check-col">
-                <span class="checkbox {% if avis.blame %}checked{% endif %}"></span>Blâme
-            </div>
-            <div class="check-col"></div>
-        </div>
-    </div>
-
-    <!-- ============ DÉCISION DU CONSEIL ============ -->
-    <div class="section-title">DÉCISION DU CONSEIL</div>
-    <div class="decision">
-        <div class="row">
-            <div class="col">
-                Passe : <span class="box">{% if decision == "passe" %}✓{% endif %}</span>
-            </div>
-            <div class="col">
-                Redouble : <span class="box">{% if decision == "redouble" %}✓{% endif %}</span>
-            </div>
-            <div class="col">
-                Exclu : <span class="box">{% if decision == "exclu" %}✓{% endif %}</span>
-            </div>
-        </div>
-        <div class="fait-a">
-            Fait à <span class="field">{{ fait_a|default:"" }}</span>, le <span class="field">{{ fait_le|default:"__/__/____" }}</span>
-        </div>
-    </div>
-
-    <!-- ============ SIGNATURES ============ -->
-    <div class="signatures">
-        <div class="signature-box">
-            <div class="title">Le Directeur</div>
-            <div class="subtitle">(Signature et Cachet)</div>
-            <div class="stamp-circle"></div>
-        </div>
-        <div class="signature-box right">
-            <div class="title">Visa des Parents/Tuteurs</div>
-        </div>
-    </div>
-
+<!-- ══ ÉTABLISSEMENT ══ -->
+<div class="bloc-etab">
+    <div class="etab-nom">{{ etablissement.nom|default:"Académie Numérique Intelligente" }}</div>
+    <div class="etab-sous">Établissement d'Enseignement Secondaire Général</div>
+    <div class="etab-lieu">{{ etablissement.ville|default:"Cotonou" }}, République du Bénin</div>
 </div>
+
+<!-- ══ TITRE ══ -->
+<div class="bloc-titre">
+    <div class="titre-principal">Bulletin de {{ type_exam_display|default:"Composition" }}</div>
+    <div class="titre-sous">Année scolaire 20{{ annee.debut|default:"25" }} – 20{{ annee.fin|default:"26" }}</div>
+    <div class="titre-annee">
+        Trimestre :&nbsp;
+        <span class="trim-badge {% if trimestre == 'T1' %}actif{% endif %}">1<sup>er</sup></span>
+        <span class="trim-badge {% if trimestre == 'T2' %}actif{% endif %}">2<sup>ème</sup></span>
+        <span class="trim-badge {% if trimestre == 'T3' %}actif{% endif %}">3<sup>ème</sup></span>
+    </div>
+</div>
+
+<!-- ══ INFORMATIONS ÉLÈVE ══ -->
+<div class="sect-hdr">I. Identité de l'élève</div>
+<div class="sect-body" style="padding:0;">
+    <div class="nom-eleve">{{ eleve.nom_prenoms|default:"NOM ET PRÉNOMS"|upper }}</div>
+    <table class="info-grid" cellpadding="0" cellspacing="0">
+        <tr>
+            <td width="25%">
+                <span class="info-label">Matricule</span>
+                <span class="info-val">{{ eleve.matricule|default:"—" }}</span>
+            </td>
+            <td width="20%">
+                <span class="info-label">Classe</span>
+                <span class="info-val">{{ eleve.classe|default:"N/A" }}</span>
+            </td>
+            <td width="20%">
+                <span class="info-label">Effectif</span>
+                <span class="info-val">{{ eleve.effectif|default:"—" }}</span>
+            </td>
+            <td width="35%">
+                <span class="info-label">Date de naissance</span>
+                <span class="info-val">{{ eleve.date_naissance|default:"__/__/____" }}</span>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="2" style="padding:3px 6px 8px 6px;">
+                <span class="info-label">Lieu de naissance</span>
+                <span class="info-val">{{ eleve.lieu_naissance|default:"—" }}</span>
+            </td>
+            <td width="20%" style="padding:3px 6px 8px 6px;">
+                <span class="info-label">Sexe</span>
+                <span class="info-val">
+                    {% if eleve.sexe == 'M' %}Masculin{% elif eleve.sexe == 'F' %}Féminin{% else %}—{% endif %}
+                </span>
+            </td>
+            <td style="padding:3px 6px 8px 6px;">
+                <span class="info-label">Tél. établissement</span>
+                <span class="info-val">{{ etablissement.tel|default:"—" }}</span>
+            </td>
+        </tr>
+    </table>
+</div>
+
+<!-- ══ NOTE EN VEDETTE + STATS ══ -->
+<div class="sect-hdr" style="margin-top:6px;">II. Résultats de la composition</div>
+<div class="sect-body" style="padding:0; border-top:none;">
+    <table class="vedette-table" cellpadding="0" cellspacing="0" width="100%">
+        <tr>
+            <td class="vedette-note">
+                <div class="big">{{ resultats.moyenne|default:"—" }}</div>
+                <div class="sur">/20</div>
+                <div class="lbl">Moyenne finale</div>
+                <div>
+                    <span class="mention-txt">{{ resultats.mention|default:"—" }}</span>
+                </div>
+            </td>
+            <td class="vedette-stats">
+                <table class="vstat" cellpadding="0" cellspacing="0">
+                    <tr>
+                        <td width="50%" style="padding:5px 8px; border-bottom:1px solid #e2ddd0; border-right:1px solid #e2ddd0;">
+                            <span class="info-label">Rang dans la classe</span>
+                            <span style="font-size:13px; font-weight:bold; color:#0f2a54;">{{ resultats.rang|default:"N/A" }}</span>
+                        </td>
+                        <td class="right" width="50%" style="padding:5px 8px; border-bottom:1px solid #e2ddd0;">
+                            <span class="info-label">Moyenne de la classe</span>
+                            <span style="font-size:13px; font-weight:bold; color:#0f2a54;">{{ resultats.moyenne_classe|default:"—" }}<small style="font-size:8px; color:#888;">/20</small></span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding:5px 8px; border-right:1px solid #e2ddd0;">
+                            <span class="info-label">Plus forte moyenne</span>
+                            <span style="font-size:13px; font-weight:bold; color:#166534;">{{ resultats.plus_forte|default:"—" }}</span>
+                        </td>
+                        <td class="right" style="padding:5px 8px;">
+                            <span class="info-label">Plus faible moyenne</span>
+                            <span style="font-size:13px; font-weight:bold; color:#991b1b;">{{ resultats.plus_faible|default:"—" }}</span>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</div>
+
+<!-- ══ TABLE DES NOTES ══ -->
+<div class="sect-hdr" style="margin-top:6px;">III. Détail par discipline</div>
+<table class="table-notes" cellpadding="0" cellspacing="0" width="100%">
+    <thead>
+        <tr>
+            <th class="left" style="width:28%;">Discipline</th>
+            <th style="width:8%;">Coef.</th>
+            <th style="width:12%;">Note obtenue</th>
+            <th style="width:11%;">Moy. /20</th>
+            <th style="width:12%;">Moy. pond.</th>
+            <th style="width:9%;">Rang</th>
+            <th class="left" style="width:20%;">Appréciation</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for matiere in matieres %}
+        <tr {% if forloop.counter|divisibleby:2 %}class="alt"{% endif %}>
+            <td class="left">{{ matiere.nom }}</td>
+            <td>{{ matiere.coef|default:"" }}</td>
+            <td class="{% if matiere.moyenne >= 10 %}note-vert{% else %}note-rouge{% endif %}">
+                {{ matiere.dev1|default:"" }}
+            </td>
+            <td class="note-norm">{{ matiere.moyenne|default:"" }}</td>
+            <td>{{ matiere.moy_coef|default:"" }}</td>
+            <td>{{ matiere.rang|default:"" }}</td>
+            <td class="left" style="font-size:8px; font-style:italic;">{{ matiere.appreciation|default:""|truncatechars:60 }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" style="text-align:center; padding:8px; color:#888;">Aucune donnée</td></tr>
+        {% endfor %}
+    </tbody>
+    <tfoot>
+        <tr class="total">
+            <td class="left">Total</td>
+            <td>{{ totaux.coef|default:"" }}</td>
+            <td colspan="2"></td>
+            <td>{{ totaux.moy_coef|default:"" }}</td>
+            <td colspan="2"></td>
+        </tr>
+        <tr class="moy">
+            <td class="left" style="color:white;">Moyenne du trimestre</td>
+            <td colspan="6" style="text-align:center; color:white; font-size:12px;">
+                {{ moyenne_trimestre|default:"—" }} / 20
+            </td>
+        </tr>
+    </tfoot>
+</table>
+
+<!-- ══ AVIS DU CONSEIL ══ -->
+<div class="sect-hdr" style="margin-top:6px;">IV. Avis du conseil des professeurs</div>
+<div class="sect-body">
+    <table class="avis-table" cellpadding="0" cellspacing="0" width="100%">
+        <tr>
+            <td width="33%">
+                <span class="check-box">{% if avis.felicitations %}[&#10003;]{% else %}[&nbsp;&nbsp;]{% endif %}</span>
+                Félicitations
+            </td>
+            <td width="33%">
+                <span class="check-box">{% if avis.tableau_honneur %}[&#10003;]{% else %}[&nbsp;&nbsp;]{% endif %}</span>
+                Tableau d'honneur
+            </td>
+            <td width="34%">
+                <span class="check-box">{% if avis.encouragement %}[&#10003;]{% else %}[&nbsp;&nbsp;]{% endif %}</span>
+                Encouragement
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <span class="check-box">{% if avis.avertissement %}[&#10003;]{% else %}[&nbsp;&nbsp;]{% endif %}</span>
+                Avertissement de travail
+            </td>
+            <td>
+                <span class="check-box">{% if avis.blame %}[&#10003;]{% else %}[&nbsp;&nbsp;]{% endif %}</span>
+                Blâme
+            </td>
+            <td></td>
+        </tr>
+    </table>
+</div>
+
+<!-- ══ DÉCISION ══ -->
+<div class="sect-hdr" style="margin-top:6px;">V. Décision du conseil</div>
+<div class="sect-body">
+    <table class="dec-table" cellpadding="0" cellspacing="0" width="100%">
+        <tr>
+            <td width="33%">
+                <span class="dec-box {% if decision == 'passe' %}dec-active{% endif %}">
+                    {% if decision == 'passe' %}[&#10003;]{% else %}[&nbsp;&nbsp;]{% endif %}
+                </span>
+                Passe en classe supérieure
+            </td>
+            <td width="33%">
+                <span class="dec-box {% if decision == 'redouble' %}dec-active{% endif %}">
+                    {% if decision == 'redouble' %}[&#10003;]{% else %}[&nbsp;&nbsp;]{% endif %}
+                </span>
+                Redouble
+            </td>
+            <td width="34%">
+                <span class="dec-box {% if decision == 'exclu' %}dec-active{% endif %}">
+                    {% if decision == 'exclu' %}[&#10003;]{% else %}[&nbsp;&nbsp;]{% endif %}
+                </span>
+                Exclu
+            </td>
+        </tr>
+    </table>
+    <div style="text-align:right; font-size:10px; margin-top:5px; color:#444;">
+        Fait à {{ fait_a|default:"Cotonou" }}, le {{ fait_le|default:"__/__/____" }}
+    </div>
+</div>
+
+<!-- ══ SIGNATURES ══ -->
+<table class="sig-table" cellpadding="0" cellspacing="0" width="100%">
+    <tr>
+        <td width="50%">
+            <div class="sig-zone"></div>
+            <div class="sig-titre">Le Directeur de l'Établissement</div>
+            <div class="sig-detail">(Signature et Cachet)</div>
+        </td>
+        <td width="50%">
+            <div class="cachet-zone">
+                <div style="font-size:6px; font-weight:bold; color:#0f2a54;">Cachet Officiel</div>
+            </div>
+        </td>
+    </tr>
+    <tr>
+        <td colspan="2" style="padding-top:8px;">
+            <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                    <td width="50%" style="text-align:center;">
+                        <div class="sig-zone"></div>
+                        <div class="sig-titre">Le Professeur Principal</div>
+                        <div class="sig-detail">(Signature)</div>
+                    </td>
+                    <td width="50%" style="text-align:center;">
+                        <div class="sig-zone"></div>
+                        <div class="sig-titre">Le Parent / Tuteur</div>
+                        <div class="sig-detail">Lu et approuvé</div>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+
+<!-- ══ FOOTER ══ -->
+<table width="100%" cellpadding="0" cellspacing="0"><tr><td class="footer-barre">&nbsp;</td></tr></table>
+<table class="footer-table" cellpadding="0" cellspacing="0" width="100%">
+    <tr>
+        <td>
+            Bulletin généré automatiquement — IA Académie Numérique
+            &nbsp;|&nbsp; <span class="verif">Réf. AN-{{ eleve.matricule|default:""|slice:":8"|upper }}</span>
+        </td>
+        <td style="text-align:right; font-size:7px; color:#888;">
+            Fraternité – Justice – Travail &nbsp;|&nbsp; République du Bénin
+        </td>
+    </tr>
+</table>
 
 </body>
 </html>

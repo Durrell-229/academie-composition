@@ -1,0 +1,145 @@
+{% extends 'app_base.html' %}
+{% block title %}Calendrier des compositions – {{ eleve.get_full_name }}{% endblock %}
+
+{% block breadcrumb %}
+  <a href="{% url 'parents:dashboard' %}" class="hover:text-white transition">Portail Parents</a>
+  <span class="mx-2 opacity-40">/</span>
+  Calendrier de {{ eleve.first_name }}
+{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+
+  <!-- En-tête -->
+  <div class="bg-bg-secondary border border-bg-tertiary rounded-2xl p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div class="flex items-center gap-4">
+      <div class="h-14 w-14 rounded-2xl bg-button-gradient flex items-center justify-center text-white text-2xl font-black shadow-lg shadow-primary/20">
+        {{ eleve.first_name|slice:":1"|upper }}
+      </div>
+      <div>
+        <h1 class="text-2xl font-black text-white">{{ eleve.get_full_name }}</h1>
+        <p class="text-text-muted text-sm">
+          {% if inscription_active %}{{ inscription_active.classe.nom }} – {% endif %}
+          Prochaines compositions et évaluations
+        </p>
+      </div>
+    </div>
+    <span class="bg-primary/20 text-primary text-sm font-black px-4 py-2 rounded-xl">
+      {{ evaluations|length }} évaluation{{ evaluations|length|pluralize }} à venir
+    </span>
+  </div>
+
+  <!-- Légende types -->
+  <div class="flex flex-wrap gap-3">
+    {% for type, couleur, label in type_legende %}
+    <span class="flex items-center gap-2 text-xs font-bold text-text-secondary">
+      <span class="h-3 w-3 rounded-full" style="background:{{ couleur }}"></span>{{ label }}
+    </span>
+    {% endfor %}
+    <span class="flex items-center gap-2 text-xs font-bold text-text-secondary"><span class="h-3 w-3 rounded-full bg-blue-500"></span>Devoir</span>
+    <span class="flex items-center gap-2 text-xs font-bold text-text-secondary"><span class="h-3 w-3 rounded-full bg-violet-500"></span>Interrogation</span>
+    <span class="flex items-center gap-2 text-xs font-bold text-text-secondary"><span class="h-3 w-3 rounded-full bg-red-500"></span>Examen</span>
+    <span class="flex items-center gap-2 text-xs font-bold text-text-secondary"><span class="h-3 w-3 rounded-full bg-orange-500"></span>Partiel</span>
+    <span class="flex items-center gap-2 text-xs font-bold text-text-secondary"><span class="h-3 w-3 rounded-full bg-emerald-500"></span>TP</span>
+  </div>
+
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
+
+    <!-- Calendrier FullCalendar -->
+    <div class="xl:col-span-2 bg-bg-secondary border border-bg-tertiary rounded-2xl p-6">
+      <div id="calendar"></div>
+    </div>
+
+    <!-- Liste chronologique -->
+    <div class="bg-bg-secondary border border-bg-tertiary rounded-2xl overflow-hidden">
+      <div class="p-5 border-b border-bg-tertiary">
+        <h2 class="font-black text-white">Prochaines évaluations</h2>
+      </div>
+      <div class="divide-y divide-bg-tertiary max-h-[600px] overflow-y-auto">
+        {% if evaluations %}
+          {% for ev in evaluations %}
+          <div class="p-4 hover:bg-bg-primary/30 transition-colors">
+            <div class="flex items-start gap-3">
+              <div class="shrink-0 text-center bg-bg-primary rounded-xl p-2 w-12">
+                <p class="text-xs font-black text-text-muted uppercase">{{ ev.date_evaluation|date:"M" }}</p>
+                <p class="text-xl font-black text-white leading-tight">{{ ev.date_evaluation|date:"d" }}</p>
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="font-bold text-white text-sm truncate">{{ ev.titre }}</p>
+                <p class="text-text-muted text-xs">{{ ev.matiere_classe.matiere.nom }}</p>
+                <div class="flex gap-2 mt-1 flex-wrap">
+                  <span class="text-[10px] font-black px-2 py-0.5 rounded-full
+                    {% if ev.type_evaluation == 'examen' %}bg-red-500/20 text-red-400
+                    {% elif ev.type_evaluation == 'partiel' %}bg-orange-500/20 text-orange-400
+                    {% elif ev.type_evaluation == 'interrogation' %}bg-violet-500/20 text-violet-400
+                    {% else %}bg-blue-500/20 text-blue-400{% endif %}">
+                    {{ ev.get_type_evaluation_display }}
+                  </span>
+                  <span class="text-[10px] text-text-muted font-bold">{{ ev.duree }} min · coeff. {{ ev.coefficient }}</span>
+                </div>
+                {% if ev.professeur %}
+                <p class="text-[10px] text-text-muted mt-1">{{ ev.professeur.get_full_name }}</p>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+        <div class="p-8 text-center">
+          <i class="fa-solid fa-calendar-check text-3xl text-text-muted mb-3"></i>
+          <p class="text-white font-bold text-sm">Aucune évaluation planifiée</p>
+          <p class="text-text-muted text-xs mt-1">Les compositions apparaîtront ici dès leur publication.</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css">
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const calendarEl = document.getElementById('calendar');
+  const calendar = new FullCalendar.Calendar(calendarEl, {
+    initialView: 'dayGridMonth',
+    locale: 'fr',
+    headerToolbar: {
+      left: 'prev,next today',
+      center: 'title',
+      right: 'dayGridMonth,listWeek'
+    },
+    buttonText: { today: "Aujourd'hui", month: 'Mois', list: 'Liste' },
+    events: {{ calendar_events|safe }},
+    eventClick: function(info) {
+      const p = info.event.extendedProps;
+      alert(
+        `📚 ${info.event.title}\n` +
+        `Type : ${p.type}\n` +
+        `Durée : ${p.duree} min\n` +
+        `Coefficient : ${p.coefficient}\n` +
+        (p.professeur ? `Enseignant : ${p.professeur}` : '')
+      );
+    },
+    eventDidMount: function(info) {
+      info.el.style.borderRadius = '6px';
+      info.el.style.border = 'none';
+    }
+  });
+  calendar.render();
+});
+</script>
+
+<style>
+.fc { color: #94A3B8; }
+.fc .fc-toolbar-title { font-size: 1.1rem; font-weight: 900; color: #fff; }
+.fc .fc-button { background: #1E293B; border: 1px solid #334155; color: #94A3B8; font-weight: 700; }
+.fc .fc-button:hover, .fc .fc-button-primary:not(:disabled).fc-button-active { background: #6366F1; border-color: #6366F1; color: #fff; }
+.fc .fc-daygrid-day { background: transparent; }
+.fc .fc-daygrid-day:hover { background: rgba(99,102,241,0.05); }
+.fc .fc-col-header-cell { background: #0F172A; }
+.fc-theme-standard td, .fc-theme-standard th { border-color: #1E293B; }
+.fc .fc-scrollgrid { border-color: #1E293B; }
+</style>
+{% endblock %}

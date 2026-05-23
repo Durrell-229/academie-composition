@@ -14,6 +14,17 @@
       <p class="text-text-muted mb-6">Votre devoir a été envoyé avec succès. Il sera corrigé et votre note sera disponible sous peu.</p>
     </div>
 
+    <!-- STATUT CORRECTION IA -->
+    <div id="ia-status-box" class="glass rounded-2xl border border-warning/30 p-4 mb-6 flex items-center gap-3">
+      <div class="w-10 h-10 rounded-lg bg-warning/10 flex items-center justify-center flex-shrink-0">
+        <i class="fa-solid fa-circle-notch fa-spin text-warning" id="ia-status-icon"></i>
+      </div>
+      <div>
+        <p class="font-bold text-white text-sm" id="ia-status-title">Correction IA en cours…</p>
+        <p class="text-xs text-text-muted mt-1" id="ia-status-msg">Votre copie est en cours d'analyse. Cette page se mettra à jour automatiquement.</p>
+      </div>
+    </div>
+
     <!-- INFO BOXES -->
     <div class="space-y-4 mb-8">
       <div class="glass rounded-2xl border border-border-standard p-4">
@@ -23,7 +34,7 @@
           </div>
           <div>
             <p class="font-bold text-white text-sm">Délai de Correction</p>
-            <p class="text-xs text-text-muted mt-1">Vos notes apparaîtront dans les bulletins dans les 24-48 heures</p>
+            <p class="text-xs text-text-muted mt-1">La correction IA prend généralement moins d'une minute</p>
           </div>
         </div>
       </div>
@@ -55,9 +66,9 @@
 
     <!-- ACTION BUTTONS -->
     <div class="space-y-3">
-      <a href="{% url 'bulletins:index' %}" class="block w-full py-3 rounded-xl bg-gradient-to-r from-primary to-secondary text-white font-bold text-center hover:shadow-lg transition">
-        <i class="fa-solid fa-file-invoice mr-2"></i>
-        Voir Mes Bulletins
+      <a href="{% url 'compositions:result_detail' session.id %}" class="block w-full py-3 rounded-xl bg-gradient-to-r from-primary to-secondary text-white font-bold text-center hover:shadow-lg transition">
+        <i class="fa-solid fa-chart-bar mr-2"></i>
+        Voir Mon Résultat
       </a>
 
       <a href="{% url 'dashboard' %}" class="block w-full py-3 rounded-xl bg-bg-tertiary/30 border border-border-standard text-white font-bold text-center hover:bg-bg-tertiary/50 transition">
@@ -70,8 +81,8 @@
     <div class="mt-8 pt-6 border-t border-border-standard">
       <p class="text-xs text-text-muted text-center mb-3">Accès Rapide</p>
       <div class="flex gap-2 justify-center">
-        <a href="{% url 'bulletins:index' %}" class="px-3 py-2 rounded-lg bg-bg-tertiary/20 text-xs text-primary font-bold hover:bg-bg-tertiary/40 transition">
-          <i class="fa-solid fa-file-pdf mr-1"></i> Bulletins
+        <a href="{% url 'compositions:result_detail' session.id %}" class="px-3 py-2 rounded-lg bg-bg-tertiary/20 text-xs text-primary font-bold hover:bg-bg-tertiary/40 transition">
+          <i class="fa-solid fa-chart-bar mr-1"></i> Résultat
         </a>
         <a href="{% url 'dashboard' %}" class="px-3 py-2 rounded-lg bg-bg-tertiary/20 text-xs text-accent font-bold hover:bg-bg-tertiary/40 transition">
           <i class="fa-solid fa-home mr-1"></i> Accueil
@@ -80,4 +91,50 @@
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  const sessionId = '{{ session.id }}';
+  if (!sessionId) return;
+
+  const statusUrl = '/compositions/api/correction-status/' + sessionId + '/';
+  const titleEl   = document.getElementById('ia-status-title');
+  const msgEl     = document.getElementById('ia-status-msg');
+  const iconEl    = document.getElementById('ia-status-icon');
+  const boxEl     = document.getElementById('ia-status-box');
+  const resultBtn = document.querySelector('a[href*="/result/"]');
+
+  function poll() {
+    fetch(statusUrl, { credentials: 'same-origin' })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.corrige) {
+          iconEl.className = 'fa-solid fa-check-circle text-green-400';
+          if (data.paywall) {
+            // Correction terminée mais accès verrouillé — ne pas révéler la note
+            titleEl.textContent = 'Correction terminée !';
+            msgEl.textContent = 'Votre copie a été corrigée. Consultez votre résultat pour accéder à votre note.';
+          } else {
+            titleEl.textContent = 'Correction terminée !';
+            msgEl.textContent = data.note !== null
+              ? 'Votre note : ' + data.note + '/' + data.note_sur
+              : 'Votre résultat est disponible.';
+          }
+          boxEl.classList.remove('border-warning/30');
+          boxEl.classList.add('border-green-500/30');
+          if (resultBtn) resultBtn.classList.add('animate-pulse');
+          // Rediriger vers result_view qui gère lui-même le paywall
+          setTimeout(function() { window.location.href = data.result_url; }, 3000);
+        } else {
+          setTimeout(poll, data.en_correction ? 5000 : 4000);
+        }
+      })
+      .catch(function() { setTimeout(poll, 8000); });
+  }
+
+  setTimeout(poll, 3000);
+})();
+</script>
 {% endblock %}

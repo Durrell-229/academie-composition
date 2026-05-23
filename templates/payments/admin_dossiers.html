@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+{% block title %}Dossiers de candidature — Admin{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 py-8 space-y-6">
+
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-black text-gray-800">Dossiers de candidature</h1>
+      <p class="text-sm text-gray-500 mt-1">Gérez et validez les dossiers soumis par les candidats.</p>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="grid grid-cols-2 sm:grid-cols-5 gap-4">
+    <div class="bg-white rounded-2xl shadow p-4 text-center">
+      <p class="text-2xl font-black text-gray-800">{{ stats.total }}</p>
+      <p class="text-xs text-gray-500 font-bold uppercase mt-1">Total</p>
+    </div>
+    <div class="bg-orange-50 rounded-2xl shadow p-4 text-center">
+      <p class="text-2xl font-black text-orange-600">{{ stats.incomplets }}</p>
+      <p class="text-xs text-gray-500 font-bold uppercase mt-1">Incomplets</p>
+    </div>
+    <div class="bg-blue-50 rounded-2xl shadow p-4 text-center">
+      <p class="text-2xl font-black text-blue-600">{{ stats.soumis }}</p>
+      <p class="text-xs text-gray-500 font-bold uppercase mt-1">À valider</p>
+    </div>
+    <div class="bg-green-50 rounded-2xl shadow p-4 text-center">
+      <p class="text-2xl font-black text-green-600">{{ stats.valides }}</p>
+      <p class="text-xs text-gray-500 font-bold uppercase mt-1">Validés</p>
+    </div>
+    <div class="bg-red-50 rounded-2xl shadow p-4 text-center">
+      <p class="text-2xl font-black text-red-600">{{ stats.rejetes }}</p>
+      <p class="text-xs text-gray-500 font-bold uppercase mt-1">Rejetés</p>
+    </div>
+  </div>
+
+  <!-- Filtres -->
+  <form method="get" class="flex flex-wrap gap-3 bg-white p-4 rounded-2xl shadow">
+    <select name="statut" class="border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+      <option value="">Tous les statuts</option>
+      {% for val, label in statuts %}
+      <option value="{{ val }}" {% if statut_filtre == val %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <select name="type" class="border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+      <option value="">Tous les types</option>
+      <option value="academie" {% if type_filtre == 'academie' %}selected{% endif %}>Académie Numérique</option>
+      <option value="libre" {% if type_filtre == 'libre' %}selected{% endif %}>Candidat Libre</option>
+    </select>
+    <button type="submit" class="bg-blue-600 text-white font-bold px-5 py-2 rounded-xl hover:bg-blue-700 transition text-sm">
+      Filtrer
+    </button>
+    {% if statut_filtre or type_filtre %}
+    <a href="{% url 'payments:admin_dossiers_candidature' %}" class="text-gray-500 hover:text-gray-700 text-sm flex items-center">
+      Réinitialiser
+    </a>
+    {% endif %}
+  </form>
+
+  <!-- Tableau -->
+  <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 border-b">
+        <tr>
+          <th class="text-left px-5 py-4 font-bold text-gray-600">Candidat</th>
+          <th class="text-left px-5 py-4 font-bold text-gray-600">Type</th>
+          <th class="text-left px-5 py-4 font-bold text-gray-600">Statut</th>
+          <th class="text-left px-5 py-4 font-bold text-gray-600">Documents</th>
+          <th class="text-left px-5 py-4 font-bold text-gray-600">Dernière mise à jour</th>
+          <th class="text-center px-5 py-4 font-bold text-gray-600">Action</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        {% for dossier in dossiers %}
+        <tr class="hover:bg-gray-50 transition">
+          <td class="px-5 py-4">
+            <p class="font-bold text-gray-800">{{ dossier.eleve.get_full_name }}</p>
+            <p class="text-xs text-gray-500">{{ dossier.eleve.email }}</p>
+          </td>
+          <td class="px-5 py-4">
+            {% with tc=dossier.eleve.type_candidat %}
+            <span class="px-2 py-1 rounded-full text-xs font-bold
+              {% if tc == 'academie' %}bg-blue-100 text-blue-700
+              {% elif tc == 'libre' %}bg-purple-100 text-purple-700
+              {% else %}bg-gray-100 text-gray-500{% endif %}">
+              {% if tc == 'academie' %}Académie{% elif tc == 'libre' %}Libre{% else %}—{% endif %}
+            </span>
+            {% endwith %}
+          </td>
+          <td class="px-5 py-4">
+            <span class="px-3 py-1 rounded-full text-xs font-bold
+              {% if dossier.statut == 'valide' %}bg-green-100 text-green-700
+              {% elif dossier.statut == 'rejete' %}bg-red-100 text-red-700
+              {% elif dossier.statut == 'soumis' %}bg-blue-100 text-blue-700
+              {% else %}bg-orange-100 text-orange-700{% endif %}">
+              {{ dossier.get_statut_display }}
+            </span>
+          </td>
+          <td class="px-5 py-4">
+            {% with total=dossier.soumissions.count valides=dossier.soumissions.filter %}
+            <div class="flex items-center gap-2">
+              <div class="flex gap-1">
+                {% for s in dossier.soumissions.all %}
+                <span class="w-2.5 h-2.5 rounded-full
+                  {% if s.statut == 'valide' %}bg-green-400
+                  {% elif s.statut == 'rejete' %}bg-red-400
+                  {% else %}bg-yellow-400{% endif %}" title="{{ s.document_requis.nom }}"></span>
+                {% endfor %}
+              </div>
+              <span class="text-xs text-gray-500">{{ dossier.soumissions.count }} doc(s)</span>
+            </div>
+            {% endwith %}
+          </td>
+          <td class="px-5 py-4 text-gray-500 text-xs">
+            {{ dossier.date_modification|date:"d/m/Y H:i" }}
+          </td>
+          <td class="px-5 py-4 text-center">
+            <a href="{% url 'payments:admin_detail_dossier' dossier.id %}"
+               class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-1.5 rounded-lg text-xs transition">
+              Examiner
+            </a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" class="px-5 py-12 text-center text-gray-500">
+            Aucun dossier trouvé.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+{% endblock %}

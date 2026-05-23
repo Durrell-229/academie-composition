@@ -1,0 +1,184 @@
+{% extends 'base.html' %}
+{% block title %}Dossier — {{ dossier.eleve.get_full_name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-8 space-y-6">
+
+  <!-- En-tête -->
+  <div class="flex items-center justify-between">
+    <div>
+      <a href="{% url 'payments:admin_dossiers_candidature' %}" class="text-sm text-gray-500 hover:text-gray-700">← Retour aux dossiers</a>
+      <h1 class="text-2xl font-black text-gray-800 mt-1">{{ dossier.eleve.get_full_name }}</h1>
+      <p class="text-sm text-gray-500">{{ dossier.eleve.email }} · {{ dossier.eleve.phone|default:"Tél. non renseigné" }}</p>
+    </div>
+    <span class="px-4 py-2 rounded-full text-sm font-black
+      {% if dossier.statut == 'valide' %}bg-green-100 text-green-700
+      {% elif dossier.statut == 'rejete' %}bg-red-100 text-red-700
+      {% elif dossier.statut == 'soumis' %}bg-blue-100 text-blue-700
+      {% else %}bg-orange-100 text-orange-700{% endif %}">
+      {{ dossier.get_statut_display }}
+    </span>
+  </div>
+
+  <!-- Infos candidat -->
+  <div class="bg-white rounded-2xl shadow-lg p-6 grid grid-cols-2 sm:grid-cols-4 gap-4">
+    <div class="bg-gray-50 rounded-xl p-3 text-center">
+      <p class="text-xs text-gray-500 font-bold uppercase">Type</p>
+      <p class="font-black text-gray-800 mt-1 text-sm">
+        {% if dossier.eleve.type_candidat == 'academie' %}Académie Numérique
+        {% elif dossier.eleve.type_candidat == 'libre' %}Candidat Libre
+        {% else %}Non défini{% endif %}
+      </p>
+    </div>
+    <div class="bg-gray-50 rounded-xl p-3 text-center">
+      <p class="text-xs text-gray-500 font-bold uppercase">Classe</p>
+      <p class="font-black text-gray-800 mt-1 text-sm">{{ dossier.eleve.classe|default:"—" }}</p>
+    </div>
+    <div class="bg-gray-50 rounded-xl p-3 text-center">
+      <p class="text-xs text-gray-500 font-bold uppercase">Matricule</p>
+      <p class="font-black text-gray-800 mt-1 text-sm font-mono">{{ dossier.eleve.matricule|default:"—" }}</p>
+    </div>
+    <div class="bg-gray-50 rounded-xl p-3 text-center">
+      <p class="text-xs text-gray-500 font-bold uppercase">Soumis le</p>
+      <p class="font-black text-gray-800 mt-1 text-sm">
+        {% if dossier.date_soumission %}{{ dossier.date_soumission|date:"d/m/Y" }}{% else %}—{% endif %}
+      </p>
+    </div>
+  </div>
+
+  <!-- Documents soumis -->
+  <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-100">
+      <h2 class="font-bold text-gray-800">Documents soumis</h2>
+    </div>
+    <div class="divide-y divide-gray-100">
+      {% for s in soumissions %}
+      <div class="p-6 flex flex-col sm:flex-row gap-4">
+        <!-- Statut icône -->
+        <div class="w-10 h-10 rounded-xl flex items-center justify-center text-lg flex-shrink-0
+          {% if s.statut == 'valide' %}bg-green-100
+          {% elif s.statut == 'rejete' %}bg-red-100
+          {% else %}bg-yellow-100{% endif %}">
+          {% if s.statut == 'valide' %}✅{% elif s.statut == 'rejete' %}❌{% else %}⏳{% endif %}
+        </div>
+
+        <!-- Info -->
+        <div class="flex-1">
+          <div class="flex flex-wrap items-center gap-2">
+            <p class="font-bold text-gray-800">{{ s.document_requis.nom }}</p>
+            <span class="text-xs px-2 py-0.5 rounded-full font-bold
+              {% if s.statut == 'valide' %}bg-green-100 text-green-700
+              {% elif s.statut == 'rejete' %}bg-red-100 text-red-700
+              {% else %}bg-yellow-100 text-yellow-700{% endif %}">
+              {{ s.get_statut_display }}
+            </span>
+          </div>
+          <p class="text-xs text-gray-400 mt-1">
+            {{ s.nom_fichier_original|default:"fichier" }} · Soumis le {{ s.date_soumission|date:"d/m/Y à H:i" }}
+          </p>
+          {% if s.commentaire_admin %}
+          <p class="text-sm text-gray-600 mt-1 italic">« {{ s.commentaire_admin }} »</p>
+          {% endif %}
+        </div>
+
+        <!-- Actions -->
+        <div class="flex flex-col gap-2 flex-shrink-0">
+          <a href="{{ s.fichier.url }}" target="_blank"
+             class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold px-4 py-2 rounded-xl text-xs transition text-center">
+            Voir le fichier
+          </a>
+          {% if s.statut != 'valide' %}
+          <button onclick="ouvrirValidation('{{ s.id }}', 'valider_doc', '{{ s.document_requis.nom|escapejs }}')"
+                  class="bg-green-100 hover:bg-green-200 text-green-700 font-bold px-4 py-2 rounded-xl text-xs transition">
+            ✓ Valider
+          </button>
+          {% endif %}
+          {% if s.statut != 'rejete' %}
+          <button onclick="ouvrirValidation('{{ s.id }}', 'rejeter_doc', '{{ s.document_requis.nom|escapejs }}')"
+                  class="bg-red-100 hover:bg-red-200 text-red-700 font-bold px-4 py-2 rounded-xl text-xs transition">
+            ✕ Rejeter
+          </button>
+          {% endif %}
+        </div>
+      </div>
+      {% empty %}
+      <div class="p-12 text-center text-gray-500">Aucun document soumis.</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Décision sur le dossier complet -->
+  {% if dossier.statut == 'soumis' %}
+  <div class="bg-white rounded-2xl shadow-lg p-6 border-2 border-blue-200">
+    <h2 class="font-bold text-gray-800 mb-4">Décision finale sur le dossier</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="valider_dossier">
+        <textarea name="commentaire" rows="3" placeholder="Commentaire optionnel…"
+                  class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm mb-3 focus:ring-2 focus:ring-green-400 focus:outline-none"></textarea>
+        <button type="submit"
+                class="w-full bg-green-600 hover:bg-green-700 text-white font-black py-3 rounded-xl transition">
+          ✓ Valider le dossier complet
+        </button>
+      </form>
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="rejeter_dossier">
+        <textarea name="commentaire" rows="3" placeholder="Motif du rejet (obligatoire)…" required
+                  class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm mb-3 focus:ring-2 focus:ring-red-400 focus:outline-none"></textarea>
+        <button type="submit"
+                class="w-full bg-red-500 hover:bg-red-600 text-white font-black py-3 rounded-xl transition">
+          ✕ Rejeter le dossier
+        </button>
+      </form>
+    </div>
+    <p class="text-xs text-gray-400 mt-3">Le candidat sera notifié par email de la décision.</p>
+  </div>
+  {% endif %}
+
+</div>
+
+<!-- Modal validation/rejet document -->
+<div id="modal-val" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4">
+    <h2 class="text-lg font-black text-gray-800" id="modal-val-titre">Valider le document</h2>
+    <form method="post" id="modal-val-form">
+      {% csrf_token %}
+      <input type="hidden" name="action" id="modal-val-action">
+      <input type="hidden" name="soumission_id" id="modal-val-id">
+      <div class="mb-4">
+        <label class="block text-sm font-bold text-gray-700 mb-1">Commentaire (optionnel)</label>
+        <textarea name="commentaire" rows="3"
+                  class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                  placeholder="Message pour l'élève…"></textarea>
+      </div>
+      <div class="flex gap-3">
+        <button type="button" onclick="fermerModal()"
+                class="flex-1 bg-gray-100 text-gray-700 font-bold py-2.5 rounded-xl hover:bg-gray-200 transition">
+          Annuler
+        </button>
+        <button type="submit" id="modal-val-btn"
+                class="flex-1 font-bold py-2.5 rounded-xl transition text-white">
+          Confirmer
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function ouvrirValidation(soumissionId, action, nomDoc) {
+  const isValider = action === 'valider_doc';
+  document.getElementById('modal-val-titre').textContent = (isValider ? '✓ Valider : ' : '✕ Rejeter : ') + nomDoc;
+  document.getElementById('modal-val-action').value = action;
+  document.getElementById('modal-val-id').value = soumissionId;
+  const btn = document.getElementById('modal-val-btn');
+  btn.textContent = isValider ? 'Valider' : 'Rejeter';
+  btn.className = 'flex-1 font-bold py-2.5 rounded-xl transition text-white ' + (isValider ? 'bg-green-600 hover:bg-green-700' : 'bg-red-500 hover:bg-red-600');
+  document.getElementById('modal-val').classList.remove('hidden');
+}
+function fermerModal() { document.getElementById('modal-val').classList.add('hidden'); }
+document.getElementById('modal-val').addEventListener('click', e => { if (e.target === document.getElementById('modal-val')) fermerModal(); });
+</script>
+{% endblock %}

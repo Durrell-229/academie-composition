@@ -16,11 +16,22 @@ from django.views.decorators.http import require_http_methods
 
 from .models import (
     PlanAbonnementScolaire, AbonnementEleve, PaiementAbonnement,
-    ConfigurationFedaPay, PromotionAbonnement, FraisScolaire
+    ConfigurationFedaPay, PromotionAbonnement, FraisScolaire,
+    PaiementCorrectionUnitaire,
 )
-from schools.models import Etablissement, Classe
+from core.models import Organisation as Etablissement, Classe
 from .fedapay_service import FedaPayService, FedaPayCheckout
+
+
+def _get_org_plateforme():
+    """Retourne (ou crée) l'organisation globale unique de la plateforme."""
+    org, _ = Etablissement.objects.get_or_create(
+        code='PLATEFORME',
+        defaults={'nom': 'Académie Numérique', 'pays': 'Bénin', 'devise': 'XOF', 'is_active': True}
+    )
+    return org
 from .tasks import traiter_paiement_fedapay
+from .utils import paiements_actifs
 from core.redis_tasks import get_task_result
 
 logger = logging.getLogger(__name__)
@@ -76,17 +87,37 @@ def souscrire_abonnement(request):
         return redirect('payments:abonnements')
     
     plan = get_object_or_404(PlanAbonnementScolaire, slug=plan_slug, is_actif=True)
-    
+
     # Vérifier la config FedaPay via l'établissement du plan
     etablissement = plan.etablissement
-    if not hasattr(etablissement, 'config_fedapay'):
+
+    # MODE GRATUIT : si aucune configuration FedaPay n'est active,
+    # activer l'abonnement directement sans paiement.
+    if not paiements_actifs(etablissement):
+        abonnement, created = AbonnementEleve.objects.get_or_create(
+            eleve=request.user,
+            plan=plan,
+            defaults={
+                'etablissement': _get_org_plateforme(),
+                'statut': AbonnementEleve.StatutAbonnement.ACTIF,
+                'date_debut': timezone.now(),
+                'date_fin': timezone.now() + __import__('datetime').timedelta(days=plan.duree_jours),
+            }
+        )
+        if not created and abonnement.statut != AbonnementEleve.StatutAbonnement.ACTIF:
+            abonnement.statut = AbonnementEleve.StatutAbonnement.ACTIF
+            abonnement.date_debut = timezone.now()
+            abonnement.date_fin = timezone.now() + __import__('datetime').timedelta(days=plan.duree_jours)
+            abonnement.save(update_fields=['statut', 'date_debut', 'date_fin'])
+        messages.success(request, f"Accès gratuit activé — plan {plan.nom}. Aucun paiement requis.")
+        return redirect('payments:mes_abonnements')
+
+    config = getattr(etablissement, 'config_fedapay', None)
+    if config is None:
         messages.warning(request, "Le paiement FedaPay n'est pas encore configuré pour cet établissement.")
-        config = None
-    else:
-        config = etablissement.config_fedapay
-        if not config.is_actif:
-            messages.error(request, "Le système de paiement est temporairement indisponible.")
-            return redirect('payments:abonnements')
+    elif not config.is_actif:
+        messages.error(request, "Le système de paiement est temporairement indisponible.")
+        return redirect('payments:abonnements')
     
     # Calculer le prix avec promotion
     prix_final = plan.prix_mensuel
@@ -175,6 +206,11 @@ def initier_paiement_fedapay(request):
             date_prochain_paiement=timezone.now() + timedelta(days=plan.duree_jours) if plan.type_plan != 'annuel' else None
         )
         
+        # Vérifier la config FedaPay avant de créer quoi que ce soit
+        config = getattr(etablissement, 'config_fedapay', None)
+        if not config or not config.is_actif:
+            return JsonResponse({'success': False, 'error': 'Le système de paiement n\'est pas configuré pour cet établissement.'})
+
         # Créer le paiement
         paiement = PaiementAbonnement.objects.create(
             abonnement=abonnement,
@@ -186,15 +222,34 @@ def initier_paiement_fedapay(request):
             telephone_paiement=telephone,
             reference_transaction=f"ABN-{abonnement.numero_abonnement}-{timezone.now().strftime('%Y%m%d%H%M%S')}"
         )
-        
-        # Lancer la tâche de paiement
-        result = traiter_paiement_fedapay.delay(str(paiement.id))
-        
+
+        # Appeler FedaPay SYNCHRONEMENT — on a besoin de l'URL de paiement maintenant
+        fedapay = FedaPayService(etablissement)
+
+        customer_id = abonnement.fedapay_customer_id
+        if not customer_id:
+            customer_id = fedapay.creer_customer(request.user)
+            if customer_id:
+                abonnement.fedapay_customer_id = customer_id
+                abonnement.save(update_fields=['fedapay_customer_id'])
+
+        callback_url = f"{settings.SITE_URL}/payments/paiement/succes/"
+        result = fedapay.creer_transaction(paiement, customer_id, callback_url)
+
+        if not result or not result.get('payment_url'):
+            paiement.statut = PaiementAbonnement.StatutPaiement.ECHEC
+            paiement.derniere_erreur = 'Impossible d\'obtenir l\'URL de paiement FedaPay'
+            paiement.save(update_fields=['statut', 'derniere_erreur'])
+            return JsonResponse({'success': False, 'error': 'Impossible d\'initier le paiement. Veuillez réessayer.'})
+
+        paiement.statut = PaiementAbonnement.StatutPaiement.EN_COURS
+        paiement.save(update_fields=['statut'])
+
         return JsonResponse({
             'success': True,
             'paiement_id': str(paiement.id),
-            'task_id': result,
-            'message': 'Paiement initié'
+            'payment_url': result['payment_url'],
+            'transaction_id': result['transaction_id'],
         })
         
     except Exception as e:
@@ -237,48 +292,147 @@ def verifier_statut_paiement(request, paiement_id):
 @require_http_methods(["POST"])
 def fedapay_webhook(request):
     """
-    Webhook pour recevoir les notifications de FedaPay
+    Webhook FedaPay : traite les paiements d'abonnement et de tranches.
     """
+    import hmac as hmac_module
+    import hashlib
+    from django.db import transaction as db_transaction
+
     try:
         payload = request.body
         signature = request.headers.get('X-FedaPay-Signature', '')
-        
-        # Récupérer les données
         data = json.loads(payload)
-        
-        # Trouver la configuration correspondante
-        # On doit identifier l'établissement à partir des métadonnées
-        metadata = data.get('data', {}).get('metadata', {})
-        paiement_id = metadata.get('paiement_id')
-        
-        if paiement_id:
-            paiement = get_object_or_404(PaiementAbonnement, id=paiement_id)
-            config = paiement.abonnement.etablissement.config_fedapay
-            
-            # Vérifier la signature
-            import hmac
-            import hashlib
-            
-            expected_signature = hmac.new(
-                config.webhook_secret.encode('utf-8'),
-                payload,
-                hashlib.sha256
-            ).hexdigest()
-            
-            if not hmac.compare_digest(expected_signature, signature):
-                logger.warning("Signature webhook invalide")
-                return HttpResponse(status=401)
-            
-            # Traiter le webhook
-            service = FedaPayService(paiement.abonnement.etablissement)
-            service.traiter_webhook(data)
-            
-            return HttpResponse(status=200)
-        
-        return HttpResponse(status=400)
-        
+
+        event_type = data.get('name', '')
+        transaction_data = data.get('data', {})
+        metadata = transaction_data.get('metadata', {})
+        fedapay_transaction_id = str(transaction_data.get('id', ''))
+        statut_fedapay = transaction_data.get('status', '')
+
+        # ── Identifier le paiement via l'ID de transaction FedaPay ──
+        from .models import PaiementAbonnement, TranchePaiement, AbonnementEleve, PlanEchelonnement
+
+        paiement = PaiementAbonnement.objects.filter(
+            fedapay_transaction_id=fedapay_transaction_id
+        ).select_related('abonnement__etablissement').first()
+
+        tranche = TranchePaiement.objects.filter(
+            fedapay_transaction_id=fedapay_transaction_id
+        ).select_related('plan__abonnement__etablissement').first()
+
+        etablissement = None
+        if paiement:
+            etablissement = paiement.abonnement.etablissement
+        elif tranche:
+            etablissement = tranche.plan.abonnement.etablissement
+
+        # ── Vérifier la signature si un secret est configuré ──
+        if etablissement:
+            config = getattr(etablissement, 'config_fedapay', None)
+            if config and config.webhook_secret and signature:
+                expected = hmac_module.new(
+                    config.webhook_secret.encode('utf-8'),
+                    payload,
+                    hashlib.sha256
+                ).hexdigest()
+                if not hmac_module.compare_digest(expected, signature):
+                    logger.warning(f"Signature webhook invalide pour établissement {etablissement.id}")
+                    return HttpResponse(status=401)
+
+        # ── Identifier aussi les paiements de correction unitaire ──
+        from .models import PaiementCorrectionUnitaire
+        paiement_correction = PaiementCorrectionUnitaire.objects.filter(
+            fedapay_transaction_id=fedapay_transaction_id
+        ).select_related('session__eleve', 'session__exam').first()
+
+        if paiement_correction and not etablissement:
+            config_global = ConfigurationFedaPay.objects.filter(is_actif=True).first()
+            if config_global and config_global.webhook_secret and signature:
+                import hmac as _hmac
+                expected = _hmac.new(
+                    config_global.webhook_secret.encode('utf-8'),
+                    payload,
+                    hashlib.sha256
+                ).hexdigest()
+                if not _hmac.compare_digest(expected, signature):
+                    logger.warning("Signature webhook invalide pour paiement correction unitaire")
+                    return HttpResponse(status=401)
+
+        # ── Traitement si paiement approuvé ──
+        if statut_fedapay == 'approved':
+            with db_transaction.atomic():
+
+                # Cas 0 : paiement de correction unitaire (paywall)
+                if paiement_correction and paiement_correction.statut != PaiementCorrectionUnitaire.Statut.SUCCES:
+                    paiement_correction.statut = PaiementCorrectionUnitaire.Statut.SUCCES
+                    paiement_correction.fedapay_webhook_data = data
+                    paiement_correction.date_paiement = timezone.now()
+                    paiement_correction.save(update_fields=['statut', 'fedapay_webhook_data', 'date_paiement'])
+
+                    from compositions.access import debloquer_correction
+                    debloquer_correction(paiement_correction.session)
+
+                    # Répartition automatique des fonds
+                    try:
+                        from .repartition import repartir_correction
+                        repartir_correction(paiement_correction)
+                    except Exception as rep_err:
+                        logger.error(f"Erreur répartition correction {paiement_correction.id}: {rep_err}")
+
+                    from notifications.utils import send_notification
+                    try:
+                        send_notification(
+                            user=paiement_correction.eleve,
+                            title="Correction débloquée !",
+                            message=f"Votre correction pour '{paiement_correction.session.exam.titre}' est maintenant accessible.",
+                            type='BULLETIN',
+                        )
+                    except Exception:
+                        pass
+                    logger.info(f"Correction {paiement_correction.session.id} débloquée via webhook.")
+
+                # Cas 1 : paiement d'abonnement classique
+                if paiement and paiement.statut != PaiementAbonnement.StatutPaiement.SUCCES:
+                    paiement.statut = PaiementAbonnement.StatutPaiement.SUCCES
+                    paiement.fedapay_webhook_data = data
+                    paiement.date_paiement = timezone.now()
+                    paiement.date_confirmation = timezone.now()
+                    paiement.save(update_fields=['statut', 'fedapay_webhook_data', 'date_paiement', 'date_confirmation'])
+
+                    abonnement = paiement.abonnement
+                    abonnement.statut = AbonnementEleve.StatutAbonnement.ACTIF
+                    abonnement.dernier_paiement = timezone.now()
+                    abonnement.montant_paye_total += paiement.montant
+                    abonnement.nombre_paiements += 1
+                    abonnement.save(update_fields=['statut', 'dernier_paiement', 'montant_paye_total', 'nombre_paiements'])
+                    logger.info(f"Abonnement {abonnement.id} activé via webhook.")
+
+                # Cas 2 : paiement d'une tranche échelonnée
+                if tranche and tranche.statut != TranchePaiement.Statut.PAYE:
+                    tranche.statut = TranchePaiement.Statut.PAYE
+                    tranche.date_paiement = timezone.now()
+                    tranche.save(update_fields=['statut', 'date_paiement'])
+
+                    abonnement = tranche.plan.abonnement
+                    # Activer à la première tranche payée
+                    if tranche.numero == 1 and abonnement.statut != AbonnementEleve.StatutAbonnement.ACTIF:
+                        abonnement.statut = AbonnementEleve.StatutAbonnement.ACTIF
+                    abonnement.dernier_paiement = timezone.now()
+                    abonnement.montant_paye_total += tranche.montant
+                    abonnement.nombre_paiements += 1
+                    abonnement.save(update_fields=['statut', 'dernier_paiement', 'montant_paye_total', 'nombre_paiements'])
+
+                    # Marquer le plan comme soldé si toutes les tranches sont payées
+                    plan_ech = tranche.plan
+                    if plan_ech.tranches.filter(statut=TranchePaiement.Statut.PAYE).count() == plan_ech.nombre_tranches:
+                        plan_ech.statut = PlanEchelonnement.Statut.SOLDE
+                        plan_ech.save(update_fields=['statut'])
+                    logger.info(f"Tranche {tranche.numero} payée via webhook.")
+
+        return HttpResponse(status=200)
+
     except Exception as e:
-        logger.error(f"Erreur webhook FedaPay: {e}")
+        logger.error(f"Erreur webhook FedaPay: {e}", exc_info=True)
         return HttpResponse(status=500)
 
 
@@ -378,15 +532,15 @@ def admin_config_fedapay(request):
     """
     Configuration FedaPay par établissement (Super Admin)
     """
-    etablissements = Etablissement.objects.all()
-    
+    etablissements = [_get_org_plateforme()]
+
     configs = []
     for etab in etablissements:
         config, created = ConfigurationFedaPay.objects.get_or_create(
             etablissement=etab,
             defaults={
                 'nom_marchand': etab.nom,
-                'email_marchand': etab.email or 'contact@exemple.com',
+                'email_marchand': 'contact@exemple.com',
                 'environnement': 'sandbox',
                 'cle_api_publique': '',
                 'cle_api_secrete': '',
@@ -440,11 +594,11 @@ def admin_save_config_fedapay(request):
 def admin_edit_plan(request, plan_id):
     """Modifier un plan d'abonnement existant"""
     plan = get_object_or_404(PlanAbonnementScolaire, id=plan_id)
-    etablissements = Etablissement.objects.filter(is_actif=True)
+    etablissements = [_get_org_plateforme()]
 
     if request.method == 'POST':
         try:
-            plan.etablissement_id = request.POST.get('etablissement')
+            plan.etablissement = _get_org_plateforme()
             plan.nom = request.POST.get('nom')
             plan.slug = request.POST.get('slug')
             plan.niveau = request.POST.get('niveau', 'standard')
@@ -500,7 +654,7 @@ def admin_plans_abonnement(request):
     Gestion des plans d'abonnement (Super Admin)
     """
     plans = PlanAbonnementScolaire.objects.all().select_related('etablissement')
-    etablissements = Etablissement.objects.filter(is_actif=True)
+    etablissements = [_get_org_plateforme()]
     
     context = {
         'plans': plans,
@@ -520,7 +674,7 @@ def admin_create_plan(request):
     """
     try:
         plan = PlanAbonnementScolaire.objects.create(
-            etablissement_id=request.POST.get('etablissement'),
+            etablissement=_get_org_plateforme(),
             nom=request.POST.get('nom'),
             slug=request.POST.get('slug'),
             niveau=request.POST.get('niveau', 'standard'),
@@ -698,9 +852,9 @@ def confirmer_paiement_fedapay(request):
 def admin_frais_list(request):
     """Liste des frais scolaires avec filtres par établissement"""
     etablissement_id = request.GET.get('etablissement')
-    frais_qs = FraisScolaire.objects.select_related('etablissement').prefetch_related('classes_concernees')
+    frais_qs = FraisScolaire.objects.select_related('etablissement')
 
-    etablissements = Etablissement.objects.filter(is_actif=True)
+    etablissements = [_get_org_plateforme()]
 
     if etablissement_id:
         frais_qs = frais_qs.filter(etablissement_id=etablissement_id)
@@ -717,8 +871,8 @@ def admin_frais_list(request):
 @staff_member_required
 def admin_frais_create(request):
     """Créer un nouveau frais scolaire"""
-    etablissements = Etablissement.objects.filter(is_actif=True)
-    classes = Classe.objects.select_related('etablissement').all()
+    etablissements = [_get_org_plateforme()]
+    classes = Classe.objects.all()
 
     if request.method == 'POST':
         try:
@@ -735,9 +889,9 @@ def admin_frais_create(request):
                 nombre_echeances=request.POST.get('nombre_echeances', 1),
                 is_actif=request.POST.get('is_actif') == 'on',
             )
-            classes_ids = request.POST.getlist('classes_concernees')
-            if classes_ids:
-                frais.classes_concernees.set(classes_ids)
+            classes_noms = request.POST.getlist('classes_concernees')
+            frais.classes_concernees = classes_noms if classes_noms else None
+            frais.save(update_fields=['classes_concernees'])
             messages.success(request, f'Frais "{frais.nom}" créé avec succès.')
             return redirect('payments:admin_frais_list')
         except Exception as e:
@@ -757,8 +911,8 @@ def admin_frais_create(request):
 def admin_frais_edit(request, frais_id):
     """Modifier un frais scolaire existant"""
     frais = get_object_or_404(FraisScolaire, id=frais_id)
-    etablissements = Etablissement.objects.filter(is_actif=True)
-    classes = Classe.objects.select_related('etablissement').all()
+    etablissements = [_get_org_plateforme()]
+    classes = Classe.objects.all()
 
     if request.method == 'POST':
         try:
@@ -772,9 +926,9 @@ def admin_frais_edit(request, frais_id):
             frais.est_paiement_unique = request.POST.get('est_paiement_unique') == 'on'
             frais.nombre_echeances = request.POST.get('nombre_echeances', 1)
             frais.is_actif = request.POST.get('is_actif') == 'on'
+            classes_noms = request.POST.getlist('classes_concernees')
+            frais.classes_concernees = classes_noms if classes_noms else None
             frais.save()
-            classes_ids = request.POST.getlist('classes_concernees')
-            frais.classes_concernees.set(classes_ids)
             messages.success(request, f'Frais "{frais.nom}" mis à jour.')
             return redirect('payments:admin_frais_list')
         except Exception as e:
@@ -785,7 +939,7 @@ def admin_frais_edit(request, frais_id):
         'etablissements': etablissements,
         'classes': classes,
         'types_frais': FraisScolaire.TypeFrais.choices,
-        'selected_classes': [str(pk) for pk in frais.classes_concernees.values_list('id', flat=True)],
+        'selected_classes': frais.classes_concernees or [],
         'action': 'Modifier',
     }
     return render(request, 'payments/admin_frais_form.html', context)
@@ -809,6 +963,8 @@ def admin_frais_delete(request, frais_id):
 # PAYWALL — PAIEMENT CORRECTION UNITAIRE
 # ═══════════════════════════════════════════════════════════════
 
+@login_required
+@require_http_methods(["POST"])
 @login_required
 @require_http_methods(["POST"])
 def initier_paiement_correction(request, session_id):
@@ -850,7 +1006,10 @@ def initier_paiement_correction(request, session_id):
                     'Authorization': f'Bearer {config.cle_api_secrete}',
                     'Content-Type': 'application/json',
                 }
-                callback_url = request.build_absolute_uri(f'/payments/correction/callback/{paiement_obj.id}/')
+                from django.urls import reverse
+                callback_url = request.build_absolute_uri(
+                    reverse('payments:correction_paiement_callback', args=[str(paiement_obj.id)])
+                )
                 payload = {
                     'description': f'Correction composition — {session.exam.titre}',
                     'amount': {'total': int(montant), 'currency': 'XOF'},
@@ -881,3 +1040,179 @@ def initier_paiement_correction(request, session_id):
     except Exception as e:
         logger.error(f"Erreur initier_paiement_correction: {e}")
         return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+def correction_paiement_callback(request, paiement_correction_id):
+    """
+    Callback FedaPay après paiement correction unitaire (redirection navigateur).
+    Vérifie le statut de la transaction et débloque si approuvé.
+    """
+    from .models import PaiementCorrectionUnitaire
+    from compositions.access import debloquer_correction, verifier_acces_correction
+
+    try:
+        paiement_obj = get_object_or_404(PaiementCorrectionUnitaire, id=paiement_correction_id, eleve=request.user)
+        session = paiement_obj.session
+
+        # Si le webhook a déjà traité le paiement
+        if paiement_obj.statut == PaiementCorrectionUnitaire.Statut.SUCCES:
+            messages.success(request, "Correction débloquée ! Vous pouvez consulter votre résultat.")
+            return redirect('compositions:result_detail', session_id=session.id)
+
+        # Vérification active via l'API FedaPay
+        if paiement_obj.fedapay_transaction_id:
+            config = ConfigurationFedaPay.objects.filter(is_actif=True).first()
+            if config:
+                service = FedaPayService.__new__(FedaPayService)
+                service.etablissement = None
+                service.config = config
+                status = service.verifier_transaction(paiement_obj.fedapay_transaction_id)
+                if status and status.get('status') == 'approved':
+                    paiement_obj.statut = PaiementCorrectionUnitaire.Statut.SUCCES
+                    paiement_obj.date_paiement = timezone.now()
+                    paiement_obj.save(update_fields=['statut', 'date_paiement'])
+                    debloquer_correction(session)
+                    messages.success(request, "Paiement confirmé ! Correction débloquée.")
+                    return redirect('compositions:result_detail', session_id=session.id)
+
+        messages.warning(request, "Paiement en cours de traitement. Revenez dans quelques instants.")
+        return redirect('compositions:result_detail', session_id=session.id)
+
+    except Exception as e:
+        logger.error(f"Erreur callback correction: {e}")
+        messages.error(request, "Erreur lors de la vérification du paiement.")
+        return redirect('payments:abonnements')
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# GESTION PAIEMENTS ADMIN — page unifiée (remplace Django admin)
+# ═══════════════════════════════════════════════════════════════════════
+
+@staff_member_required
+def admin_gestion_paiements(request):
+    """
+    Page de gestion paiements : abonnements, paiements, payouts corrections.
+    Onglets : abonnements | paiements | répartition | actions rapides
+    """
+    from django.db.models import Sum as _Sum, Count as _Count
+    now = timezone.now()
+    tab = request.GET.get('tab', 'abonnements')
+
+    # ── Abonnements ─────────────────────────────────────────────────
+    abo_qs = AbonnementEleve.objects.select_related('eleve', 'plan').order_by('-date_souscription')
+    statut_filtre = request.GET.get('statut_abo', '')
+    if statut_filtre:
+        abo_qs = abo_qs.filter(statut=statut_filtre)
+    abonnements = list(abo_qs[:50])
+
+    abo_stats = {
+        'actifs':   AbonnementEleve.objects.filter(statut='actif', date_fin__gt=now).count(),
+        'expires':  AbonnementEleve.objects.filter(statut='expire').count(),
+        'attente':  AbonnementEleve.objects.filter(statut='attente').count(),
+    }
+
+    # ── Paiements abonnements ────────────────────────────────────────
+    pay_abo_qs = PaiementAbonnement.objects.select_related('eleve', 'abonnement__plan').order_by('-date_creation')
+    statut_pay = request.GET.get('statut_pay', '')
+    if statut_pay:
+        pay_abo_qs = pay_abo_qs.filter(statut=statut_pay)
+    paiements_abo = list(pay_abo_qs[:50])
+
+    rev_abo_total = PaiementAbonnement.objects.filter(statut='succes').aggregate(s=_Sum('montant'))['s'] or 0
+
+    # ── Paiements corrections ────────────────────────────────────────
+    pay_cor_qs = PaiementCorrectionUnitaire.objects.select_related(
+        'session__eleve', 'session__exam'
+    ).order_by('-date_creation')
+    statut_cor = request.GET.get('statut_cor', '')
+    if statut_cor:
+        pay_cor_qs = pay_cor_qs.filter(statut=statut_cor)
+    paiements_corrections = list(pay_cor_qs[:50])
+
+    rev_cor_total = PaiementCorrectionUnitaire.objects.filter(statut='succes').aggregate(s=_Sum('montant'))['s'] or 0
+
+    # ── Payouts corrections (répartition) ───────────────────────────
+    from .models import PayoutCorrectionUnitaire
+    payout_qs = PayoutCorrectionUnitaire.objects.select_related(
+        'paiement__session__exam'
+    ).order_by('-date_creation')
+    statut_payout = request.GET.get('statut_payout', '')
+    if statut_payout:
+        payout_qs = payout_qs.filter(statut=statut_payout)
+    payouts_corrections = list(payout_qs[:60])
+
+    payout_stats = {
+        'attente':  PayoutCorrectionUnitaire.objects.filter(statut='en_attente').count(),
+        'envoye':   PayoutCorrectionUnitaire.objects.filter(statut='envoye').count(),
+        'echec':    PayoutCorrectionUnitaire.objects.filter(statut='echec').count(),
+        'distribue': PayoutCorrectionUnitaire.objects.filter(
+            statut__in=['envoye', 'succes']
+        ).aggregate(s=_Sum('montant'))['s'] or 0,
+    }
+
+    context = {
+        'tab': tab,
+        'abonnements': abonnements,
+        'abo_stats': abo_stats,
+        'statut_filtre': statut_filtre,
+        'paiements_abo': paiements_abo,
+        'statut_pay': statut_pay,
+        'rev_abo_total': rev_abo_total,
+        'paiements_corrections': paiements_corrections,
+        'statut_cor': statut_cor,
+        'rev_cor_total': rev_cor_total,
+        'payouts_corrections': payouts_corrections,
+        'statut_payout': statut_payout,
+        'payout_stats': payout_stats,
+        'prix_correction': getattr(settings, 'PRIX_CORRECTION_UNITAIRE', 500),
+    }
+    return render(request, 'payments/admin_gestion_paiements.html', context)
+
+
+@staff_member_required
+@require_http_methods(["POST"])
+def admin_toggle_abonnement(request, abonnement_id):
+    """Active ou suspend manuellement un abonnement."""
+    abo = get_object_or_404(AbonnementEleve, id=abonnement_id)
+    action = request.POST.get('action', '')
+    if action == 'activer':
+        abo.statut = 'actif'
+        abo.save(update_fields=['statut'])
+        messages.success(request, f"Abonnement de {abo.eleve.get_full_name()} activé.")
+    elif action == 'suspendre':
+        abo.statut = 'suspendu'
+        abo.save(update_fields=['statut'])
+        messages.success(request, f"Abonnement de {abo.eleve.get_full_name()} suspendu.")
+    return redirect(f"{request.META.get('HTTP_REFERER', '/payments/admin/gestion/')}#abonnements")
+
+
+@staff_member_required
+@require_http_methods(["POST"])
+def admin_retry_payout_correction(request, payout_id):
+    """Relance un payout correction en échec."""
+    from .models import PayoutCorrectionUnitaire
+    from .repartition import _envoyer_payout_fedapay
+    payout = get_object_or_404(PayoutCorrectionUnitaire, id=payout_id)
+    config = ConfigurationFedaPay.objects.filter(is_actif=True).first()
+    if not config:
+        messages.error(request, "Aucune config FedaPay active.")
+        return redirect('/payments/admin/gestion/?tab=repartition')
+    exam_titre = payout.paiement.session.exam.titre[:20] if payout.paiement else ''
+    result = _envoyer_payout_fedapay(
+        config,
+        telephone=payout.telephone,
+        montant=int(payout.montant),
+        description=f"Correction {exam_titre} — {payout.beneficiaire}",
+    )
+    if result['success']:
+        payout.statut = PayoutCorrectionUnitaire.Statut.ENVOYE
+        payout.fedapay_payout_id = result['payout_id'] or ''
+        payout.reponse_api = result['raw']
+        payout.date_traitement = timezone.now()
+        payout.message_erreur = ''
+        payout.save(update_fields=['statut', 'fedapay_payout_id', 'reponse_api', 'date_traitement', 'message_erreur'])
+        messages.success(request, f"Payout {payout.beneficiaire} relancé avec succès.")
+    else:
+        messages.error(request, f"Échec relance : {result['error']}")
+    return redirect('/payments/admin/gestion/?tab=repartition')

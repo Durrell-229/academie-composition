@@ -35,10 +35,32 @@ class Matiere(models.Model):
         return self.nom
 
 
+class Organisation(models.Model):
+    """
+    Tenant / organisation de la plateforme (remplace schools.Etablissement).
+    Concept simple : une école, une académie, ou tout groupe d'élèves.
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    nom = models.CharField(_('nom'), max_length=200)
+    code = models.CharField(_('code'), max_length=30, unique=True)
+    pays = models.CharField(_('pays'), max_length=100, default='Bénin')
+    devise = models.CharField(_('devise'), max_length=10, default='XOF')
+    logo = models.ImageField(_('logo'), upload_to='organisations/logos/', blank=True, null=True)
+    description = models.TextField(_('description'), blank=True)
+    is_active = models.BooleanField(_('actif'), default=True)
+    date_creation = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = _('organisation')
+        verbose_name_plural = _('organisations')
+        ordering = ['nom']
+
+    def __str__(self):
+        return self.nom
+
+
 class Classe(models.Model):
-    # Modèle léger utilisé par exams, devoirs, cours.
-    # schools.Classe est le modèle complet (avec Etablissement, NiveauScolaire, effectifs).
-    # Ne pas utiliser core.Classe pour les nouvelles apps — préférer schools.Classe.
+    """Classe légère utilisée par exams, devoirs, cours."""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     nom = models.CharField(_('nom'), max_length=200)
     niveau = models.CharField(_('niveau'), max_length=20, choices=NIVEAU_CHOICES)
@@ -46,11 +68,6 @@ class Classe(models.Model):
     annee_academique = models.CharField(_('année académique'), max_length=20)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    # Lien optionnel vers schools.Classe pour migration progressive
-    schools_classe = models.ForeignKey(
-        'schools.Classe', on_delete=models.SET_NULL,
-        null=True, blank=True, related_name='core_classes'
-    )
 
     class Meta:
         verbose_name = _('classe')

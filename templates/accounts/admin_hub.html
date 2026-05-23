@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+{% block title %}Espace Administration{% endblock %}
+{% block content %}
+<div class="min-h-screen px-4 py-8" style="background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);">
+<div class="max-w-6xl mx-auto space-y-8">
+
+  <div>
+    <h1 class="text-2xl font-black text-white">Espace Administration</h1>
+    <p class="text-slate-400 text-sm mt-1">Toutes les fonctions de gestion depuis le tableau de bord</p>
+  </div>
+
+  <!-- Alertes urgentes -->
+  {% if exams_pending > 0 or bourses_pending > 0 %}
+  <div class="rounded-2xl p-4 flex items-center gap-3" style="background:#1c0a00;border:1px solid #f97316;">
+    <i class="fa-solid fa-triangle-exclamation text-orange-400 text-lg"></i>
+    <span class="text-orange-300 font-semibold text-sm">
+      {% if exams_pending > 0 %}{{ exams_pending }} épreuve{{ exams_pending|pluralize }} en attente d'approbation{% endif %}
+      {% if exams_pending > 0 and bourses_pending > 0 %} · {% endif %}
+      {% if bourses_pending > 0 %}{{ bourses_pending }} bourse{{ bourses_pending|pluralize }} en attente{% endif %}
+    </span>
+    <a href="/gestion/approbations/" class="ml-auto text-xs font-bold text-orange-400 hover:underline">Traiter →</a>
+  </div>
+  {% endif %}
+
+  <!-- Grille des modules -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+
+    <!-- Utilisateurs -->
+    <a href="/accounts/admin/users/"
+       class="rounded-2xl p-6 flex flex-col gap-3 hover:-translate-y-1 transition-all duration-300 group"
+       style="background:#0c1929;border:1px solid #1e40af;">
+      <div class="flex items-center justify-between">
+        <div class="w-12 h-12 rounded-xl flex items-center justify-center text-2xl" style="background:#1e3a8a;">
+          <i class="fa-solid fa-users text-blue-400"></i>
+        </div>
+        <span class="text-3xl font-black text-white">{{ total_users }}</span>
+      </div>
+      <div>
+        <p class="font-black text-white text-lg">Utilisateurs</p>
+        <p class="text-slate-400 text-sm">{{ total_eleves }} élèves · {{ total_profs }} profs</p>
+      </div>
+      <div class="flex gap-2 text-xs mt-auto">
+        <span class="text-blue-400">Gérer · Activer · Rôles</span>
+        <i class="fa-solid fa-arrow-right ml-auto text-blue-400 group-hover:translate-x-1 transition"></i>
+      </div>
+    </a>
+
+    <!-- Approbations -->
+    <a href="/gestion/approbations/"
+       class="rounded-2xl p-6 flex flex-col gap-3 hover:-translate-y-1 transition-all duration-300 group
+              {% if exams_pending > 0 or cours_pending > 0 %}animate-pulse-border{% endif %}"
+       style="background:#1c0f00;border:1px solid {% if exams_pending > 0 %}#f97316{% else %}#78350f{% endif %};">
+      <div class="flex items-center justify-between">
+        <div class="w-12 h-12 rounded-xl flex items-center justify-center text-2xl" style="background:#7c2d12;">
+          <i class="fa-solid fa-clipboard-check text-orange-400"></i>
+        </div>
+        <span class="text-3xl font-black {% if exams_pending > 0 %}text-orange-400{% else %}text-white{% endif %}">
+          {{ exams_pending }}
+        </span>
+      </div>
+      <div>
+        <p class="font-black text-white text-lg">Approbations</p>
+        <p class="text-slate-400 text-sm">Épreuves · Cours en attente</p>
+      </div>
+      <div class="flex gap-2 text-xs mt-auto">
+        <span class="text-orange-400">Approuver · Rejeter</span>
+        <i class="fa-solid fa-arrow-right ml-auto text-orange-400 group-hover:translate-x-1 transition"></i>
+      </div>
+    </a>
+
+    <!-- Classes & Matières -->
+    <a href="/gestion/classes-matieres/"
+       class="rounded-2xl p-6 flex flex-col gap-3 hover:-translate-y-1 transition-all duration-300 group"
+       style="background:#0f1f0f;border:1px solid #166534;">
+      <div class="flex items-center justify-between">
+        <div class="w-12 h-12 rounded-xl flex items-center justify-center text-2xl" style="background:#14532d;">
+          <i class="fa-solid fa-graduation-cap text-emerald-400"></i>
+        </div>
+        <div class="text-right">
+          <p class="text-xl font-black text-emerald-400">{{ total_classes }}</p>
+          <p class="text-xs text-slate-400">classes</p>
+        </div>
+      </div>
+      <div>
+        <p class="font-black text-white text-lg">Classes &amp; Matières</p>
+        <p class="text-slate-400 text-sm">{{ total_matieres }} matières actives</p>
+      </div>
+      <div class="flex gap-2 text-xs mt-auto">
+        <span class="text-emerald-400">Créer · Modifier · Désactiver</span>
+        <i class="fa-solid fa-arrow-right ml-auto text-emerald-400 group-hover:translate-x-1 transition"></i>
+      </div>
+    </a>
+
+    <!-- Annonces -->
+    <a href="/gestion/annonces/"
+       class="rounded-2xl p-6 flex flex-col gap-3 hover:-translate-y-1 transition-all duration-300 group"
+       style="background:#0f172a;border:1px solid #4c1d95;">
+      <div class="flex items-center justify-between">
+        <div class="w-12 h-12 rounded-xl flex items-center justify-center text-2xl" style="background:#2e1065;">
+          <i class="fa-solid fa-bullhorn text-violet-400"></i>
+        </div>
+        <span class="text-3xl font-black text-violet-400">{{ annonces_actives }}</span>
+      </div>
+      <div>
+        <p class="font-black text-white text-lg">Annonces Globales</p>
+        <p class="text-slate-400 text-sm">Affiché sur toute la plateforme</p>
+      </div>
+      <div class="flex gap-2 text-xs mt-auto">
+        <span class="text-violet-400">Créer · Activer · Supprimer</span>
+        <i class="fa-solid fa-arrow-right ml-auto text-violet-400 group-hover:translate-x-1 transition"></i>
+      </div>
+    </a>
+
+    <!-- Bourses -->
+    <a href="/gestion/bourses/"
+       class="rounded-2xl p-6 flex flex-col gap-3 hover:-translate-y-1 transition-all duration-300 group"
+       style="background:#0f1520;border:1px solid #1e3a8a;">
+      <div class="flex items-center justify-between">
+        <div class="w-12 h-12 rounded-xl flex items-center justify-center text-2xl" style="background:#1e3a8a;">
+          <i class="fa-solid fa-hand-holding-dollar text-blue-400"></i>
+        </div>
+        <span class="text-3xl font-black {% if bourses_pending > 0 %}text-amber-400{% else %}text-white{% endif %}">
+          {{ bourses_pending }}
+        </span>
+      </div>
+      <div>
+        <p class="font-black text-white text-lg">Bourses Scolaires</p>
+        <p class="text-slate-400 text-sm">Demandes en attente de décision</p>
+      </div>
+      <div class="flex gap-2 text-xs mt-auto">
+        <span class="text-blue-400">Approuver · Refuser</span>
+        <i class="fa-solid fa-arrow-right ml-auto text-blue-400 group-hover:translate-x-1 transition"></i>
+      </div>
+    </a>
+
+    <!-- Paiements -->
+    <a href="/payments/admin/gestion/"
+       class="rounded-2xl p-6 flex flex-col gap-3 hover:-translate-y-1 transition-all duration-300 group"
+       style="background:#0c1a0c;border:1px solid #065f46;">
+      <div class="w-12 h-12 rounded-xl flex items-center justify-center text-2xl" style="background:#064e3b;">
+        <i class="fa-solid fa-coins text-emerald-400"></i>
+      </div>
+      <div>
+        <p class="font-black text-white text-lg">Paiements</p>
+        <p class="text-slate-400 text-sm">Abonnements · Corrections · Répartition</p>
+      </div>
+      <div class="flex gap-2 text-xs mt-auto">
+        <span class="text-emerald-400">Abonnements · Payouts · FedaPay</span>
+        <i class="fa-solid fa-arrow-right ml-auto text-emerald-400 group-hover:translate-x-1 transition"></i>
+      </div>
+    </a>
+
+  </div>
+
+  <!-- Liens rapides techniques -->
+  <div>
+    <p class="text-slate-500 text-xs font-semibold uppercase mb-3">Autres outils</p>
+    <div class="flex flex-wrap gap-3">
+      <a href="/payments/admin/config-fedapay/" class="px-4 py-2 rounded-xl text-xs font-semibold text-emerald-400" style="background:#0f2a1d;border:1px solid #059669;">
+        <i class="fa-solid fa-key mr-1"></i>Config FedaPay
+      </a>
+      <a href="/payments/admin/plans-abonnement/" class="px-4 py-2 rounded-xl text-xs font-semibold text-violet-400" style="background:#1a1040;border:1px solid #7c3aed;">
+        <i class="fa-solid fa-layer-group mr-1"></i>Plans Abonnement
+      </a>
+      <a href="/payments/admin/frais-scolaires/" class="px-4 py-2 rounded-xl text-xs font-semibold text-amber-400" style="background:#1c1500;border:1px solid #d97706;">
+        <i class="fa-solid fa-file-invoice-dollar mr-1"></i>Frais Scolaires
+      </a>
+      <a href="/payments/admin/dossiers/" class="px-4 py-2 rounded-xl text-xs font-semibold text-blue-400" style="background:#0c1929;border:1px solid #2563eb;">
+        <i class="fa-solid fa-folder-open mr-1"></i>Dossiers Candidature
+      </a>
+      <a href="/payments/commissions/" class="px-4 py-2 rounded-xl text-xs font-semibold text-pink-400" style="background:#1f0d1a;border:1px solid #db2777;">
+        <i class="fa-solid fa-percent mr-1"></i>Commissions
+      </a>
+      <a href="/accounts/admin/eleves/" class="px-4 py-2 rounded-xl text-xs font-semibold text-cyan-400" style="background:#0c1f2a;border:1px solid #0891b2;">
+        <i class="fa-solid fa-child mr-1"></i>Gestion Élèves
+      </a>
+    </div>
+  </div>
+
+</div>
+</div>
+{% endblock %}

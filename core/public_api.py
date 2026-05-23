@@ -5,8 +5,9 @@ from django.http import HttpRequest
 from accounts.models import User
 from compositions.models import Resultat
 from exams.models import Exam
-from certifications.models import Certificate
-from gamification.models import GlobalLeaderboard
+# certifications et gamification supprimés — stubs ci-dessous
+Certificate = None
+GlobalLeaderboard = None
 
 router = Router(tags=["API Publique"])
 
@@ -59,39 +60,19 @@ def public_stats(request: HttpRequest):
         "total_utilisateurs": User.objects.count(),
         "total_examens": Exam.objects.count(),
         "total_compositions": Resultat.objects.count(),
-        "total_certificats": Certificate.objects.count(),
+        "total_certificats": 0,
         "pays_représentés": User.objects.values('country').distinct().count(),
     }
 
 
 @router.get("/leaderboard", response=List[PublicLeaderboardOut])
 def public_leaderboard(request: HttpRequest, limit: int = 50):
-    entries = GlobalLeaderboard.objects.filter(periode='all_time').select_related('user')[:limit]
-    return [{
-        "rang": e.rang_mondial,
-        "nom": e.user.full_name,
-        "pays": e.pays,
-        "score": float(e.score_total),
-        "niveau": e.niveau,
-        "moyenne": float(e.moyenne),
-    } for e in entries]
+    return []
 
 
 @router.get("/verify-certificate/{code}", response={200: PublicCertificateOut, 404: dict})
 def verify_certificate(request: HttpRequest, code: str):
-    try:
-        cert = Certificate.objects.select_related('eleve').get(code_verification=code)
-        return 200, {
-            "code": cert.code_verification,
-            "titre": cert.titre,
-            "eleve": cert.eleve.full_name,
-            "type": cert.get_type_certificat_display(),
-            "date": cert.date_delivrance.strftime('%d/%m/%Y'),
-            "institution": cert.institution,
-            "statut": cert.get_statut_display(),
-        }
-    except Certificate.DoesNotExist:
-        return 404, {"error": "Certificat introuvable"}
+    return 404, {"error": "Module certificats désactivé"}
 
 
 @router.get("/public-exams", response=List[PublicExamOut])

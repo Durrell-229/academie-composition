@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% load static %}
 
 {% block title %}Assigner l'Épreuve - {{ exam.titre }}{% endblock %}
@@ -10,7 +10,7 @@
     <!-- Header -->
     <div class="mb-8">
       <div class="flex items-center mb-4">
-        <a href="{% url 'exam_detail' exam.id %}" class="text-text-muted hover:text-white transition-colors flex items-center gap-2">
+        <a href="{% url 'exams:exam_detail' exam.id %}" class="text-text-muted hover:text-white transition-colors flex items-center gap-2">
           <i class="fa-solid fa-arrow-left"></i>
           Retour à l'épreuve
         </a>
@@ -107,7 +107,7 @@
         {% if classes %}
         <div class="px-6 py-4 border-t border-border-standard bg-bg-tertiary/20">
           <div class="flex items-center justify-between">
-            <a href="{% url 'exam_detail' exam.id %}" class="text-text-muted hover:text-white transition-colors text-sm">
+            <a href="{% url 'exams:exam_detail' exam.id %}" class="text-text-muted hover:text-white transition-colors text-sm">
               Annuler
             </a>
             <button type="submit"

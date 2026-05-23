@@ -1,9 +1,9 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 {% block title %}Créer une Épreuve | Académie Numérique{% endblock %}
 {% block breadcrumb %}
   <a href="{% url 'dashboard' %}" class="hover:text-primary transition">Dashboard</a>
   <span class="mx-2 text-text-muted">/</span>
-  <a href="{% url 'exam_list' %}" class="hover:text-primary transition">Épreuves</a>
+  <a href="{% url 'exams:exam_list' %}" class="hover:text-primary transition">Épreuves</a>
   <span class="mx-2 text-text-muted">/</span>
   <span class="text-white font-semibold">Nouvelle épreuve</span>
 {% endblock %}
@@ -55,13 +55,40 @@
 
         <div>
           <label class="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-1.5">Type d'épreuve *</label>
-          <select name="type_exam"
+          <select name="type_exam" id="type_exam"
             class="w-full bg-bg-secondary border border-border-standard rounded-xl px-4 py-3 text-white text-sm focus:border-border-focus transition outline-none">
-            <option value="composition">Composition</option>
-            <option value="examen">Examen</option>
-            <option value="devoir">Devoir</option>
-            <option value="concours">Concours</option>
-            <option value="eval_prof">Évaluation Professeur</option>
+            <option value="interrogation" {% if exam.type_exam == 'interrogation' %}selected{% endif %}>
+              Interrogation — bulletin note simple
+            </option>
+            <option value="devoir" {% if exam.type_exam == 'devoir' %}selected{% endif %}>
+              Devoir Surveillé — bulletin scolaire
+            </option>
+            <option value="composition" {% if exam.type_exam == 'composition' %}selected{% endif %}>
+              Composition Trimestrielle — bulletin officiel béninois
+            </option>
+            <option value="examen" {% if exam.type_exam == 'examen' %}selected{% endif %}>
+              Examen — bulletin officiel
+            </option>
+            <option value="concours" {% if exam.type_exam == 'concours' %}selected{% endif %}>
+              Concours — bulletin officiel
+            </option>
+            <option value="eval_prof" {% if exam.type_exam == 'eval_prof' %}selected{% endif %}>
+              Évaluation Professeur — bulletin simple
+            </option>
+          </select>
+          <p class="text-[9px] text-text-muted mt-1">
+            <i class="fa-solid fa-circle-info mr-1"></i>
+            Le type détermine le format du bulletin PDF remis à l'élève après correction.
+          </p>
+        </div>
+
+        <div>
+          <label class="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-1.5">Trimestre *</label>
+          <select name="trimestre"
+            class="w-full bg-bg-secondary border border-border-standard rounded-xl px-4 py-3 text-white text-sm focus:border-border-focus transition outline-none">
+            <option value="T1" {% if exam.trimestre == 'T1' %}selected{% endif %}>1er Trimestre</option>
+            <option value="T2" {% if exam.trimestre == 'T2' %}selected{% endif %}>2ème Trimestre</option>
+            <option value="T3" {% if exam.trimestre == 'T3' %}selected{% endif %}>3ème Trimestre</option>
           </select>
         </div>
 

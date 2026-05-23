@@ -9,11 +9,17 @@ from django.utils import timezone
 
 class Exam(models.Model):
     class Type(models.TextChoices):
-        COMPOSITION = 'composition', _('Composition')
+        INTERROGATION = 'interrogation', _('Interrogation')
+        DEVOIR = 'devoir', _('Devoir Surveillé')
+        COMPOSITION = 'composition', _('Composition Trimestrielle')
         EXAMEN = 'examen', _('Examen')
-        DEVOIR = 'devoir', _('Devoir')
         CONCOURS = 'concours', _('Concours')
         EVALUATION_PROF = 'eval_prof', _('Évaluation Professeur')
+
+    class Trimestre(models.TextChoices):
+        T1 = 'T1', _('1er Trimestre')
+        T2 = 'T2', _('2ème Trimestre')
+        T3 = 'T3', _('3ème Trimestre')
 
     class Statut(models.TextChoices):
         BROUILLON = 'brouillon', _('Brouillon')
@@ -25,7 +31,11 @@ class Exam(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     titre = models.CharField(_('titre'), max_length=300)
     description = models.TextField(_('description'), blank=True)
-    type_exam = models.CharField(_('type'), max_length=20, choices=Type.choices, default=Type.COMPOSITION)
+    type_exam = models.CharField(_('type'), max_length=20, choices=Type.choices, default=Type.INTERROGATION)
+    trimestre = models.CharField(
+        _('trimestre'), max_length=2, choices=Trimestre.choices, default=Trimestre.T1,
+        help_text='Trimestre auquel appartient cette évaluation'
+    )
     matiere = models.ForeignKey('core.Matiere', on_delete=models.SET_NULL, null=True, related_name='exams')
     classe = models.ForeignKey('core.Classe', on_delete=models.SET_NULL, null=True, blank=True, related_name='exams')
     createur = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='exams_crees')
@@ -43,6 +53,12 @@ class Exam(models.Model):
     anti_cheat_active = models.BooleanField(_('anti-triche actif'), default=True)
     camera_required = models.BooleanField(_('caméra obligatoire'), default=True)
     fullscreen_required = models.BooleanField(_('plein écran obligatoire'), default=True)
+    # Numéro Mobile Money du professeur bénéficiaire (50 % des paiements de correction)
+    telephone_prof_beneficiaire = models.CharField(
+        _('téléphone prof bénéficiaire (Mobile Money)'),
+        max_length=20, blank=True,
+        help_text='Numéro MTN/Moov du professeur — recevra 50 % du paiement correction élève'
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -106,9 +122,89 @@ class ExamAssignment(models.Model):
         verbose_name = _('attribution d\'épreuve')
         verbose_name_plural = _('attributions d\'épreuves')
 
+
+# ═══════════════════════════════════════════════════════════════════════════
+# NOTES D'INTERROGATION
+# ═══════════════════════════════════════════════════════════════════════════
+
+class NoteInterrogation(models.Model):
+    """
+    Note individuelle d'un élève à une interrogation.
+
+    Plusieurs interrogations peuvent exister par matière et par trimestre.
+    La moyenne de toutes les NoteInterrogation d'un élève pour une matière + trimestre
+    donne la « Moy. Interrogations » affichée sur le bulletin trimestriel.
+
+    Créé automatiquement après la correction d'un Exam de type INTERROGATION.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    exam = models.ForeignKey(
+        Exam, on_delete=models.CASCADE, related_name='notes_interrogation',
+        limit_choices_to={'type_exam': Exam.Type.INTERROGATION}
+    )
+    eleve = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='notes_interrogation'
+    )
+    note = models.DecimalField(_('note obtenue'), max_digits=5, decimal_places=2)
+    note_sur = models.DecimalField(_('note maximale'), max_digits=5, decimal_places=2, default=20.00)
+    appreciation = models.TextField(_('appréciation du prof'), blank=True, default='')
+    absent = models.BooleanField(_('absent'), default=False)
+    corrige_par = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='interros_corrigees'
+    )
+    corrige_at = models.DateTimeField(_('corrigé le'), null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = _('note d\'interrogation')
+        verbose_name_plural = _('notes d\'interrogation')
+        unique_together = ['exam', 'eleve']
+        ordering = ['exam__date_debut', 'eleve']
+
     def __str__(self):
-        target = self.eleve or self.classe
-        return f"{self.exam.titre} -> {target}"
+        return f"{self.eleve.full_name} — {self.exam.titre} : {self.note}/{self.note_sur}"
+
+
+class BulletinInterrogation(models.Model):
+    """
+    Relevé de notes d'une interrogation pour toute la classe.
+    Généré par le prof après correction complète de l'interrogation.
+    Permet à chaque élève (et aux parents) de consulter le résultat.
+    """
+
+    class Statut(models.TextChoices):
+        BROUILLON = 'brouillon', _('Brouillon')
+        PUBLIE = 'publie', _('Publié')
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    exam = models.OneToOneField(
+        Exam, on_delete=models.CASCADE, related_name='bulletin_interrogation',
+        limit_choices_to={'type_exam': Exam.Type.INTERROGATION}
+    )
+    classe = models.ForeignKey('core.Classe', on_delete=models.CASCADE, related_name='bulletins_interrogation')
+    moyenne_classe = models.DecimalField(_('moyenne de la classe'), max_digits=5, decimal_places=2, default=0.00)
+    note_plus_haute = models.DecimalField(_('note la plus haute'), max_digits=5, decimal_places=2, default=0.00)
+    note_plus_basse = models.DecimalField(_('note la plus basse'), max_digits=5, decimal_places=2, default=0.00)
+    effectif_total = models.PositiveSmallIntegerField(_('effectif total'), default=0)
+    nombre_absents = models.PositiveSmallIntegerField(_('nombre d\'absents'), default=0)
+    statut = models.CharField(_('statut'), max_length=20, choices=Statut.choices, default=Statut.BROUILLON)
+    publie_par = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='bulletins_interro_publies'
+    )
+    file_pdf = models.FileField(_('fichier PDF'), upload_to='bulletins_interrogations/%Y/%m/', blank=True, null=True)
+    verification_token = models.UUIDField(_('token de vérification'), unique=True, default=uuid.uuid4)
+    created_at = models.DateTimeField(auto_now_add=True)
+    publie_at = models.DateTimeField(_('publié le'), null=True, blank=True)
+
+    class Meta:
+        verbose_name = _('relevé d\'interrogation')
+        verbose_name_plural = _('relevés d\'interrogation')
+
+    def __str__(self):
+        return f"Relevé — {self.exam.titre} ({self.classe})"
 
 
 # ═══════════════════════════════════════════════════════════════════════════

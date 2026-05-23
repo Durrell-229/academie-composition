@@ -14,11 +14,16 @@ logger = logging.getLogger(__name__)
 
 class MultiAIService:
     """
-    Service IA avec fallback automatique sur 4 fournisseurs.
-    Ordre : Groq → Gemini → Mistral → DeepSeek
+    Service IA avec fallback automatique.
+    Correction de copies : NVIDIA (vision/OCR) → Groq → Gemini → Mistral → DeepSeek
+    Autres tâches (QCM, feedback) : Groq → Gemini → Mistral → DeepSeek
     """
 
+    NVIDIA_API_URL = "https://integrate.api.nvidia.com/v1/chat/completions"
+    NVIDIA_CORRECTION_MODEL = "meta/llama-3.3-70b-instruct"
+
     def __init__(self):
+        self.nvidia_key = getattr(settings, 'NVIDIA_API_KEY', '') or os.environ.get('NVIDIA_API_KEY', '')
         self.groq_key = getattr(settings, 'GROQ_API_KEY', '') or os.environ.get('GROQ_API_KEY', '')
         self.gemini_key = getattr(settings, 'GEMINI_API_KEY', '') or os.environ.get('GEMINI_API_KEY', '')
         self.mistral_key = getattr(settings, 'MISTRAL_API_KEY', '') or os.environ.get('MISTRAL_API_KEY', '')
@@ -48,8 +53,36 @@ class MultiAIService:
 
         logger.error("[MultiAI] Tous les fournisseurs IA ont échoué.")
         if expect_json:
-            return '{"note": 0, "appreciation": "IA indisponible.", "details": [], "points_forts_global": "", "axes_amelioration": "Vérifiez les clés API."}'
+            return '{"note": null, "appreciation": "Correction impossible : aucun service IA disponible. Vérifiez vos clés API (GROQ_API_KEY, GEMINI_API_KEY, NVIDIA_API_KEY) dans le fichier .env.", "details": [], "points_forts_global": "", "axes_amelioration": "Configurez au moins une clé API valide pour activer la correction automatique.", "erreur_technique": true}'
         return "L'IA est temporairement indisponible. Vérifiez les clés API dans le fichier .env."
+
+    def _call_nvidia_nemotron(self, prompt: str) -> Optional[str]:
+        """
+        Appel NVIDIA Nemotron-4-340B pour la correction de copies.
+        Le texte OCR a déjà été extrait par nemotron-ocr-v1 en amont (dans tasks.py).
+        """
+        if not self.nvidia_key or 'ta_cle' in self.nvidia_key:
+            return None
+        try:
+            headers = {
+                "Authorization": f"Bearer {self.nvidia_key}",
+                "Content-Type": "application/json",
+            }
+            payload = {
+                "model": self.NVIDIA_CORRECTION_MODEL,
+                "messages": [
+                    {"role": "system", "content": "Tu es un correcteur d'examens expert et strict. Réponds UNIQUEMENT en JSON valide."},
+                    {"role": "user", "content": prompt}
+                ],
+                "temperature": 0.2,
+                "max_tokens": 4096,
+            }
+            resp = requests.post(self.NVIDIA_API_URL, headers=headers, json=payload, timeout=120)
+            resp.raise_for_status()
+            return resp.json()['choices'][0]['message']['content']
+        except Exception as e:
+            logger.warning(f"[MultiAI] Échec NVIDIA Nemotron: {e}")
+            return None
 
     def _call_groq(self, prompt: str) -> Optional[str]:
         if not self.groq_key or 'ta_cle' in self.groq_key:
@@ -122,8 +155,12 @@ class MultiAIService:
         except Exception:
             return None
 
-    def correct_copy(self, corrige_type_text: str, copie_text: str, exam_info: dict) -> dict:
-        """Corrige une copie d'élève par rapport à un corrigé type."""
+    def correct_copy(self, corrige_type_text: str, copie_text: str, exam_info: dict, image_paths: list = None) -> dict:
+        """
+        Corrige une copie d'élève.
+        Flux : nemotron-ocr-v1 (OCR images) → nemotron-4-340b-instruct (correction) → fallback Groq/Gemini
+        Le paramètre image_paths est conservé pour compatibilité mais l'OCR est fait dans tasks.py.
+        """
         note_max = exam_info.get('note_maximale', 20)
         corrige_doc_id = exam_info.get('corrige_doc_id', 'NON_SPECIFIE')
         copie_doc_ids = exam_info.get('copie_doc_ids', [])
@@ -156,7 +193,7 @@ CORRIGÉ TYPE (référence absolue pour la correction) — ID: {corrige_doc_id}:
 
 COPIE DE L'ÉLÈVE — IDs: {', '.join(copie_doc_ids) if copie_doc_ids else 'Réponses texte directes'}:
 ---
-{copie_text if copie_text.strip() else '[COPIE VIDE — attribuer 0 si aucun contenu détectable]'}
+{copie_text.strip() if copie_text.strip() else "[OCR en cours ou copie manuscrite — évalue selon les éléments disponibles. Si aucun contenu n'est lisible, attribue une note partielle et signale le problème d'extraction dans l'appréciation.]"}
 ---
 
 INSTRUCTIONS CRITIQUES DE CORRECTION :
@@ -183,7 +220,19 @@ FORMAT DE RÉPONSE EXIGÉ (JSON valide UNIQUEMENT) :
   "recommandations": "<conseils personnalisés pour progresser>"
 }}"""
 
-        raw = self.generate(prompt, expect_json=True)
+        # ── NVIDIA Nemotron-4-340B en premier (correction après OCR) ──
+        raw = None
+        if self.nvidia_key and 'ta_cle' not in self.nvidia_key:
+            logger.info("[MultiAI] Correction via NVIDIA Nemotron-4-340B")
+            raw = self._call_nvidia_nemotron(prompt)
+            if raw:
+                logger.info("[MultiAI] Succès correction NVIDIA Nemotron")
+
+        # ── Fallback sur Groq/Gemini/Mistral ─────────────────────────
+        if not raw:
+            logger.info("[MultiAI] Nemotron indisponible — fallback Groq/Gemini/Mistral")
+            raw = self.generate(prompt, expect_json=True)
+
         try:
             clean = raw.strip()
             if '```json' in clean:
@@ -350,6 +399,50 @@ Retourne UNIQUEMENT un JSON valide sans texte autour :
                 "axes_amelioration": ["Révisez le programme"],
                 "remediation": "Consultez votre cours et réessayez."
             }
+
+
+    def parse_qcm_from_text(self, raw_text: str, matiere: str = '', classe: str = '') -> str:
+        """
+        Analyse un texte brut (extrait de PDF, TXT, image OCR) et le reformate
+        en JSON QCM structuré (même format que generate_qcm).
+        """
+        context = f" pour {classe} en {matiere}" if matiere or classe else ""
+        prompt = f"""Tu es un expert en pédagogie{context}.
+
+Voici un texte brut extrait d'un document QCM (peut être imparfait, contenir des erreurs OCR, etc.) :
+---
+{raw_text[:6000]}
+---
+
+MISSION :
+1. Identifie toutes les questions QCM dans ce texte
+2. Pour chaque question, identifie ses choix (A, B, C, D ou numérotés)
+3. Identifie la bonne réponse si elle est présente (souvent marquée par *, ✓, (correct), ou listée en fin de document)
+4. Si la bonne réponse n'est pas explicite, détermine-la toi-même en tant qu'expert
+
+RÈGLES :
+- Chaque question doit avoir exactement 4 choix A, B, C, D
+- Une seule bonne réponse par question
+- Si le texte a moins de 4 choix pour une question, invente des distracteurs plausibles
+- Corrige les fautes d'OCR évidentes
+
+Retourne UNIQUEMENT un JSON valide, rien d'autre :
+{{
+  "questions": [
+    {{
+      "question": "Texte exact de la question ?",
+      "choix": {{
+        "A": "Texte du choix A",
+        "B": "Texte du choix B",
+        "C": "Texte du choix C",
+        "D": "Texte du choix D"
+      }},
+      "correcte": "A"
+    }}
+  ]
+}}"""
+
+        return self.generate(prompt, expect_json=True)
 
 
 # Instance globale réutilisable

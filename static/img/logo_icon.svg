@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4F46E5"/>
+      <stop offset="55%" stop-color="#7C3AED"/>
+      <stop offset="100%" stop-color="#0891B2"/>
+    </linearGradient>
+    <linearGradient id="glow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00E5FF"/>
+      <stop offset="100%" stop-color="#7C4DFF"/>
+    </linearGradient>
+    <linearGradient id="shine" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fff" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Fond arrondi -->
+  <rect width="100" height="100" rx="22" fill="url(#bg)"/>
+  <!-- Reflet iOS -->
+  <rect width="100" height="100" rx="22" fill="url(#shine)"/>
+
+  <!-- ── Toque de diplôme ── -->
+  <!-- Plateau plat de la toque -->
+  <polygon points="50,22 80,36 50,50 20,36" fill="#FFFFFF" opacity="0.95"/>
+  <!-- Corps de la toque -->
+  <path d="M36,40 L36,54 Q50,62 64,54 L64,40 L50,48 Z" fill="#FFFFFF" opacity="0.85"/>
+  <!-- Corde gauche -->
+  <line x1="20" y1="36" x2="20" y2="50" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" opacity="0.7"/>
+  <circle cx="20" cy="52" r="2.5" fill="#00E5FF" opacity="0.9"/>
+
+  <!-- ── Nœuds IA (circuit / cerveau) sous la toque ── -->
+  <!-- Nœuds -->
+  <circle cx="34" cy="72" r="4" fill="url(#glow)" opacity="0.95"/>
+  <circle cx="50" cy="68" r="4" fill="url(#glow)" opacity="0.95"/>
+  <circle cx="66" cy="72" r="4" fill="url(#glow)" opacity="0.95"/>
+  <circle cx="50" cy="81" r="3" fill="#00E5FF" opacity="0.85"/>
+  <!-- Connexions -->
+  <line x1="34" y1="72" x2="50" y2="68" stroke="#00E5FF" stroke-width="1.5" opacity="0.7"/>
+  <line x1="50" y1="68" x2="66" y2="72" stroke="#00E5FF" stroke-width="1.5" opacity="0.7"/>
+  <line x1="34" y1="72" x2="50" y2="81" stroke="#7C4DFF" stroke-width="1.5" opacity="0.7"/>
+  <line x1="66" y1="72" x2="50" y2="81" stroke="#7C4DFF" stroke-width="1.5" opacity="0.7"/>
+
+  <!-- Contour léger -->
+  <rect width="100" height="100" rx="22" fill="none" stroke="#fff" stroke-width="1" opacity="0.18"/>
+</svg>

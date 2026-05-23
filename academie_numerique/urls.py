@@ -15,26 +15,26 @@ urlpatterns = [
     path('admin_dashboard/', admin_dashboard_view, name='admin_dashboard'),
     path('api/v1/', v1_api.urls),
     path('api/core/', core_api.urls),
+    # ── Comptes & navigation ──────────────────────────────────
     path('accounts/', include('accounts.urls')),
+    path('gestion/', include('accounts.gestion_urls')),
     path('core/', include('core.urls')),
+    # ── Compositions & corrections ────────────────────────────
     path('exams/', include('exams.urls')),
+    path('examens-nationaux/', include('exams.examens_nationaux_urls')),
     path('compositions/', include('compositions.urls')),
-    path('notifications/', include('notifications.urls')),
-    path('correction/', include('correction.urls')),
     path('corrections/', include('corrections.urls')),
-    path('bulletins/', include('bulletins.urls')),
-    path('certificates/', include('certifications.urls')),
     path('qcm/', include('qcm.urls')),
-    path('plagiat/', include('plagiat.urls')),
-    path('gamification/', include('gamification.urls')),
-    path('audit/', include('audittrail.urls')),
-    path('webhooks/', include('webhooks.urls')),
-    path('payments/', include('payments.urls')),
-    path('subscriptions/', include('subscriptions.urls')),
+    # ── Cours & devoirs ───────────────────────────────────────
     path('cours/', include('cours.urls')),
     path('devoirs/', include('devoirs.urls')),
-    path('examens-nationaux/', include('exams.examens_nationaux_urls')),
-    path('realtime/', include('realtime.urls')),
+    # ── Paiements ─────────────────────────────────────────────
+    path('payments/', include('payments.urls')),
+    path('subscriptions/', include('subscriptions.urls')),
+    # ── Infrastructure ────────────────────────────────────────
+    path('notifications/', include('notifications.urls')),
+    path('audit/', include('audittrail.urls')),
+    path('webhooks/', include('webhooks.urls')),
 ]
 
 # Servir les fichiers médias et statiques en développement (RIGOUREUX)

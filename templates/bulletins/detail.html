@@ -3,7 +3,7 @@
 {% block breadcrumb %}
   <a href="{% url 'dashboard' %}" class="hover:text-primary transition">Dashboard</a>
   <span class="mx-2 text-text-muted">/</span>
-  <a href="{% url 'bulletins:index' %}" class="hover:text-primary transition">Bulletins</a>
+  <a href="{% url 'compositions:ia_corrections_list' %}" class="hover:text-primary transition">Bulletins</a>
   <span class="mx-2 text-text-muted">/</span>
   <span class="text-white font-semibold">{{ bulletin.get_periode_display }}</span>
 {% endblock %}
@@ -30,7 +30,7 @@
       <a href="{% url 'bulletins:generate' bulletin.id %}" class="px-4 py-2.5 rounded-xl glass border border-border-standard text-sm font-bold hover:bg-bg-tertiary/50 transition flex items-center gap-2">
         <i class="fa-solid fa-rotate"></i> Regénérer
       </a>
-      <a href="{% url 'bulletins:index' %}" class="px-4 py-2.5 rounded-xl glass border border-border-standard text-sm font-bold hover:bg-bg-tertiary/50 transition">
+      <a href="{% url 'compositions:ia_corrections_list' %}" class="px-4 py-2.5 rounded-xl glass border border-border-standard text-sm font-bold hover:bg-bg-tertiary/50 transition">
         <i class="fa-solid fa-arrow-left"></i>
       </a>
     </div>

@@ -3,7 +3,7 @@ Vues pour les dashboards fonctionnels avec données réelles
 """
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
-from django.db.models import Avg, Count, Q, Max, Min
+from django.db.models import Avg, Count, Q, Max, Min, Sum
 from django.utils import timezone
 from datetime import timedelta
 import logging
@@ -12,10 +12,20 @@ from accounts.models import User
 from core.models import Matiere, Classe
 from exams.models import Exam, ExamAssignment
 from compositions.models import CompositionSession
-from correction.models import CorrectionCopie
-from bulletins.models import Bulletin
+from corrections.models import CorrectionCopie
 from notifications.models import Notification
-from gamification.models import GlobalLeaderboard, Badge, UserBadge
+
+# Import paiements (protégé contre ImportError si migrations pas encore faites)
+try:
+    from payments.models import (
+        Paiement, AbonnementEleve, PaiementAbonnement,
+        PaiementCorrectionUnitaire, DossierCandidature,
+        PayoutCommission, RapportFinancier,
+    )
+    from subscriptions.models import SubscriptionPlan, UserSubscription
+    PAYMENTS_AVAILABLE = True
+except Exception:
+    PAYMENTS_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
@@ -91,25 +101,11 @@ def dashboard_eleve(request):
             read=False
         ).count()
         
-        # XP et Badges (gamification)
-        try:
-            user_xp = GlobalLeaderboard.objects.filter(user=user).order_by('-updated_at').first()
-            if user_xp:
-                context['xp_total'] = user_xp.points_xp
-                context['niveau'] = user_xp.niveau
-                context['xp_pourcentage'] = min(100, int((user_xp.points_xp % 1000) / 10))
-            else:
-                context['xp_total'] = 0
-                context['niveau'] = 1
-                context['xp_pourcentage'] = 0
-        except Exception:
-            context['xp_total'] = 0
-            context['niveau'] = 1
-            context['xp_pourcentage'] = 0
-        
-        user_badges = UserBadge.objects.filter(user=user).select_related('badge')[:6]
-        context['badges'] = [ub.badge for ub in user_badges]
-        context['badges_count'] = UserBadge.objects.filter(user=user).count()
+        context['xp_total'] = 0
+        context['niveau'] = 1
+        context['xp_pourcentage'] = 0
+        context['badges'] = []
+        context['badges_count'] = 0
         
         # Graphique des notes par matière
         notes_par_matiere = CorrectionCopie.objects.filter(
@@ -322,11 +318,120 @@ def dashboard_admin(request):
         context['mois_labels'] = mois
         context['examens_par_mois'] = examens_par_mois
         context['copies_par_mois'] = copies_par_mois
-        
+
     except Exception as e:
-        logger.error(f"Erreur dashboard admin: {e}")
+        logger.error(f"Erreur dashboard admin (stats de base): {e}")
         context['erreur'] = str(e)
-    
+
+    # ── BLOC PAIEMENTS ──────────────────────────────────────────
+    if PAYMENTS_AVAILABLE:
+        try:
+            trente_jours = timezone.now() - timedelta(days=30)
+
+            # ── Frais scolaires (Paiement) ──
+            paiements_qs = Paiement.objects.all()
+            total_encaisse = paiements_qs.filter(
+                statut='complet'
+            ).aggregate(s=Sum('montant_paye'))['s'] or 0
+
+            total_attendu = paiements_qs.aggregate(
+                s=Sum('montant_total')
+            )['s'] or 0
+
+            total_restant = paiements_qs.exclude(
+                statut='annule'
+            ).aggregate(s=Sum('montant_restant'))['s'] or 0
+
+            paiements_en_retard = paiements_qs.filter(statut='en_retard').count()
+            taux_recouvrement = (
+                round(float(total_encaisse) / float(total_attendu) * 100, 1)
+                if total_attendu else 0
+            )
+
+            context.update({
+                'paiement_total_encaisse':  total_encaisse,
+                'paiement_total_attendu':   total_attendu,
+                'paiement_total_restant':   total_restant,
+                'paiements_en_retard':      paiements_en_retard,
+                'taux_recouvrement':        taux_recouvrement,
+                'derniers_paiements':       paiements_qs.select_related(
+                    'eleve', 'frais'
+                ).order_by('-date_paiement')[:8],
+            })
+
+            # ── Abonnements ──
+            abonnements_actifs = AbonnementEleve.objects.filter(
+                statut='actif', date_fin__gt=timezone.now()
+            )
+            context.update({
+                'abonnements_actifs':      abonnements_actifs.count(),
+                'abonnements_expires':     AbonnementEleve.objects.filter(statut='expire').count(),
+                'abonnements_en_attente':  AbonnementEleve.objects.filter(statut='attente').count(),
+                'abonnements_par_plan':    AbonnementEleve.objects.filter(
+                    statut='actif'
+                ).values('plan__nom', 'plan__niveau').annotate(
+                    total=Count('id')
+                ).order_by('-total')[:5],
+                'revenus_abonnements_mois': PaiementAbonnement.objects.filter(
+                    statut='succes', date_paiement__gte=trente_jours
+                ).aggregate(s=Sum('montant'))['s'] or 0,
+                'derniers_paiements_abo':  PaiementAbonnement.objects.select_related(
+                    'eleve', 'abonnement__plan'
+                ).order_by('-date_creation')[:6],
+            })
+
+            # ── Corrections unitaires ──
+            context.update({
+                'corrections_unitaires_succes': PaiementCorrectionUnitaire.objects.filter(
+                    statut='succes'
+                ).count(),
+                'revenus_corrections_mois': PaiementCorrectionUnitaire.objects.filter(
+                    statut='succes', date_paiement__gte=trente_jours
+                ).aggregate(s=Sum('montant'))['s'] or 0,
+            })
+
+            # ── Dossiers candidature ──
+            context.update({
+                'dossiers_soumis':   DossierCandidature.objects.filter(statut='soumis').count(),
+                'dossiers_valides':  DossierCandidature.objects.filter(statut='valide').count(),
+                'dossiers_rejetes':  DossierCandidature.objects.filter(statut='rejete').count(),
+                'derniers_dossiers': DossierCandidature.objects.select_related(
+                    'eleve'
+                ).order_by('-date_modification')[:5],
+            })
+
+            # ── Payouts commissions ──
+            context.update({
+                'payouts_succes':     PayoutCommission.objects.filter(statut='succes').count(),
+                'payouts_en_attente': PayoutCommission.objects.filter(statut='en_attente').count(),
+                'derniers_payouts':   PayoutCommission.objects.select_related(
+                    'paiement__eleve'
+                ).order_by('-date_creation')[:5],
+            })
+
+            # ── Revenus totaux ce mois ──
+            revenus_mois = (
+                (context['revenus_abonnements_mois'] or 0) +
+                (context['revenus_corrections_mois'] or 0)
+            )
+            context['revenus_totaux_mois'] = revenus_mois
+
+            # ── Graphique revenus sur 6 mois ──
+            revenus_par_mois = []
+            for i in range(5, -1, -1):
+                d = timezone.now() - timedelta(days=i * 30)
+                debut = d.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+                fin = (debut + timedelta(days=32)).replace(day=1)
+                rev = PaiementAbonnement.objects.filter(
+                    statut='succes', date_paiement__gte=debut, date_paiement__lt=fin
+                ).aggregate(s=Sum('montant'))['s'] or 0
+                revenus_par_mois.append(int(rev))
+            context['revenus_par_mois'] = revenus_par_mois
+
+        except Exception as e:
+            logger.error(f"Erreur dashboard admin (paiements): {e}")
+            context['paiements_erreur'] = str(e)
+
     return render(request, 'dashboards/admin.html', context)
 
 

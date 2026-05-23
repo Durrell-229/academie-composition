@@ -13,11 +13,31 @@ class ExamFileInline(admin.TabularInline):
 
 @admin.register(Exam)
 class ExamAdmin(admin.ModelAdmin):
-    list_display = ['titre', 'type_exam', 'matiere', 'classe', 'createur', 'statut', 'date_debut', 'date_fin']
+    list_display = ['titre', 'type_exam', 'matiere', 'classe', 'createur', 'statut', 'date_debut', 'date_fin', 'telephone_prof_beneficiaire']
     list_filter = ['type_exam', 'statut', 'matiere', 'classe']
-    search_fields = ['titre', 'description']
+    search_fields = ['titre', 'description', 'telephone_prof_beneficiaire']
     inlines = [ExamFileInline]
     date_hierarchy = 'date_debut'
+    fieldsets = (
+        (None, {
+            'fields': ('titre', 'description', 'type_exam', 'trimestre', 'matiere', 'classe', 'createur')
+        }),
+        ('Planification', {
+            'fields': ('date_debut', 'date_fin', 'duree_minutes', 'note_maximale', 'coefficient', 'statut', 'est_public', 'instructions')
+        }),
+        ('Anti-triche', {
+            'fields': ('anti_cheat_active', 'camera_required', 'fullscreen_required')
+        }),
+        ('Répartition paiement', {
+            'fields': ('telephone_prof_beneficiaire',),
+            'description': (
+                'Numéro Mobile Money (MTN/Moov) du professeur qui recevra 50 % '
+                'de chaque paiement de correction. '
+                'Les 50 % restants sont répartis automatiquement : '
+                '5 % Dev1 · 5 % Dev2 · 40 % Entretien plateforme.'
+            ),
+        }),
+    )
 
 
 @admin.register(ExamAssignment)
