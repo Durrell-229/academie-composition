@@ -95,6 +95,7 @@ def exam_create_view(request):
             matiere_id=matiere_id if matiere_id else None,
             classe_id=classe_id if classe_id else None,
             type_exam=request.POST.get('type_exam', 'composition'),
+            trimestre=request.POST.get('trimestre', 'T1'),
             duree_minutes=int(duree),
             date_debut=date_debut,
             date_fin=date_fin,
@@ -213,7 +214,7 @@ def exam_approve_view(request, exam_id):
     """Approuver une épreuve (Admin uniquement)"""
     if request.user.role != 'admin':
         messages.error(request, "Accès refusé. Seuls les administrateurs peuvent approuver les épreuves.")
-        return redirect('exam_detail', exam_id=exam_id)
+        return redirect('exams:exam_detail', exam_id=exam_id)
     
     exam = get_object_or_404(Exam, id=exam_id)
     
@@ -234,7 +235,7 @@ def exam_approve_view(request, exam_id):
         messages.success(request, f"L'épreuve '{exam.titre}' a été approuvée avec succès.")
         logger.info(f"Examen {exam_id} approuvé par {request.user.email}")
     
-    return redirect('exam_detail', exam_id=exam_id)
+    return redirect('exams:exam_detail', exam_id=exam_id)
 
 
 @login_required
@@ -242,7 +243,7 @@ def exam_reject_view(request, exam_id):
     """Rejeter une épreuve (Admin uniquement)"""
     if request.user.role != 'admin':
         messages.error(request, "Accès refusé. Seuls les administrateurs peuvent rejeter les épreuves.")
-        return redirect('exam_detail', exam_id=exam_id)
+        return redirect('exams:exam_detail', exam_id=exam_id)
     
     exam = get_object_or_404(Exam, id=exam_id)
     
@@ -265,7 +266,7 @@ def exam_reject_view(request, exam_id):
         messages.warning(request, f"L'épreuve '{exam.titre}' a été rejetée.")
         logger.info(f"Examen {exam_id} rejeté par {request.user.email}. Raison: {commentaire}")
     
-    return redirect('exam_detail', exam_id=exam_id)
+    return redirect('exams:exam_detail', exam_id=exam_id)
 
 
 @login_required
@@ -276,12 +277,12 @@ def exam_publish_view(request, exam_id):
     # Vérifier les permissions
     if request.user.role != 'admin' and exam.createur != request.user:
         messages.error(request, "Accès refusé. Vous ne pouvez pas publier cette épreuve.")
-        return redirect('exam_detail', exam_id=exam_id)
+        return redirect('exams:exam_detail', exam_id=exam_id)
     
     # Vérifier que l'épreuve est approuvée
     if exam.approval_status != 'approved':
         messages.error(request, "Cette épreuve doit être approuvée par un administrateur avant d'être publiée.")
-        return redirect('exam_detail', exam_id=exam_id)
+        return redirect('exams:exam_detail', exam_id=exam_id)
     
     if request.method == 'POST':
         exam.statut = 'publie'
@@ -309,7 +310,7 @@ def exam_publish_view(request, exam_id):
         messages.success(request, f"L'épreuve '{exam.titre}' a été publiée avec succès.")
         logger.info(f"Examen {exam_id} publié par {request.user.email}")
 
-    return redirect('exam_detail', exam_id=exam_id)
+    return redirect('exams:exam_detail', exam_id=exam_id)
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -328,7 +329,7 @@ def exam_assign_view(request, exam_id):
     # Seul l'admin ou le créateur peut assigner l'exam
     if request.user.role != 'admin' and exam.createur != request.user:
         messages.error(request, "Vous ne pouvez assigner que vos propres épreuves.")
-        return redirect('exam_detail', exam_id=exam_id)
+        return redirect('exams:exam_detail', exam_id=exam_id)
 
     from .models import ExamAssignment
 
@@ -370,7 +371,7 @@ def exam_assign_view(request, exam_id):
             else:
                 messages.info(request, "Toutes les classes sélectionnées avaient déjà cette épreuve assignée.")
 
-            return redirect('exam_detail', exam_id=exam_id)
+            return redirect('exams:exam_detail', exam_id=exam_id)
 
     return render(request, 'exams/exam_assign.html', {
         'exam': exam,

@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block title %}{{ campus.nom }} | Académie Numérique{% endblock %}
+{% block breadcrumb %}
+<a href="{% url 'schools:etablissement_list' %}" class="text-text-muted hover:text-text-primary">Établissements</a>
+<span class="mx-2 text-text-muted">/</span>
+<a href="{% url 'schools:etablissement_detail' etablissement.id %}" class="text-text-muted hover:text-text-primary">{{ etablissement.nom }}</a>
+<span class="mx-2 text-text-muted">/</span>
+<a href="{% url 'schools:campus_list' etablissement.id %}" class="text-text-muted hover:text-text-primary">Campus</a>
+<span class="mx-2 text-text-muted">/</span>
+<span class="text-text-primary font-semibold">{{ campus.nom }}</span>
+{% endblock %}
+{% block content %}
+<div class="space-y-6">
+  <div class="animate-in p-6 rounded-2xl bg-bg-card border border-border-standard flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-xl font-black text-text-primary flex items-center gap-3"><i class="fa-solid fa-building text-primary"></i> {{ campus.nom }}</h1>
+      <p class="text-sm text-text-muted mt-1">{{ campus.code }} · {{ etablissement.nom }}</p>
+    </div>
+    <div class="flex gap-2">
+      <span class="px-3 py-1.5 bg-primary/10 text-primary text-xs font-bold rounded-lg flex items-center gap-1"><i class="fa-solid fa-door-open"></i> {{ campus.nombre_salles }} salles</span>
+      <span class="px-3 py-1.5 bg-accent/10 text-accent text-xs font-bold rounded-lg flex items-center gap-1"><i class="fa-solid fa-building"></i> {{ campus.nombre_batiments }} bâtiments</span>
+    </div>
+  </div>
+  <div class="animate-in delay-1 bg-bg-card border border-border-standard rounded-2xl p-5">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="font-bold text-text-primary flex items-center gap-2"><i class="fa-solid fa-chalkboard text-accent"></i> Classes de ce campus</h2>
+      <a href="{% url 'schools:classe_create' etablissement.id %}" class="text-xs text-accent hover:underline font-bold">+ Ajouter</a>
+    </div>
+    {% for classe in classes_list %}
+    <div class="flex items-center justify-between p-3 rounded-xl bg-bg-card border border-border-standard mb-2">
+      <div>
+        <p class="text-sm font-bold text-text-primary">{{ classe.nom }}</p>
+        <p class="text-xs text-text-muted">{{ classe.code }}</p>
+      </div>
+      <a href="{% url 'schools:classe_detail' etablissement.id classe.id %}" class="text-xs text-primary hover:underline font-bold">Voir</a>
+    </div>
+    {% empty %}
+    <p class="text-sm text-text-muted text-center py-6">Aucune classe assignée à ce campus.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

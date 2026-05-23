@@ -5,12 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Abonnements - Académie Numérique</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
             font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', sans-serif;
             background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
@@ -18,8 +14,8 @@
             color: #fff;
             overflow-x: hidden;
         }
-        
-        /* Hero Section avec image publicitaire */
+
+        /* Hero */
         .hero-section {
             position: relative;
             height: 70vh;
@@ -29,1015 +25,424 @@
             overflow: hidden;
             background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #8b5cf6 100%);
         }
-        
-        .hero-bg {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            opacity: 0.3;
-        }
-        
-        .hero-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(to bottom, rgba(15, 23, 42, 0.3), rgba(15, 23, 42, 0.9));
-        }
-        
-        .hero-content {
-            position: relative;
-            z-index: 2;
-            text-align: center;
-            padding: 2rem;
-            max-width: 900px;
-        }
-        
-        .hero-badge {
-            display: inline-block;
-            background: linear-gradient(135deg, #f59e0b, #ef4444);
-            color: white;
-            padding: 0.5rem 1.5rem;
-            border-radius: 50px;
-            font-weight: 600;
-            font-size: 0.9rem;
-            margin-bottom: 1.5rem;
-            animation: pulse 2s infinite;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-        }
-        
-        .hero-title {
-            font-size: 3.5rem;
-            font-weight: 800;
-            margin-bottom: 1rem;
-            background: linear-gradient(135deg, #fff, #cbd5e1);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            text-shadow: 0 4px 20px rgba(59, 130, 246, 0.3);
-        }
-        
-        .hero-subtitle {
-            font-size: 1.3rem;
-            color: #94a3b8;
-            margin-bottom: 2rem;
-            line-height: 1.6;
-        }
-        
-        .hero-features {
-            display: flex;
-            justify-content: center;
-            gap: 2rem;
-            flex-wrap: wrap;
-            margin-top: 2rem;
-        }
-        
-        .hero-feature {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-size: 1rem;
-            color: #cbd5e1;
-        }
-        
-        .hero-feature-icon {
-            width: 24px;
-            height: 24px;
-            background: #10b981;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-        }
-        
-        /* Section Plans */
-        .plans-section {
-            padding: 4rem 2rem;
-            position: relative;
-        }
-        
-        .section-header {
-            text-align: center;
-            margin-bottom: 3rem;
-        }
-        
-        .section-title {
-            font-size: 2.5rem;
-            font-weight: 700;
-            margin-bottom: 0.5rem;
-        }
-        
-        .section-subtitle {
-            color: #94a3b8;
-            font-size: 1.1rem;
-        }
-        
-        /* Toggle Mensuel/Annuel */
-        .billing-toggle {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 1rem;
-            margin-bottom: 3rem;
-        }
-        
-        .toggle-btn {
-            background: transparent;
-            border: 2px solid #3b82f6;
-            color: #fff;
-            padding: 0.75rem 2rem;
-            border-radius: 50px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-        
-        .toggle-btn.active {
-            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-            border-color: transparent;
-        }
-        
-        .toggle-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(59, 130, 246, 0.3);
-        }
-        
-        .economie-badge {
-            background: linear-gradient(135deg, #10b981, #059669);
-            color: white;
-            padding: 0.25rem 0.75rem;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-        
-        /* Carrousel Plans */
-        .plans-carousel {
-            position: relative;
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-        
-        .carousel-container {
-            display: flex;
-            gap: 2rem;
-            overflow-x: auto;
-            scroll-snap-type: x mandatory;
-            scroll-behavior: smooth;
-            padding: 2rem 1rem;
-            -webkit-overflow-scrolling: touch;
-            scrollbar-width: none;
-        }
-        
-        .carousel-container::-webkit-scrollbar {
-            display: none;
-        }
-        
-        .plan-card {
-            flex: 0 0 350px;
-            scroll-snap-align: center;
-            background: linear-gradient(145deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.9));
-            border-radius: 24px;
-            padding: 2rem;
-            position: relative;
-            transition: all 0.4s ease;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-        }
-        
-        .plan-card:hover {
-            transform: translateY(-10px) scale(1.02);
-            border-color: rgba(59, 130, 246, 0.5);
-            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4);
-        }
-        
-        .plan-card.popular {
-            border: 2px solid #f59e0b;
-            transform: scale(1.05);
-        }
-        
-        .plan-card.popular:hover {
-            transform: translateY(-10px) scale(1.07);
-        }
-        
+        .hero-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.3; }
+        .hero-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to bottom, rgba(15,23,42,.3), rgba(15,23,42,.9)); }
+        .hero-content { position: relative; z-index: 2; text-align: center; padding: 2rem; max-width: 900px; }
+        .hero-badge { display: inline-block; background: linear-gradient(135deg, #f59e0b, #ef4444); color: #fff; padding: .5rem 1.5rem; border-radius: 50px; font-weight: 600; font-size: .9rem; margin-bottom: 1.5rem; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.05)} }
+        .hero-title { font-size: 3.5rem; font-weight: 800; margin-bottom: 1rem; background: linear-gradient(135deg, #fff, #cbd5e1); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .hero-subtitle { font-size: 1.3rem; color: #94a3b8; margin-bottom: 2rem; line-height: 1.6; }
+        .hero-features { display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap; margin-top: 2rem; }
+        .hero-feature { display: flex; align-items: center; gap: .5rem; font-size: 1rem; color: #cbd5e1; }
+        .hero-feature-icon { width: 24px; height: 24px; background: #10b981; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+
+        /* Plans section */
+        .plans-section { padding: 4rem 2rem; position: relative; }
+        .section-header { text-align: center; margin-bottom: 3rem; }
+        .section-title { font-size: 2.5rem; font-weight: 700; margin-bottom: .5rem; }
+        .section-subtitle { color: #94a3b8; font-size: 1.1rem; }
+
+        /* Toggle */
+        .billing-toggle { display: flex; justify-content: center; align-items: center; gap: 1rem; margin-bottom: 3rem; }
+        .toggle-btn { background: transparent; border: 2px solid #3b82f6; color: #fff; padding: .75rem 2rem; border-radius: 50px; cursor: pointer; font-weight: 600; transition: all .3s ease; }
+        .toggle-btn.active { background: linear-gradient(135deg, #3b82f6, #8b5cf6); border-color: transparent; }
+        .toggle-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(59,130,246,.3); }
+        .economie-badge { background: linear-gradient(135deg, #10b981, #059669); color: #fff; padding: .25rem .75rem; border-radius: 20px; font-size: .8rem; font-weight: 600; }
+
+        /* Carrousel */
+        .plans-carousel { position: relative; max-width: 1400px; margin: 0 auto; }
+        .carousel-container { display: flex; gap: 2rem; overflow-x: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth; padding: 2rem 1rem; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+        .carousel-container::-webkit-scrollbar { display: none; }
+
+        /* Plan card */
+        .plan-card { flex: 0 0 350px; scroll-snap-align: center; background: linear-gradient(145deg, rgba(30,41,59,.8), rgba(15,23,42,.9)); border-radius: 24px; padding: 2rem; position: relative; transition: all .4s ease; border: 1px solid rgba(255,255,255,.1); backdrop-filter: blur(10px); }
+        .plan-card:hover { transform: translateY(-10px) scale(1.02); border-color: rgba(59,130,246,.5); box-shadow: 0 30px 60px rgba(0,0,0,.4); }
+        .plan-card.popular { border: 2px solid #f59e0b; transform: scale(1.05); }
+        .plan-card.popular:hover { transform: translateY(-10px) scale(1.07); }
+        .plan-card.current-plan { border: 2px solid #10b981; }
+
         /* Badges */
-        .plan-badge {
-            position: absolute;
-            top: -12px;
-            left: 50%;
-            transform: translateX(-50%);
-            padding: 0.5rem 1.5rem;
-            border-radius: 50px;
-            font-size: 0.8rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        
-        .badge-popular {
-            background: linear-gradient(135deg, #f59e0b, #ef4444);
-            color: white;
-        }
-        
-        .badge-recommended {
-            background: linear-gradient(135deg, #10b981, #059669);
-            color: white;
-        }
-        
-        .badge-special {
-            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
-            color: white;
-        }
-        
-        /* Header Plan */
-        .plan-header {
-            text-align: center;
-            margin-bottom: 1.5rem;
-            padding-bottom: 1.5rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        .plan-icon {
-            font-size: 3rem;
-            margin-bottom: 0.5rem;
-        }
-        
-        .plan-name {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 0.5rem;
-        }
-        
-        .plan-description {
-            color: #94a3b8;
-            font-size: 0.9rem;
-        }
-        
+        .plan-badge { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); padding: .5rem 1.5rem; border-radius: 50px; font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; white-space: nowrap; }
+        .badge-popular  { background: linear-gradient(135deg, #f59e0b, #ef4444); color: #fff; }
+        .badge-recommended { background: linear-gradient(135deg, #10b981, #059669); color: #fff; }
+        .badge-special { background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: #fff; }
+        .badge-current { background: linear-gradient(135deg, #10b981, #059669); color: #fff; }
+
+        /* Header plan */
+        .plan-header { text-align: center; margin-bottom: 1.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid rgba(255,255,255,.1); }
+        .plan-icon { font-size: 3rem; margin-bottom: .5rem; }
+        .plan-name { font-size: 1.5rem; font-weight: 700; margin-bottom: .5rem; }
+        .plan-description { color: #94a3b8; font-size: .9rem; }
+
         /* Prix */
-        .plan-price {
-            text-align: center;
-            margin: 1.5rem 0;
-        }
-        
-        .price-amount {
-            font-size: 3rem;
-            font-weight: 800;
-            color: #fff;
-            line-height: 1;
-        }
-        
-        .price-currency {
-            font-size: 1.2rem;
-            font-weight: 600;
-            color: #64748b;
-        }
-        
-        .price-period {
-            color: #94a3b8;
-            font-size: 0.9rem;
-        }
-        
-        .price-original {
-            text-decoration: line-through;
-            color: #64748b;
-            font-size: 1.2rem;
-            margin-right: 0.5rem;
-        }
-        
-        .economie-text {
-            color: #10b981;
-            font-size: 0.9rem;
-            font-weight: 600;
-            margin-top: 0.5rem;
-        }
-        
+        .plan-price { text-align: center; margin: 1.5rem 0; }
+        .price-amount { font-size: 3rem; font-weight: 800; color: #fff; line-height: 1; }
+        .price-currency { font-size: 1.2rem; font-weight: 600; color: #64748b; }
+        .price-period { color: #94a3b8; font-size: .9rem; }
+        .economie-text { color: #10b981; font-size: .9rem; font-weight: 600; margin-top: .5rem; }
+
         /* Features */
-        .plan-features {
-            list-style: none;
-            margin: 1.5rem 0;
-        }
-        
-        .plan-feature {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            padding: 0.75rem 0;
-            font-size: 0.95rem;
-            color: #e2e8f0;
-        }
-        
-        .feature-icon {
-            width: 20px;
-            height: 20px;
-            background: linear-gradient(135deg, #10b981, #059669);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-            flex-shrink: 0;
-        }
-        
-        .feature-icon.included {
-            background: linear-gradient(135deg, #10b981, #059669);
-        }
-        
-        .feature-icon.not-included {
-            background: #64748b;
-        }
-        
-        /* CTA Button */
-        .plan-cta {
-            width: 100%;
-            padding: 1rem 2rem;
-            border: none;
-            border-radius: 12px;
-            font-size: 1.1rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-top: 1rem;
-        }
-        
-        .plan-cta.primary {
-            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-            color: white;
-        }
-        
-        .plan-cta.secondary {
-            background: transparent;
-            border: 2px solid #3b82f6;
-            color: #3b82f6;
-        }
-        
-        .plan-cta:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 15px 30px rgba(59, 130, 246, 0.4);
-        }
-        
-        /* Navigation Carrousel */
-        .carousel-nav {
-            display: flex;
-            justify-content: center;
-            gap: 1rem;
-            margin-top: 2rem;
-        }
-        
-        .nav-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.3);
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        
-        .nav-dot.active {
-            background: #3b82f6;
-            width: 30px;
-            border-radius: 6px;
-        }
-        
-        .carousel-btn {
-            position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 50px;
-            height: 50px;
-            background: rgba(30, 41, 59, 0.8);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 50%;
-            color: white;
-            font-size: 1.5rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .carousel-btn:hover {
-            background: #3b82f6;
-            transform: translateY(-50%) scale(1.1);
-        }
-        
+        .plan-features { list-style: none; margin: 1.5rem 0; }
+        .plan-feature { display: flex; align-items: center; gap: .75rem; padding: .75rem 0; font-size: .95rem; color: #e2e8f0; }
+        .feature-icon { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0; }
+        .feature-icon.included { background: linear-gradient(135deg, #10b981, #059669); }
+        .feature-icon.not-included { background: #64748b; }
+
+        /* CTA */
+        .plan-cta { width: 100%; padding: 1rem 2rem; border: none; border-radius: 12px; font-size: 1.1rem; font-weight: 700; cursor: pointer; transition: all .3s ease; margin-top: 1rem; }
+        .plan-cta.primary { background: linear-gradient(135deg, #3b82f6, #8b5cf6); color: #fff; }
+        .plan-cta.secondary { background: transparent; border: 2px solid #3b82f6; color: #3b82f6; }
+        .plan-cta.current { background: linear-gradient(135deg, #10b981, #059669); color: #fff; cursor: default; }
+        .plan-cta:hover:not(.current) { transform: translateY(-3px); box-shadow: 0 15px 30px rgba(59,130,246,.4); }
+
+        /* Navigation dots */
+        .carousel-nav { display: flex; justify-content: center; gap: 1rem; margin-top: 2rem; }
+        .nav-dot { width: 12px; height: 12px; border-radius: 50%; background: rgba(255,255,255,.3); cursor: pointer; transition: all .3s ease; }
+        .nav-dot.active { background: #3b82f6; width: 30px; border-radius: 6px; }
+        .carousel-btn { position: absolute; top: 50%; transform: translateY(-50%); width: 50px; height: 50px; background: rgba(30,41,59,.8); border: 1px solid rgba(255,255,255,.1); border-radius: 50%; color: #fff; font-size: 1.5rem; cursor: pointer; transition: all .3s ease; display: flex; align-items: center; justify-content: center; }
+        .carousel-btn:hover { background: #3b82f6; transform: translateY(-50%) scale(1.1); }
         .carousel-btn.prev { left: -25px; }
         .carousel-btn.next { right: -25px; }
-        
-        /* Section Promotions */
-        .promo-section {
-            padding: 4rem 2rem;
-            background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(239, 68, 68, 0.1));
-        }
-        
-        .promo-banner {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 3rem;
-            align-items: center;
-        }
-        
-        .promo-content h2 {
-            font-size: 2.5rem;
-            margin-bottom: 1rem;
-        }
-        
-        .promo-content p {
-            color: #94a3b8;
-            font-size: 1.1rem;
-            margin-bottom: 2rem;
-        }
-        
-        .promo-code {
-            display: inline-block;
-            background: linear-gradient(135deg, #f59e0b, #ef4444);
-            padding: 1rem 2rem;
-            border-radius: 12px;
-            font-size: 1.5rem;
-            font-weight: 800;
-            letter-spacing: 3px;
-            margin-bottom: 1rem;
-        }
-        
-        .promo-image {
-            position: relative;
-        }
-        
-        .promo-image img {
-            width: 100%;
-            border-radius: 20px;
-            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4);
-        }
-        
-        /* Section FAQ */
-        .faq-section {
-            padding: 4rem 2rem;
-            max-width: 900px;
-            margin: 0 auto;
-        }
-        
-        .faq-item {
-            background: rgba(30, 41, 59, 0.5);
-            border-radius: 12px;
-            margin-bottom: 1rem;
-            overflow: hidden;
-        }
-        
-        .faq-question {
-            padding: 1.5rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            cursor: pointer;
-            font-weight: 600;
-        }
-        
-        .faq-answer {
-            padding: 0 1.5rem 1.5rem;
-            color: #94a3b8;
-            line-height: 1.6;
-        }
-        
-        /* Footer Section */
-        .trust-section {
-            padding: 3rem 2rem;
-            text-align: center;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        .trust-title {
-            color: #64748b;
-            font-size: 0.9rem;
-            margin-bottom: 2rem;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-        
-        .trust-badges {
-            display: flex;
-            justify-content: center;
-            gap: 3rem;
-            flex-wrap: wrap;
-        }
-        
-        .trust-badge {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            color: #94a3b8;
-        }
-        
-        .trust-badge-icon {
-            font-size: 1.5rem;
-        }
-        
+
+        /* Empty plans */
+        .no-plans { text-align: center; padding: 4rem 2rem; color: #64748b; }
+        .no-plans h3 { font-size: 1.5rem; margin-bottom: 1rem; color: #94a3b8; }
+
+        /* Promo */
+        .promo-section { padding: 4rem 2rem; background: linear-gradient(135deg, rgba(245,158,11,.1), rgba(239,68,68,.1)); }
+        .promo-banner { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; align-items: center; }
+        .promo-content h2 { font-size: 2.5rem; margin-bottom: 1rem; }
+        .promo-content p { color: #94a3b8; font-size: 1.1rem; margin-bottom: 2rem; }
+        .promo-code { display: inline-block; background: linear-gradient(135deg, #f59e0b, #ef4444); padding: 1rem 2rem; border-radius: 12px; font-size: 1.5rem; font-weight: 800; letter-spacing: 3px; margin-bottom: 1rem; }
+        .promo-image img { width: 100%; border-radius: 20px; box-shadow: 0 30px 60px rgba(0,0,0,.4); }
+
+        /* FAQ */
+        .faq-section { padding: 4rem 2rem; max-width: 900px; margin: 0 auto; }
+        .faq-item { background: rgba(30,41,59,.5); border-radius: 12px; margin-bottom: 1rem; overflow: hidden; }
+        .faq-question { padding: 1.5rem; display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-weight: 600; }
+        .faq-answer { padding: 0 1.5rem 1.5rem; color: #94a3b8; line-height: 1.6; }
+
+        /* Trust */
+        .trust-section { padding: 3rem 2rem; text-align: center; border-top: 1px solid rgba(255,255,255,.1); }
+        .trust-title { color: #64748b; font-size: .9rem; margin-bottom: 2rem; text-transform: uppercase; letter-spacing: 2px; }
+        .trust-badges { display: flex; justify-content: center; gap: 3rem; flex-wrap: wrap; }
+        .trust-badge { display: flex; align-items: center; gap: .5rem; color: #94a3b8; }
+        .trust-badge-icon { font-size: 1.5rem; }
+
         /* Responsive */
-        @media (max-width: 1024px) {
-            .plan-card {
-                flex: 0 0 300px;
-            }
-            
-            .carousel-btn {
-                display: none;
-            }
-        }
-        
+        @media (max-width: 1024px) { .plan-card { flex: 0 0 300px; } .carousel-btn { display: none; } }
         @media (max-width: 768px) {
-            .hero-title {
-                font-size: 2rem;
-            }
-            
-            .hero-subtitle {
-                font-size: 1rem;
-            }
-            
-            .plan-card {
-                flex: 0 0 280px;
-            }
-            
-            .promo-banner {
-                grid-template-columns: 1fr;
-                text-align: center;
-            }
-            
-            .section-title {
-                font-size: 1.8rem;
-            }
+            .hero-title { font-size: 2rem; }
+            .hero-subtitle { font-size: 1rem; }
+            .plan-card { flex: 0 0 280px; }
+            .promo-banner { grid-template-columns: 1fr; text-align: center; }
+            .section-title { font-size: 1.8rem; }
         }
-        
-        /* Animation d'entrée */
-        @keyframes slideInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        .animate-in {
-            animation: slideInUp 0.6s ease forwards;
-        }
-        
-        /* Délais pour les cartes */
-        .plan-card:nth-child(1) { animation-delay: 0.1s; }
-        .plan-card:nth-child(2) { animation-delay: 0.2s; }
-        .plan-card:nth-child(3) { animation-delay: 0.3s; }
-        .plan-card:nth-child(4) { animation-delay: 0.4s; }
+
+        @keyframes slideInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-in { animation: slideInUp .6s ease forwards; }
     </style>
 </head>
 <body>
-    <!-- Hero Section -->
+
+    <!-- Hero -->
     <section class="hero-section">
         <img src="/static/images/abonnements/hero-bg.jpg" alt="Académie Numérique" class="hero-bg" onerror="this.style.display='none'">
         <div class="hero-overlay"></div>
         <div class="hero-content">
-            <div class="hero-badge">🎓 Offre de lancement -20%</div>
+            <div class="hero-badge">Offre de lancement</div>
             <h1 class="hero-title">Choisissez votre plan d'apprentissage</h1>
             <p class="hero-subtitle">
-                Accédez à une éducation de qualité avec l'IA. Des milliers d'élèves déjà satisfaits.
+                Accédez à une éducation de qualité avec l'IA.
                 Annulez à tout moment.
             </p>
             <div class="hero-features">
                 <div class="hero-feature">
-                    <div class="hero-feature-icon">✓</div>
+                    <div class="hero-feature-icon">&#10003;</div>
                     <span>Certificats reconnus</span>
                 </div>
                 <div class="hero-feature">
-                    <div class="hero-feature-icon">✓</div>
-                    <span>Correction IA illimitée</span>
+                    <div class="hero-feature-icon">&#10003;</div>
+                    <span>Correction IA</span>
                 </div>
                 <div class="hero-feature">
-                    <div class="hero-feature-icon">✓</div>
-                    <span>Support 24/7</span>
+                    <div class="hero-feature-icon">&#10003;</div>
+                    <span>Paiement Mobile Money</span>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Section Plans -->
+    <!-- Plans -->
     <section class="plans-section">
         <div class="section-header">
             <h2 class="section-title">Des plans adaptés à vos besoins</h2>
-            <p class="section-subtitle">Commencez gratuitement, upgradez quand vous voulez</p>
+            <p class="section-subtitle">Commencez, upgradez quand vous voulez</p>
         </div>
 
         <!-- Toggle Mensuel/Annuel -->
         <div class="billing-toggle">
-            <button class="toggle-btn" id="monthlyBtn">Mensuel</button>
-            <button class="toggle-btn active" id="yearlyBtn">
+            <button class="toggle-btn active" id="monthlyBtn">Mensuel</button>
+            <button class="toggle-btn" id="yearlyBtn">
                 Annuel
-                <span class="economie-badge">Économisez 20%</span>
+                <span class="economie-badge">Économisez</span>
             </button>
         </div>
 
-        <!-- Carrousel Plans -->
+        {% if plans %}
+        <!-- Carrousel -->
         <div class="plans-carousel">
-            <button class="carousel-btn prev" onclick="scrollCarousel(-1)">‹</button>
-            
+            <button class="carousel-btn prev" onclick="scrollCarousel(-1)">&#8249;</button>
+
             <div class="carousel-container" id="plansContainer">
-                <!-- Plan Essentiel -->
-                <div class="plan-card animate-in">
-                    <div class="plan-header">
-                        <div class="plan-icon">📚</div>
-                        <h3 class="plan-name">Essentiel</h3>
-                        <p class="plan-description">Parfait pour débuter</p>
-                    </div>
-                    
-                    <div class="plan-price" data-monthly="5000" data-yearly="48000">
-                        <div class="price-monthly" style="display: none;">
-                            <span class="price-amount">5,000</span>
-                            <span class="price-currency">FCFA</span>
-                            <span class="price-period">/mois</span>
-                        </div>
-                        <div class="price-yearly">
-                            <span class="price-amount">48,000</span>
-                            <span class="price-currency">FCFA</span>
-                            <span class="price-period">/an</span>
-                        </div>
-                        <div class="economie-text" style="display: none;">Économisez 12,000 FCFA</div>
-                    </div>
-                    
-                    <ul class="plan-features">
-                        <li class="plan-feature">
-                            <span class="feature-icon included">✓</span>
-                            <span>Accès aux cours vidéos</span>
-                        </li>
-                        <li class="plan-feature">
-                            <span class="feature-icon included">✓</span>
-                            <span>5 compositions par mois</span>
-                        </li>
-                        <li class="plan-feature">
-                            <span class="feature-icon included">✓</span>
-                            <span>Certificats PDF</span>
-                        </li>
-                        <li class="plan-feature">
-                            <span class="feature-icon not-included">×</span>
-                            <span style="color: #64748b;">Correction IA avancée</span>
-                        </li>
-                        <li class="plan-feature">
-                            <span class="feature-icon not-included">×</span>
-                            <span style="color: #64748b;">Support prioritaire</span>
-                        </li>
-                    </ul>
-                    
-                    <button class="plan-cta secondary" onclick="selectPlan('essentiel')">
-                        Commencer
-                    </button>
-                </div>
+                {% for plan in plans %}
+                <div class="plan-card animate-in{% if plan.is_populaire %} popular{% endif %}{% if abonnement_actif and abonnement_actif.plan.id == plan.id %} current-plan{% endif %}"
+                     style="border-color: {{ plan.couleur }}33;">
 
-                <!-- Plan Standard (Populaire) -->
-                <div class="plan-card popular animate-in">
-                    <div class="plan-badge badge-popular">Le plus populaire</div>
-                    
-                    <div class="plan-header">
-                        <div class="plan-icon">⭐</div>
-                        <h3 class="plan-name">Standard</h3>
-                        <p class="plan-description">Le choix des élèves sérieux</p>
-                    </div>
-                    
-                    <div class="plan-price" data-monthly="10000" data-yearly="96000">
-                        <div class="price-monthly" style="display: none;">
-                            <span class="price-amount">10,000</span>
-                            <span class="price-currency">FCFA</span>
-                            <span class="price-period">/mois</span>
-                        </div>
-                        <div class="price-yearly">
-                            <span class="price-amount">96,000</span>
-                            <span class="price-currency">FCFA</span>
-                            <span class="price-period">/an</span>
-                        </div>
-                        <div class="economie-text">Économisez 24,000 FCFA</div>
-                    </div>
-                    
-                    <ul class="plan-features">
-                        <li class="plan-feature">
-                            <span class="feature-icon included">✓</span>
-                            <span>Tout du plan Essentiel</span>
-                        </li>
-                        <li class="plan-feature">
-                            <span class="feature-icon included">✓</span>
-                            <span>Compositions illimitées</span>
-                        </li>
-                        <li class="plan-feature">
-                            <span class="feature-icon included">✓</span>
-                            <span>Correction IA avancée</span>
-                        </li>
-                        <li class="plan-feature">
-                            <span class="feature-icon included">✓</span>
-                            <span>Rapports détaillés</span>
-                        </li>
-                        <li class="plan-feature">
-                            <span class="feature-icon not-included">×</span>
-                            <span style="color: #64748b;">Coaching personnalisé</span>
-                        </li>
-                    </ul>
-                    
-                    <button class="plan-cta primary" onclick="selectPlan('standard')">
-                        Choisir Standard
-                    </button>
-                </div>
+                    {% if abonnement_actif and abonnement_actif.plan.id == plan.id %}
+                        <div class="plan-badge badge-current">Plan actuel</div>
+                    {% elif plan.is_populaire %}
+                        <div class="plan-badge badge-popular">Le plus populaire</div>
+                    {% elif plan.is_recommande %}
+                        <div class="plan-badge badge-recommended">Recommandé</div>
+                    {% elif plan.badge_special %}
+                        <div class="plan-badge badge-special">{{ plan.badge_special }}</div>
+                    {% endif %}
 
-                <!-- Plan Premium -->
-                <div class="plan-card animate-in">
-                    <div class="plan-badge badge-recommended">Recommandé</div>
-                    
                     <div class="plan-header">
-                        <div class="plan-icon">🚀</div>
-                        <h3 class="plan-name">Premium</h3>
-                        <p class="plan-description">Pour une excellence totale</p>
+                        <div class="plan-icon">{{ plan.icone }}</div>
+                        <h3 class="plan-name">{{ plan.nom }}</h3>
+                        {% if plan.description_courte %}
+                        <p class="plan-description">{{ plan.description_courte }}</p>
+                        {% endif %}
                     </div>
-                    
-                    <div class="plan-price" data-monthly="15000" data-yearly="144000">
-                        <div class="price-monthly" style="display: none;">
-                            <span class="price-amount">15,000</span>
-                            <span class="price-currency">FCFA</span>
-                            <span class="price-period">/mois</span>
-                        </div>
-                        <div class="price-yearly">
-                            <span class="price-amount">144,000</span>
-                            <span class="price-currency">FCFA</span>
-                            <span class="price-period">/an</span>
-                        </div>
-                        <div class="economie-text">Économisez 36,000 FCFA</div>
-                    </div>
-                    
-                    <ul class="plan-features">
-                        <li class="plan-feature">
-                            <span class="feature-icon included">✓</span>
-                            <span>Tout du plan Standard</span>
-                        </li>
-                        <li class="plan-feature">
-                            <span class="feature-icon included">✓</span>
-                            <span>Coaching personnalisé</span>
-                        </li>
-                        <li class="plan-feature">
-                            <span class="feature-icon included">✓</span>
-                            <span>Accès prioritaire au support</span>
-                        </li>
-                        <li class="plan-feature">
-                            <span class="feature-icon included">✓</span>
-                            <span>Certificats premium holographiques</span>
-                        </li>
-                        <li class="plan-feature">
-                            <span class="feature-icon included">✓</span>
-                            <span>Préparation aux examens officiels</span>
-                        </li>
-                    </ul>
-                    
-                    <button class="plan-cta primary" onclick="selectPlan('premium')">
-                        Choisir Premium
-                    </button>
-                </div>
 
-                <!-- Plan Famille -->
-                <div class="plan-card animate-in">
-                    <div class="plan-badge badge-special">Économique</div>
-                    
-                    <div class="plan-header">
-                        <div class="plan-icon">👨‍👩‍👧‍👦</div>
-                        <h3 class="plan-name">Famille</h3>
-                        <p class="plan-description">Jusqu'à 4 membres</p>
-                    </div>
-                    
-                    <div class="plan-price" data-monthly="25000" data-yearly="240000">
-                        <div class="price-monthly" style="display: none;">
-                            <span class="price-amount">25,000</span>
-                            <span class="price-currency">FCFA</span>
+                    <div class="plan-price"
+                         data-monthly="{{ plan.prix_mensuel|floatformat:0 }}"
+                         data-yearly="{{ plan.prix_annuel|default:plan.prix_mensuel|floatformat:0 }}">
+                        <div class="price-monthly">
+                            <span class="price-amount">{{ plan.prix_mensuel|floatformat:0 }}</span>
+                            <span class="price-currency"> FCFA</span>
                             <span class="price-period">/mois</span>
                         </div>
-                        <div class="price-yearly">
-                            <span class="price-amount">240,000</span>
-                            <span class="price-currency">FCFA</span>
+                        <div class="price-yearly" style="display:none;">
+                            {% if plan.prix_annuel %}
+                            <span class="price-amount">{{ plan.prix_annuel|floatformat:0 }}</span>
+                            <span class="price-currency"> FCFA</span>
                             <span class="price-period">/an</span>
+                            {% else %}
+                            <span class="price-amount">{{ plan.prix_mensuel|floatformat:0 }}</span>
+                            <span class="price-currency"> FCFA</span>
+                            <span class="price-period">/mois</span>
+                            {% endif %}
                         </div>
-                        <div class="economie-text">Économisez 60,000 FCFA</div>
+                        {% if plan.reduction_annuelle_pourcentage and plan.prix_annuel %}
+                        <div class="economie-text" style="display:none;">
+                            Économisez {{ plan.reduction_annuelle_pourcentage|floatformat:0 }}%
+                        </div>
+                        {% endif %}
                     </div>
-                    
+
+                    {% if plan.features %}
                     <ul class="plan-features">
+                        {% for feature in plan.features %}
                         <li class="plan-feature">
-                            <span class="feature-icon included">✓</span>
-                            <span>4 comptes élèves</span>
+                            <span class="feature-icon included">&#10003;</span>
+                            <span>{{ feature }}</span>
                         </li>
+                        {% endfor %}
+                        {% for limitation in plan.limitations %}
                         <li class="plan-feature">
-                            <span class="feature-icon included">✓</span>
-                            <span>Toutes les fonctionnalités Premium</span>
+                            <span class="feature-icon not-included">&#215;</span>
+                            <span style="color:#64748b;">{{ limitation }}</span>
                         </li>
-                        <li class="plan-feature">
-                            <span class="feature-icon included">✓</span>
-                            <span>Dashboard parent avancé</span>
-                        </li>
-                        <li class="plan-feature">
-                            <span class="feature-icon included">✓</span>
-                            <span>Rapports familiaux comparatifs</span>
-                        </li>
-                        <li class="plan-feature">
-                            <span class="feature-icon included">✓</span>
-                            <span>Réductions sur certifications</span>
-                        </li>
+                        {% endfor %}
                     </ul>
-                    
-                    <button class="plan-cta primary" onclick="selectPlan('famille')">
-                        Choisir Famille
+                    {% endif %}
+
+                    {% if abonnement_actif and abonnement_actif.plan.id == plan.id %}
+                    <button class="plan-cta current" disabled>Plan actuel</button>
+                    {% else %}
+                    <button class="plan-cta {% if plan.is_populaire or plan.is_recommande %}primary{% else %}secondary{% endif %}"
+                            onclick="selectPlan('{{ plan.slug }}')">
+                        Choisir {{ plan.nom }}
                     </button>
+                    {% endif %}
                 </div>
+                {% endfor %}
             </div>
-            
-            <button class="carousel-btn next" onclick="scrollCarousel(1)">›</button>
+
+            <button class="carousel-btn next" onclick="scrollCarousel(1)">&#8250;</button>
         </div>
 
-        <!-- Navigation Dots -->
-        <div class="carousel-nav">
-            <div class="nav-dot active" onclick="goToSlide(0)"></div>
-            <div class="nav-dot" onclick="goToSlide(1)"></div>
-            <div class="nav-dot" onclick="goToSlide(2)"></div>
-            <div class="nav-dot" onclick="goToSlide(3)"></div>
+        <!-- Dots dynamiques -->
+        <div class="carousel-nav" id="carouselNav">
+            {% for plan in plans %}
+            <div class="nav-dot {% if forloop.first %}active{% endif %}" onclick="goToSlide({{ forloop.counter0 }})"></div>
+            {% endfor %}
         </div>
+
+        {% else %}
+        <div class="no-plans">
+            <h3>Aucun plan disponible pour le moment</h3>
+            <p>Revenez bientôt ou contactez-nous pour plus d'informations.</p>
+        </div>
+        {% endif %}
     </section>
 
-    <!-- Section Promotion -->
+    <!-- Promotions actives depuis la BD -->
+    {% for promo in promotions %}
     <section class="promo-section">
         <div class="promo-banner">
             <div class="promo-content">
-                <h2>🎁 Offre spéciale de rentrée</h2>
-                <p>
-                    Utilisez le code promo ci-dessous et obtenez <strong>1 mois gratuit</strong>
-                    sur votre premier abonnement. Offre limitée aux 100 premiers inscrits !
-                </p>
-                <div class="promo-code">RENTREE2024</div>
-                <p style="color: #f59e0b; font-weight: 600;">⏰ Plus que 23 places disponibles</p>
+                <h2>{{ promo.nom }}</h2>
+                <p>{{ promo.description }}</p>
+                {% if promo.code_promo %}
+                <div class="promo-code">{{ promo.code_promo }}</div>
+                {% endif %}
             </div>
-            <div class="promo-image">
-                <img src="/static/images/abonnements/promo-student.png" alt="Étudiant heureux" onerror="this.src='/static/images/placeholder-promo.jpg'">
-            </div>
+            <div class="promo-image"></div>
         </div>
     </section>
+    {% empty %}
+    <!-- Pas de promotion active -->
+    {% endfor %}
 
-    <!-- Section FAQ -->
+    <!-- FAQ -->
     <section class="faq-section">
         <div class="section-header">
             <h2 class="section-title">Questions fréquentes</h2>
         </div>
-        
+
         <div class="faq-item">
             <div class="faq-question" onclick="toggleFaq(this)">
                 <span>Puis-je changer de plan à tout moment ?</span>
                 <span>+</span>
             </div>
-            <div class="faq-answer" style="display: none;">
-                Oui ! Vous pouvez upgrader ou downgrader votre plan à tout moment. 
-                Les changements prennent effet immédiatement et vous êtes facturés au prorata.
+            <div class="faq-answer" style="display:none;">
+                Oui ! Vous pouvez upgrader ou downgrader votre plan à tout moment.
+                Les changements prennent effet immédiatement.
             </div>
         </div>
-        
-        <div class="faq-item">
-            <div class="faq-question" onclick="toggleFaq(this)">
-                <span>Comment fonctionne la garantie satisfait ou remboursé ?</span>
-                <span>+</span>
-            </div>
-            <div class="faq-answer" style="display: none;">
-                Vous disposez de 14 jours pour tester sans engagement. Si vous n'êtes pas satisfait, 
-                nous vous remboursons intégralement, sans questions.
-            </div>
-        </div>
-        
+
         <div class="faq-item">
             <div class="faq-question" onclick="toggleFaq(this)">
                 <span>Quels modes de paiement acceptez-vous ?</span>
                 <span>+</span>
             </div>
-            <div class="faq-answer" style="display: none;">
-                Nous acceptons les paiements via Mobile Money (MTN, Moov), cartes bancaires, 
-                et virement bancaire via notre partenaire FedaPay, sécurisé et fiable.
+            <div class="faq-answer" style="display:none;">
+                Nous acceptons les paiements via Mobile Money (MTN, Moov) via notre partenaire FedaPay.
             </div>
         </div>
-        
+
         <div class="faq-item">
             <div class="faq-question" onclick="toggleFaq(this)">
                 <span>Que se passe-t-il si mon abonnement expire ?</span>
                 <span>+</span>
             </div>
-            <div class="faq-answer" style="display: none;">
-                Vous recevrez des rappels 7, 3 et 1 jour avant expiration. Si vous ne renouvelez pas, 
-                votre accès sera suspendu mais vos données seront conservées pendant 6 mois.
+            <div class="faq-answer" style="display:none;">
+                Vous recevrez des rappels avant expiration. Si vous ne renouvelez pas,
+                votre accès sera suspendu mais vos données seront conservées.
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <div class="faq-question" onclick="toggleFaq(this)">
+                <span>La correction IA est-elle incluse dans l'abonnement ?</span>
+                <span>+</span>
+            </div>
+            <div class="faq-answer" style="display:none;">
+                Cela dépend du plan choisi. Certains plans incluent la correction IA illimitée,
+                d'autres proposent un paiement unitaire par composition corrigée.
             </div>
         </div>
     </section>
 
-    <!-- Section Confiance -->
+    <!-- Confiance -->
     <section class="trust-section">
-        <p class="trust-title">Ils nous font confiance</p>
+        <p class="trust-title">Nos garanties</p>
         <div class="trust-badges">
             <div class="trust-badge">
-                <span class="trust-badge-icon">🔒</span>
+                <span class="trust-badge-icon">&#128274;</span>
                 <span>Paiement sécurisé FedaPay</span>
             </div>
             <div class="trust-badge">
-                <span class="trust-badge-icon">✓</span>
-                <span>Certifié Ministère de l'Éducation</span>
+                <span class="trust-badge-icon">&#10003;</span>
+                <span>Mobile Money MTN / Moov</span>
             </div>
             <div class="trust-badge">
-                <span class="trust-badge-icon">🏆</span>
-                <span>Prix de l'Innovation 2024</span>
-            </div>
-            <div class="trust-badge">
-                <span class="trust-badge-icon">👥</span>
-                <span>50,000+ élèves satisfaits</span>
+                <span class="trust-badge-icon">&#127891;</span>
+                <span>Correction par IA avancée</span>
             </div>
         </div>
     </section>
 
     <script>
-        // Toggle Mensuel/Annuel
+        // Toggle Mensuel / Annuel
         const monthlyBtn = document.getElementById('monthlyBtn');
-        const yearlyBtn = document.getElementById('yearlyBtn');
-        
+        const yearlyBtn  = document.getElementById('yearlyBtn');
+
         monthlyBtn.addEventListener('click', () => {
             monthlyBtn.classList.add('active');
             yearlyBtn.classList.remove('active');
             updatePrices('monthly');
         });
-        
+
         yearlyBtn.addEventListener('click', () => {
             yearlyBtn.classList.add('active');
             monthlyBtn.classList.remove('active');
             updatePrices('yearly');
         });
-        
+
         function updatePrices(period) {
             document.querySelectorAll('.plan-card').forEach(card => {
-                const priceMonthly = card.querySelector('.price-monthly');
-                const priceYearly = card.querySelector('.price-yearly');
-                const economie = card.querySelector('.economie-text');
-                
+                const pm = card.querySelector('.price-monthly');
+                const py = card.querySelector('.price-yearly');
+                const eco = card.querySelector('.economie-text');
                 if (period === 'monthly') {
-                    priceMonthly.style.display = 'block';
-                    priceYearly.style.display = 'none';
-                    if (economie) economie.style.display = 'none';
+                    if (pm) pm.style.display = 'block';
+                    if (py) py.style.display = 'none';
+                    if (eco) eco.style.display = 'none';
                 } else {
-                    priceMonthly.style.display = 'none';
-                    priceYearly.style.display = 'block';
-                    if (economie) economie.style.display = 'block';
+                    if (pm) pm.style.display = 'none';
+                    if (py) py.style.display = 'block';
+                    if (eco) eco.style.display = 'block';
                 }
             });
         }
-        
+
         // Carrousel
         let currentSlide = 0;
         const container = document.getElementById('plansContainer');
         const dots = document.querySelectorAll('.nav-dot');
-        
+
         function scrollCarousel(direction) {
-            const cardWidth = 370; // 350px + 20px gap
-            container.scrollBy({
-                left: direction * cardWidth,
-                behavior: 'smooth'
-            });
+            container.scrollBy({ left: direction * 370, behavior: 'smooth' });
         }
-        
+
         function goToSlide(index) {
-            const cardWidth = 370;
-            container.scrollTo({
-                left: index * cardWidth,
-                behavior: 'smooth'
-            });
+            container.scrollTo({ left: index * 370, behavior: 'smooth' });
             updateDots(index);
         }
-        
+
         function updateDots(index) {
-            dots.forEach((dot, i) => {
-                dot.classList.toggle('active', i === index);
+            dots.forEach((d, i) => d.classList.toggle('active', i === index));
+        }
+
+        if (container) {
+            container.addEventListener('scroll', () => {
+                const newIndex = Math.round(container.scrollLeft / 370);
+                if (newIndex !== currentSlide && newIndex >= 0 && newIndex < dots.length) {
+                    currentSlide = newIndex;
+                    updateDots(currentSlide);
+                }
             });
         }
-        
-        // Observer le scroll pour mettre à jour les dots
-        container.addEventListener('scroll', () => {
-            const scrollLeft = container.scrollLeft;
-            const cardWidth = 370;
-            const newIndex = Math.round(scrollLeft / cardWidth);
-            if (newIndex !== currentSlide && newIndex >= 0 && newIndex < dots.length) {
-                currentSlide = newIndex;
-                updateDots(currentSlide);
-            }
-        });
-        
-        // FAQ Toggle
+
+        // FAQ
         function toggleFaq(element) {
             const answer = element.nextElementSibling;
-            const icon = element.querySelector('span:last-child');
-            
+            const icon   = element.querySelector('span:last-child');
             if (answer.style.display === 'none') {
                 answer.style.display = 'block';
                 icon.textContent = '−';
@@ -1046,30 +451,11 @@
                 icon.textContent = '+';
             }
         }
-        
-        // Sélection de plan
-        function selectPlan(planName) {
-            // Redirection vers la page de paiement
-            window.location.href = `/payments/souscrire/?plan=${planName}`;
+
+        // Redirection vers la page de souscription
+        function selectPlan(planSlug) {
+            window.location.href = '/payments/souscrire/?plan=' + planSlug;
         }
-        
-        // Animation au scroll
-        const observerOptions = {
-            threshold: 0.1,
-            rootMargin: '0px 0px -50px 0px'
-        };
-        
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('animate-in');
-                }
-            });
-        }, observerOptions);
-        
-        document.querySelectorAll('.plan-card').forEach(card => {
-            observer.observe(card);
-        });
     </script>
 </body>
 </html>

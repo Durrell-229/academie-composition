@@ -7,7 +7,7 @@ User = get_user_model()
 class DashboardService:
     @staticmethod
     def get_prof_stats(user):
-        from correction.models import CorrectionCopie
+        from corrections.models import CorrectionCopie
         return {
             'pending_corrections': CorrectionCopie.objects.filter(exam__createur=user, status='pending').count(),
             'avg_class_success': CorrectionCopie.objects.filter(exam__createur=user).aggregate(Avg('grade'))['grade__avg'] or 0,
@@ -15,11 +15,10 @@ class DashboardService:
 
     @staticmethod
     def get_student_stats(user):
-        from correction.models import CorrectionCopie
-        from gamification.models import UserBadge
+        from corrections.models import CorrectionCopie
         return {
             'completed_exams': CorrectionCopie.objects.filter(student=user, status='approved').count(),
-            'total_badges': UserBadge.objects.filter(user=user).count(),
+            'total_badges': 0,
             'next_exams': Exam.objects.filter(
                 assignments__eleve=user,
                 statut='publie'

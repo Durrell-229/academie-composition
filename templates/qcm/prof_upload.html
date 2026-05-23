@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+{% block title %}Importer un QCM{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto px-4 py-8 space-y-6">
+
+  <div class="flex items-center justify-between">
+    <h1 class="text-2xl font-black text-gray-800">Importer un QCM</h1>
+    <a href="{% url 'qcm_prof_liste' %}" class="text-gray-500 hover:text-gray-700 text-sm">← Retour à la liste</a>
+  </div>
+
+  <div class="bg-blue-50 border border-blue-200 rounded-2xl p-4 text-sm text-blue-800">
+    <strong>Formats acceptés :</strong> PDF, fichier texte (.txt), photo du QCM (JPG, PNG).<br>
+    L'IA extrait automatiquement les questions, les choix et le corrigé type.
+  </div>
+
+  <form method="post" enctype="multipart/form-data" class="bg-white rounded-2xl shadow-lg p-6 space-y-5" id="upload-form">
+    {% csrf_token %}
+
+    <!-- Zone de dépôt -->
+    <div id="drop-zone"
+         class="border-2 border-dashed border-gray-300 rounded-2xl p-10 text-center cursor-pointer hover:border-emerald-400 hover:bg-emerald-50 transition"
+         onclick="document.getElementById('fichier').click()">
+      <div class="text-5xl mb-3" id="drop-icon">📄</div>
+      <p class="font-bold text-gray-700" id="drop-text">Cliquez ou glissez un fichier ici</p>
+      <p class="text-sm text-gray-400 mt-1">PDF · TXT · JPG · PNG</p>
+      <input type="file" id="fichier" name="fichier" accept=".pdf,.txt,.jpg,.jpeg,.png,.webp"
+             class="hidden" onchange="updateDropZone(this)">
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm font-bold text-gray-700 mb-1">Matière</label>
+        <select name="matiere_id" class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-400 focus:outline-none">
+          <option value="">— Choisir —</option>
+          {% for m in matieres %}
+          <option value="{{ m.id }}">{{ m.nom }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-bold text-gray-700 mb-1">Classe (optionnel)</label>
+        <input type="text" name="classe" placeholder="Ex: Terminale D"
+               class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-400 focus:outline-none">
+      </div>
+      <div>
+        <label class="block text-sm font-bold text-gray-700 mb-1">Difficulté</label>
+        <select name="difficulte" class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-400 focus:outline-none">
+          <option value="facile">Facile</option>
+          <option value="moyen" selected>Moyen</option>
+          <option value="difficile">Difficile</option>
+        </select>
+      </div>
+      <div class="flex items-end">
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" name="est_publique" class="w-4 h-4 rounded accent-emerald-600">
+          <span class="text-sm text-gray-700">Rendre public</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="flex justify-end gap-4">
+      <a href="{% url 'qcm_prof_liste' %}" class="bg-gray-100 text-gray-700 font-bold px-6 py-3 rounded-xl hover:bg-gray-200 transition">
+        Annuler
+      </a>
+      <button type="submit" id="submit-btn"
+              class="bg-emerald-600 text-white font-bold px-8 py-3 rounded-xl hover:bg-emerald-700 transition flex items-center gap-2">
+        <span id="btn-text">Analyser et importer</span>
+        <span id="btn-spinner" class="hidden">
+          <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+          </svg>
+        </span>
+      </button>
+    </div>
+  </form>
+</div>
+
+<script>
+function updateDropZone(input) {
+  if (input.files && input.files[0]) {
+    const name = input.files[0].name;
+    const ext = name.split('.').pop().toLowerCase();
+    const icons = {pdf: '📕', txt: '📝', jpg: '🖼️', jpeg: '🖼️', png: '🖼️', webp: '🖼️'};
+    document.getElementById('drop-icon').textContent = icons[ext] || '📄';
+    document.getElementById('drop-text').textContent = name;
+    document.getElementById('drop-zone').classList.add('border-emerald-500', 'bg-emerald-50');
+  }
+}
+
+const zone = document.getElementById('drop-zone');
+zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('border-emerald-500', 'bg-emerald-50'); });
+zone.addEventListener('dragleave', () => zone.classList.remove('border-emerald-500', 'bg-emerald-50'));
+zone.addEventListener('drop', e => {
+  e.preventDefault();
+  const dt = e.dataTransfer;
+  if (dt.files.length) {
+    document.getElementById('fichier').files = dt.files;
+    updateDropZone(document.getElementById('fichier'));
+  }
+});
+
+document.getElementById('upload-form').addEventListener('submit', () => {
+  document.getElementById('btn-text').textContent = 'Analyse en cours…';
+  document.getElementById('btn-spinner').classList.remove('hidden');
+  document.getElementById('submit-btn').disabled = true;
+});
+</script>
+{% endblock %}

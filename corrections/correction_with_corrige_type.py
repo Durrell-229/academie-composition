@@ -1,7 +1,7 @@
 # Service de correction utilisant les corrigés types uploadés par les professeurs
 from ai_engine.nvidia_ocr import nvidia_ocr_service
 from corrections.corrige_type_service import corrige_type_service
-from bulletins.bulletin_auto_generator import bulletin_auto_generator
+bulletin_auto_generator = None  # bulletins supprimé
 from typing import Dict
 import logging
 

@@ -5,12 +5,7 @@ import json
 
 # Importer tous les modèles nécessaires
 from core.models import Matiere, Classe
-from schools.models import Etablissement, NiveauScolaire, AnneeScolaire
-from academic.models import Promotion, Inscription, MatiereClasse
 from accounts.models import User
-from exams.models import Epreuve, Question, Reponse
-from compositions.models import Composition, Soumission
-from qcm.models import QCM, QuestionQCM, ReponseQCM
 from notifications.models import Notification
 
 User = get_user_model()

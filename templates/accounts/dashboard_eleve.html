@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 {% block title %}Dashboard Élève — {{ user.first_name }} | Académie Numérique{% endblock %}
 {% block breadcrumb %}<span class="text-text-primary font-semibold">Tableau de bord</span>{% endblock %}
 
@@ -95,7 +95,7 @@
               <span class="text-danger font-bold">Se termine à {{ exam.date_fin|date:"H:i" }}</span>
             </p>
           </div>
-          <a href="{% url 'composition_room' exam.id %}"
+          <a href="{% url 'compositions:composition_room' exam.id %}"
              class="px-5 py-2.5 rounded-xl bg-danger text-white text-xs font-black uppercase tracking-wider hover:bg-red-600 transition flex items-center gap-2 shadow-lg shadow-danger/30">
             <i class="fa-solid fa-play"></i> Composer
           </a>
@@ -176,7 +176,7 @@
       <!-- Grille des actions -->
       <div class="relative grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6">
         <!-- Carte Épreuves -->
-        <a href="{% url 'exam_list' %}" class="group relative bg-gradient-to-br from-slate-900/80 to-slate-800/60 backdrop-blur-2xl border border-slate-700/30 rounded-2xl sm:rounded-3xl p-6 sm:p-8 hover:from-slate-900/90 hover:to-slate-800/70 hover:border-slate-600/50 hover:shadow-2xl hover:shadow-primary/20 hover:-translate-y-1 transition-all duration-500 ease-out overflow-hidden">
+        <a href="{% url 'exams:exam_list' %}" class="group relative bg-gradient-to-br from-slate-900/80 to-slate-800/60 backdrop-blur-2xl border border-slate-700/30 rounded-2xl sm:rounded-3xl p-6 sm:p-8 hover:from-slate-900/90 hover:to-slate-800/70 hover:border-slate-600/50 hover:shadow-2xl hover:shadow-primary/20 hover:-translate-y-1 transition-all duration-500 ease-out overflow-hidden">
           <!-- Ornement supérieur -->
           <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary via-purple-500 to-accent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
           
@@ -251,7 +251,7 @@
       <!-- Deuxième rangée -->
       <div class="relative grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6 mt-4 lg:mt-6">
         <!-- Carte Résultats -->
-        <a href="{% url 'ia_corrections_list' %}" class="group relative bg-gradient-to-br from-slate-900/80 to-slate-800/60 backdrop-blur-2xl border border-slate-700/30 rounded-3xl p-8 hover:from-slate-900/90 hover:to-slate-800/70 hover:border-slate-600/50 hover:shadow-2xl hover:shadow-success/20 hover:-translate-y-1 transition-all duration-500 ease-out overflow-hidden">
+        <a href="{% url 'compositions:ia_corrections_list' %}" class="group relative bg-gradient-to-br from-slate-900/80 to-slate-800/60 backdrop-blur-2xl border border-slate-700/30 rounded-3xl p-8 hover:from-slate-900/90 hover:to-slate-800/70 hover:border-slate-600/50 hover:shadow-2xl hover:shadow-success/20 hover:-translate-y-1 transition-all duration-500 ease-out overflow-hidden">
           <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-success via-emerald-500 to-teal-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
           
           <div class="relative z-10">
@@ -283,7 +283,7 @@
         </a>
 
         <!-- Carte Certificats -->
-        <a href="{% url 'my_certificates' %}" class="group relative bg-gradient-to-br from-slate-900/80 to-slate-800/60 backdrop-blur-2xl border border-slate-700/30 rounded-3xl p-8 hover:from-slate-900/90 hover:to-slate-800/70 hover:border-slate-600/50 hover:shadow-2xl hover:shadow-warning/20 hover:-translate-y-1 transition-all duration-500 ease-out overflow-hidden">
+        <a href="{% url 'eleve_programme' %}" class="group relative bg-gradient-to-br from-slate-900/80 to-slate-800/60 backdrop-blur-2xl border border-slate-700/30 rounded-3xl p-8 hover:from-slate-900/90 hover:to-slate-800/70 hover:border-slate-600/50 hover:shadow-2xl hover:shadow-warning/20 hover:-translate-y-1 transition-all duration-500 ease-out overflow-hidden">
           <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-warning via-amber-500 to-orange-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
           
           <div class="relative z-10">
@@ -467,7 +467,7 @@
         <h3 class="font-black text-sm uppercase tracking-wider flex items-center gap-2">
           <i class="fa-solid fa-calendar-days text-primary"></i> Prochaines épreuves
         </h3>
-        <a href="{% url 'exam_list' %}" class="text-xs text-primary hover:text-primary/80 font-bold transition">Tout voir →</a>
+        <a href="{% url 'exams:exam_list' %}" class="text-xs text-primary hover:text-primary/80 font-bold transition">Tout voir →</a>
       </div>
       <div class="divide-y divide-border-standard">
         {% for exam in upcoming_exams %}
@@ -548,7 +548,7 @@
         <h3 class="font-black text-sm uppercase tracking-wider flex items-center gap-2">
           <i class="fa-solid fa-list-check text-success"></i> Mes derniers résultats
         </h3>
-        <a href="{% url 'ia_corrections_list' %}" class="text-xs text-primary hover:text-primary/80 font-bold transition">Historique →</a>
+        <a href="{% url 'compositions:ia_corrections_list' %}" class="text-xs text-primary hover:text-primary/80 font-bold transition">Historique →</a>
       </div>
       <div class="overflow-x-auto">
         <table class="w-full text-sm">
@@ -586,7 +586,7 @@
                 {% endif %}
               </td>
               <td class="py-3 px-5 text-right flex items-center justify-end gap-2">
-                <a href="{% url 'result_detail' res.session.id %}" class="text-xs text-primary hover:text-primary/80 font-bold transition">Voir →</a>
+                <a href="{% url 'compositions:result_detail' res.session.id %}" class="text-xs text-primary hover:text-primary/80 font-bold transition">Voir →</a>
                 {% if res.bulletin_pdf %}
                 <a href="{{ res.bulletin_pdf.url }}" class="text-xs text-accent hover:text-accent/80 font-bold transition" title="Télécharger bulletin"><i class="fa-solid fa-file-pdf"></i></a>
                 {% endif %}
@@ -722,51 +722,43 @@
     </div>
   </div>
 
-  <!-- ═══ DERNIER BULLETIN ═══ -->
-  {% if user.bulletins.exists %}
-  {% with dernier_bulletin=user.bulletins.first %}
+  <!-- ═══ DERNIER BULLETIN (devoirs nationaux) ═══ -->
+  {% with dernier_bulletin=user.bulletins_devoir.first %}
+  {% if dernier_bulletin %}
   <div class="animate-in delay-4 glass rounded-2xl border border-border-standard overflow-hidden">
-    <div class="flex items-center justify-between px-6 py-4 border-b border-border-standard
-                {% if dernier_bulletin.type_bulletin == 'administratif' %}bg-primary/5{% else %}bg-accent/5{% endif %}">
+    <div class="flex items-center justify-between px-6 py-4 border-b border-border-standard bg-primary/5">
       <h3 class="font-black text-sm uppercase tracking-wider flex items-center gap-2">
-        <i class="fa-solid {% if dernier_bulletin.type_bulletin == 'administratif' %}fa-landmark text-primary{% else %}fa-briefcase text-accent{% endif %}"></i>
-        Dernier Bulletin — {{ dernier_bulletin.get_periode_display }}
+        <i class="fa-solid fa-file-lines text-primary"></i>
+        Dernier Bulletin — {{ dernier_bulletin.devoir.titre|truncatechars:30 }}
       </h3>
-      <a href="{% url 'bulletins:index' %}" class="text-xs text-primary hover:text-primary/80 font-bold transition">Tous les bulletins →</a>
+      <a href="{% url 'eleve_programme' %}" class="text-xs text-primary hover:text-primary/80 font-bold transition">Voir programme →</a>
     </div>
     <div class="p-6">
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+      <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
         <div class="text-center p-3 rounded-xl bg-bg-tertiary/30 border border-border-standard">
           <p class="text-[9px] font-black uppercase tracking-widest text-text-muted mb-1">Moyenne</p>
           <p class="text-2xl font-black {% if dernier_bulletin.moyenne_generale >= 16 %}note-excellent{% elif dernier_bulletin.moyenne_generale >= 10 %}note-moyen{% else %}note-insuffisant{% endif %}">
-            {{ dernier_bulletin.moyenne_generale }}<span class="text-xs text-text-muted">/20</span>
+            {{ dernier_bulletin.moyenne_generale|default:"—" }}<span class="text-xs text-text-muted">/20</span>
           </p>
         </div>
         <div class="text-center p-3 rounded-xl bg-bg-tertiary/30 border border-border-standard">
           <p class="text-[9px] font-black uppercase tracking-widest text-text-muted mb-1">Rang</p>
-          <p class="text-2xl font-black text-warning">{{ dernier_bulletin.rang }}<span class="text-xs text-text-muted">/{{ dernier_bulletin.effectif_total }}</span></p>
+          <p class="text-2xl font-black text-warning">{{ dernier_bulletin.rang|default:"—" }}</p>
         </div>
         <div class="text-center p-3 rounded-xl bg-bg-tertiary/30 border border-border-standard">
-          <p class="text-[9px] font-black uppercase tracking-widest text-text-muted mb-1">Type</p>
-          <p class="text-xs font-bold text-white">{% if dernier_bulletin.type_bulletin == 'administratif' %}Ministère{% else %}Entreprise{% endif %}</p>
-        </div>
-        <div class="text-center p-3 rounded-xl bg-bg-tertiary/30 border border-border-standard">
-          <p class="text-[9px] font-black uppercase tracking-widest text-text-muted mb-1">Année</p>
-          <p class="text-xs font-bold text-white">{{ dernier_bulletin.annee_scolaire }}</p>
+          <p class="text-[9px] font-black uppercase tracking-widest text-text-muted mb-1">Statut</p>
+          <p class="text-xs font-bold text-white">{{ dernier_bulletin.get_statut_display }}</p>
         </div>
       </div>
-      <div class="flex items-center gap-3">
-        <a href="{% url 'bulletins:detail' dernier_bulletin.id %}" class="flex-1 py-2.5 rounded-xl bg-bg-tertiary/30 border border-border-standard text-xs font-bold text-white hover:bg-bg-tertiary/50 transition text-center">
-          <i class="fa-solid fa-eye mr-1"></i> Consulter
-        </a>
-        <a href="{% url 'bulletins:download' dernier_bulletin.id %}" class="py-2.5 px-4 rounded-xl {% if dernier_bulletin.type_bulletin == 'administratif' %}bg-primary{% else %}bg-accent{% endif %} text-white text-xs font-bold hover:opacity-90 transition flex items-center gap-2">
-          <i class="fa-solid fa-download"></i> Télécharger PDF
-        </a>
-      </div>
+      {% if dernier_bulletin.file_pdf %}
+      <a href="{% url 'eleve_download_bulletin' dernier_bulletin.id %}" class="inline-flex items-center gap-2 py-2.5 px-5 rounded-xl bg-primary text-white text-xs font-bold hover:opacity-90 transition">
+        <i class="fa-solid fa-download"></i> Télécharger PDF
+      </a>
+      {% endif %}
     </div>
   </div>
-  {% endwith %}
   {% endif %}
+  {% endwith %}
 
   <!-- ═══ SYSTÈME DE PARRAINAGE ═══ -->
   <div class="animate-in delay-5 glass rounded-2xl border border-border-standard overflow-hidden">
@@ -891,6 +883,136 @@
       </div>
     </div>
   </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       SECTION ABONNEMENT & PAIEMENTS ÉLÈVE
+  ═══════════════════════════════════════════════════════ -->
+  <div class="space-y-4 animate-in">
+    <div class="flex items-center gap-3">
+      <div class="w-1 h-7 rounded-full bg-gradient-to-b from-emerald-400 to-emerald-600"></div>
+      <h2 class="text-sm font-black uppercase tracking-widest text-text-primary">Mon Abonnement & Paiements</h2>
+    </div>
+
+    {% if mon_abonnement %}
+    <!-- Abonnement actif -->
+    <div class="glass rounded-2xl border {% if mon_abonnement.statut == 'actif' %}border-emerald-500/30{% elif mon_abonnement.statut == 'expire' %}border-rose-500/30{% else %}border-amber-500/30{% endif %} p-6">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div class="flex items-center gap-4">
+          <div class="w-14 h-14 rounded-2xl {% if mon_abonnement.statut == 'actif' %}bg-emerald-500/20{% elif mon_abonnement.statut == 'expire' %}bg-rose-500/20{% else %}bg-amber-500/20{% endif %} flex items-center justify-center text-2xl flex-shrink-0">
+            {{ mon_abonnement.plan.icone|default:"🎓" }}
+          </div>
+          <div>
+            <p class="text-xs font-black uppercase tracking-widest {% if mon_abonnement.statut == 'actif' %}text-emerald-400{% elif mon_abonnement.statut == 'expire' %}text-rose-400{% else %}text-amber-400{% endif %} mb-1">
+              {% if mon_abonnement.statut == 'actif' %}✓ Abonnement actif{% elif mon_abonnement.statut == 'expire' %}✗ Abonnement expiré{% else %}⏳ {{ mon_abonnement.get_statut_display }}{% endif %}
+            </p>
+            <h3 class="text-xl font-black text-white">{{ mon_abonnement.plan.nom }}</h3>
+            <p class="text-xs text-text-muted mt-1">
+              {{ mon_abonnement.plan.get_niveau_display }} ·
+              {% if mon_abonnement.statut == 'actif' %}
+                <span class="{% if mon_abonnement.jours_restants <= 7 %}text-rose-400 font-bold{% else %}text-emerald-400{% endif %}">
+                  {{ mon_abonnement.jours_restants }} jour{{ mon_abonnement.jours_restants|pluralize }} restant{{ mon_abonnement.jours_restants|pluralize }}
+                </span>
+              {% else %}
+                Expiré le {{ mon_abonnement.date_fin|date:"d/m/Y" }}
+              {% endif %}
+            </p>
+          </div>
+        </div>
+        <div class="flex flex-col gap-2 flex-shrink-0">
+          <a href="/payments/mes-abonnements/"
+             class="px-5 py-2.5 rounded-xl bg-primary/20 border border-primary/30 text-primary font-bold text-sm text-center hover:bg-primary/30 transition">
+            Gérer mon abonnement
+          </a>
+          {% if mon_abonnement.statut != 'actif' %}
+          <a href="/payments/abonnements/"
+             class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-primary to-accent text-white font-black text-sm text-center hover:opacity-90 transition">
+            Renouveler maintenant
+          </a>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Barre de progression abonnement -->
+      {% if mon_abonnement.statut == 'actif' and mon_abonnement.plan.duree_jours > 0 %}
+      <div class="mt-4 pt-4 border-t border-border-standard">
+        <div class="flex justify-between text-[10px] text-text-muted mb-1.5">
+          <span>Début : {{ mon_abonnement.date_debut|date:"d/m/Y" }}</span>
+          <span>Fin : {{ mon_abonnement.date_fin|date:"d/m/Y" }}</span>
+        </div>
+        <div class="h-2 bg-bg-tertiary/40 rounded-full overflow-hidden">
+          {% with pct=mon_abonnement.jours_restants|floatformat:0 %}
+          <div class="h-full rounded-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all"
+               style="width: {% widthratio mon_abonnement.jours_restants mon_abonnement.plan.duree_jours 100 %}%"></div>
+          {% endwith %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Historique paiements abonnement -->
+    {% if mes_paiements_abo %}
+    <div class="glass rounded-2xl border border-border-standard overflow-hidden">
+      <div class="px-5 py-4 border-b border-border-standard">
+        <h3 class="font-black text-sm uppercase tracking-wider flex items-center gap-2">
+          <i class="fa-solid fa-clock-rotate-left text-primary text-xs"></i> Historique de paiements
+        </h3>
+      </div>
+      <div class="divide-y divide-border-standard">
+        {% for p in mes_paiements_abo %}
+        <div class="flex items-center gap-4 px-5 py-3">
+          <div class="flex-1 min-w-0">
+            <p class="text-xs font-semibold text-text-primary">{{ p.abonnement.plan.nom }}</p>
+            <p class="text-[10px] text-text-muted">{{ p.date_creation|date:"d/m/Y H:i" }} · {{ p.get_mode_paiement_display }}</p>
+          </div>
+          <div class="text-right flex-shrink-0">
+            <p class="text-sm font-black text-white">{{ p.montant|floatformat:0 }} FCFA</p>
+            {% if p.statut == 'succes' %}
+            <span class="text-[9px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded font-bold">✓ Payé</span>
+            {% elif p.statut == 'en_attente' %}
+            <span class="text-[9px] bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded font-bold">⏳ En attente</span>
+            {% elif p.statut == 'echec' %}
+            <span class="text-[9px] bg-rose-500/20 text-rose-400 px-1.5 py-0.5 rounded font-bold">✗ Échec</span>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <!-- Pas d'abonnement -->
+    <div class="glass rounded-2xl border border-amber-500/20 p-8 text-center">
+      <div class="w-16 h-16 rounded-2xl bg-amber-500/20 flex items-center justify-center text-3xl mx-auto mb-4">🎓</div>
+      <h3 class="text-lg font-black text-white mb-2">Aucun abonnement actif</h3>
+      <p class="text-sm text-text-muted mb-5 max-w-md mx-auto">
+        Souscris à un abonnement pour débloquer la correction IA, les QCM illimités et les certificats.
+      </p>
+      <a href="/payments/abonnements/"
+         class="inline-block px-8 py-3 rounded-xl bg-gradient-to-r from-primary to-accent text-white font-black hover:opacity-90 transition hover:-translate-y-0.5">
+        Voir les plans →
+      </a>
+    </div>
+    {% endif %}
+
+    <!-- Dossier candidature -->
+    {% if mon_dossier %}
+    <div class="glass rounded-2xl border border-border-standard p-5 flex items-center gap-4">
+      <div class="w-12 h-12 rounded-xl {% if mon_dossier.statut == 'valide' %}bg-emerald-500/20{% elif mon_dossier.statut == 'rejete' %}bg-rose-500/20{% elif mon_dossier.statut == 'soumis' %}bg-blue-500/20{% else %}bg-amber-500/20{% endif %} flex items-center justify-center text-xl flex-shrink-0">
+        <i class="fa-solid fa-folder {% if mon_dossier.statut == 'valide' %}text-emerald-400{% elif mon_dossier.statut == 'rejete' %}text-rose-400{% elif mon_dossier.statut == 'soumis' %}text-blue-400{% else %}text-amber-400{% endif %}"></i>
+      </div>
+      <div class="flex-1">
+        <p class="text-xs font-black uppercase tracking-widest text-text-muted mb-0.5">Dossier de Candidature</p>
+        <p class="text-sm font-bold text-text-primary">{{ mon_dossier.get_statut_display }}</p>
+        {% if mon_dossier.commentaire_admin %}
+        <p class="text-[10px] text-text-muted mt-0.5 italic">{{ mon_dossier.commentaire_admin|truncatechars:80 }}</p>
+        {% endif %}
+      </div>
+      <a href="/payments/mon-dossier/" class="text-xs text-primary font-bold hover:underline flex-shrink-0">Voir →</a>
+    </div>
+    {% endif %}
+
+  </div><!-- fin section abonnement élève -->
 
 </div>
 

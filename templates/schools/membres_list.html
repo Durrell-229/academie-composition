@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+{% block title %}Membres — {{ etablissement.nom }} | Académie Numérique{% endblock %}
+{% block breadcrumb %}
+<a href="{% url 'schools:etablissement_list' %}" class="text-text-muted hover:text-text-primary">Établissements</a>
+<span class="mx-2 text-text-muted">/</span>
+<a href="{% url 'schools:etablissement_detail' etablissement.id %}" class="text-text-muted hover:text-text-primary">{{ etablissement.nom }}</a>
+<span class="mx-2 text-text-muted">/</span>
+<span class="text-text-primary font-semibold">Membres</span>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- Header -->
+  <div class="animate-in flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-2xl bg-bg-card border border-border-standard">
+    <div>
+      <h1 class="text-xl font-black text-text-primary flex items-center gap-3">
+        <i class="fa-solid fa-users text-accent"></i> Membres de {{ etablissement.nom }}
+      </h1>
+      <p class="text-sm text-text-muted mt-1">{{ membres.count }} membre{{ membres.count|pluralize }} actif{{ membres.count|pluralize }}</p>
+    </div>
+    <a href="{% url 'schools:etablissement_detail' etablissement.id %}" class="text-sm text-text-muted hover:text-text-primary font-bold flex items-center gap-2">
+      <i class="fa-solid fa-arrow-left"></i> Retour à l'établissement
+    </a>
+  </div>
+
+  <div class="animate-in delay-1 grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+    <!-- Ajouter un membre -->
+    <div class="bg-bg-card border border-border-standard rounded-2xl p-5">
+      <h2 class="font-bold text-text-primary mb-4 flex items-center gap-2">
+        <i class="fa-solid fa-user-plus text-primary"></i> Ajouter un membre
+      </h2>
+      <form method="post" action="{% url 'schools:membre_add' etablissement.id %}" class="space-y-3">
+        {% csrf_token %}
+        <div>
+          <label class="block text-xs font-bold text-text-muted mb-1">Email de l'utilisateur</label>
+          <input type="email" name="email" required placeholder="exemple@email.com"
+                 class="w-full px-3 py-2.5 rounded-xl bg-bg-card border border-border-standard text-text-primary placeholder-text-muted focus:outline-none focus:border-primary text-sm transition">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-text-muted mb-1">Rôle</label>
+          <select name="role" class="w-full px-3 py-2.5 rounded-xl bg-bg-card border border-border-standard text-text-primary focus:outline-none focus:border-primary text-sm">
+            {% for value, label in roles_choices %}
+            <option value="{{ value }}">{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <button type="submit" class="w-full py-2.5 bg-primary text-white font-bold rounded-xl hover:opacity-90 transition text-sm">
+          <i class="fa-solid fa-plus mr-2"></i> Ajouter
+        </button>
+      </form>
+    </div>
+
+    <!-- Liste des membres -->
+    <div class="lg:col-span-2 bg-bg-card border border-border-standard rounded-2xl p-5">
+      <h2 class="font-bold text-text-primary mb-4 flex items-center gap-2">
+        <i class="fa-solid fa-list text-accent"></i> Membres actuels
+      </h2>
+
+      {% if membres %}
+      <div class="space-y-2">
+        {% for m in membres %}
+        <div class="flex items-center justify-between p-3 rounded-xl bg-bg-card border border-border-standard hover:border-primary/30 transition group">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center text-sm font-black text-primary flex-shrink-0">
+              {{ m.user.first_name|slice:":1" }}{{ m.user.last_name|slice:":1" }}
+            </div>
+            <div>
+              <p class="text-sm font-bold text-text-primary">{{ m.user.full_name }}</p>
+              <p class="text-xs text-text-muted">{{ m.user.email }}</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full
+              {% if m.role == 'admin' %}bg-warning/10 text-warning
+              {% elif m.role == 'directeur' %}bg-accent/10 text-accent
+              {% elif m.role == 'professeur' %}bg-primary/10 text-primary
+              {% else %}bg-success/10 text-success{% endif %}">
+              {{ m.get_role_display }}
+            </span>
+            {% if m.est_principal %}
+            <span class="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold">Principal</span>
+            {% endif %}
+            <form method="post" action="{% url 'schools:membre_remove' etablissement.id m.user.id %}" class="inline">
+              {% csrf_token %}
+              <button type="submit" class="text-text-muted hover:text-danger transition text-xs p-1" title="Retirer" onclick="return confirm('Retirer {{ m.user.full_name }} ?')">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </form>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="text-center py-10 text-text-muted">
+        <i class="fa-solid fa-users-slash text-3xl mb-3 opacity-30"></i>
+        <p class="font-bold">Aucun membre pour l'instant</p>
+        <p class="text-sm mt-1">Ajoutez des membres via le formulaire ci-contre.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}

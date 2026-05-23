@@ -61,13 +61,17 @@ def traiter_paiement_mobile(paiement_id, telephone, operateur):
         
     except Exception as e:
         logger.error(f"❌ Erreur traitement paiement {paiement_id}: {e}")
-        # Marquer la transaction comme échouée
-        TransactionPaiement.objects.create(
-            paiement_id=paiement_id,
-            type_transaction='paiement',
-            est_reussi=False,
-            message_erreur=str(e)
-        )
+        try:
+            TransactionPaiement.objects.create(
+                paiement_id=paiement_id,
+                type_transaction='paiement',
+                montant=0,
+                mode_paiement='mobile_money',
+                est_reussi=False,
+                message_erreur=str(e)
+            )
+        except Exception as log_err:
+            logger.error(f"Impossible de logguer la transaction echouee: {log_err}")
         raise
 
 
@@ -203,7 +207,7 @@ def generer_rapport_financier(etablissement_id, date_debut, date_fin, rapport_id
         from django.shortcuts import get_object_or_404
         from decimal import Decimal
         
-        from schools.models import Etablissement as EtablissementModel
+        from core.models import Organisation as EtablissementModel
         etablissement = get_object_or_404(EtablissementModel, id=etablissement_id)
         
         # Calculer les statistiques
@@ -576,7 +580,7 @@ def generer_rapport_abonnements(etablissement_id, date_debut, date_fin):
     """
     try:
         from django.shortcuts import get_object_or_404
-        from schools.models import Etablissement
+        from core.models import Organisation as Etablissement
         from .models import AbonnementEleve, PaiementAbonnement
         
         etablissement = get_object_or_404(Etablissement, id=etablissement_id)

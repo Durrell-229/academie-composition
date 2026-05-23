@@ -1,0 +1,157 @@
+{% extends 'base.html' %}
+{% block title %}Mon dossier de candidature{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-8 space-y-6">
+
+  <!-- En-tête -->
+  <div class="bg-gradient-to-r from-amber-500 to-orange-600 rounded-2xl p-8 text-white">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div>
+        <h1 class="text-3xl font-black">Dossier de candidature</h1>
+        <p class="text-amber-100 mt-1">{{ type_label }} — {{ user.get_full_name }}</p>
+      </div>
+      <div class="text-right">
+        <p class="text-4xl font-black">{{ progression }}%</p>
+        <p class="text-amber-100 text-sm">complété</p>
+      </div>
+    </div>
+
+    <!-- Barre de progression -->
+    <div class="mt-4 bg-amber-700 rounded-full h-3">
+      <div class="bg-white rounded-full h-3 transition-all duration-500" style="width: {{ progression }}%"></div>
+    </div>
+    <p class="text-amber-100 text-sm mt-2">{{ nb_soumis_valides }} / {{ nb_obligatoires }} documents obligatoires soumis</p>
+  </div>
+
+  <!-- Statut du dossier -->
+  <div class="bg-white rounded-2xl shadow-lg p-6">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-xl flex items-center justify-center text-2xl
+          {% if dossier.statut == 'valide' %}bg-green-100
+          {% elif dossier.statut == 'rejete' %}bg-red-100
+          {% elif dossier.statut == 'soumis' %}bg-blue-100
+          {% else %}bg-gray-100{% endif %}">
+          {% if dossier.statut == 'valide' %}✅
+          {% elif dossier.statut == 'rejete' %}❌
+          {% elif dossier.statut == 'soumis' %}⏳
+          {% else %}📋{% endif %}
+        </div>
+        <div>
+          <p class="font-bold text-gray-800">{{ dossier.get_statut_display }}</p>
+          {% if dossier.date_soumission %}
+          <p class="text-sm text-gray-500">Soumis le {{ dossier.date_soumission|date:"d/m/Y à H:i" }}</p>
+          {% endif %}
+        </div>
+      </div>
+      {% if dossier.statut == 'valide' %}
+      <span class="bg-green-100 text-green-700 font-bold px-4 py-2 rounded-full text-sm">Dossier complet ✓</span>
+      {% endif %}
+    </div>
+
+    {% if dossier.commentaire_admin %}
+    <div class="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+      <p class="text-sm font-bold text-amber-800 mb-1">Message de l'administration :</p>
+      <p class="text-sm text-amber-700">{{ dossier.commentaire_admin }}</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Liste des documents -->
+  <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-100">
+      <h2 class="font-bold text-gray-800">Documents requis</h2>
+      <p class="text-sm text-gray-500 mt-0.5">Les documents marqués * sont obligatoires</p>
+    </div>
+
+    <div class="divide-y divide-gray-100">
+      {% for item in docs_avec_statut %}
+      <div class="p-6">
+        <div class="flex flex-col sm:flex-row sm:items-start gap-4">
+
+          <!-- Icône statut -->
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center text-lg flex-shrink-0
+            {% if item.statut == 'valide' %}bg-green-100
+            {% elif item.statut == 'rejete' %}bg-red-100
+            {% elif item.statut == 'en_attente' %}bg-yellow-100
+            {% else %}bg-gray-100{% endif %}">
+            {% if item.statut == 'valide' %}✅
+            {% elif item.statut == 'rejete' %}❌
+            {% elif item.statut == 'en_attente' %}⏳
+            {% else %}📄{% endif %}
+          </div>
+
+          <!-- Info document -->
+          <div class="flex-1">
+            <div class="flex flex-wrap items-center gap-2">
+              <p class="font-bold text-gray-800">
+                {% if item.doc.est_obligatoire %}<span class="text-red-500">* </span>{% endif %}
+                {{ item.doc.nom }}
+              </p>
+              {% if item.statut == 'valide' %}
+              <span class="bg-green-100 text-green-700 text-xs font-bold px-2 py-0.5 rounded-full">Validé</span>
+              {% elif item.statut == 'rejete' %}
+              <span class="bg-red-100 text-red-700 text-xs font-bold px-2 py-0.5 rounded-full">Rejeté</span>
+              {% elif item.statut == 'en_attente' %}
+              <span class="bg-yellow-100 text-yellow-700 text-xs font-bold px-2 py-0.5 rounded-full">En attente</span>
+              {% else %}
+              <span class="bg-gray-100 text-gray-600 text-xs font-bold px-2 py-0.5 rounded-full">Non soumis</span>
+              {% endif %}
+            </div>
+
+            {% if item.doc.description %}
+            <p class="text-sm text-gray-500 mt-1">{{ item.doc.description }}</p>
+            {% endif %}
+            <p class="text-xs text-gray-400 mt-1">Formats : {{ item.doc.formats_acceptes }} · Max {{ item.doc.taille_max_mo }} Mo</p>
+
+            {% if item.soumission and item.soumission.commentaire_admin %}
+            <div class="mt-2 p-2 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700">
+              <strong>Commentaire :</strong> {{ item.soumission.commentaire_admin }}
+            </div>
+            {% endif %}
+          </div>
+
+          <!-- Zone upload -->
+          <div class="flex-shrink-0">
+            {% if item.statut != 'valide' %}
+            <form method="post" action="{% url 'payments:soumettre_document' item.doc.id %}" enctype="multipart/form-data">
+              {% csrf_token %}
+              <label class="cursor-pointer">
+                <input type="file" name="fichier"
+                       accept=".pdf,.jpg,.jpeg,.png,.webp"
+                       onchange="this.form.submit()" class="hidden">
+                <span class="inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white font-bold px-4 py-2 rounded-xl text-sm transition cursor-pointer">
+                  {% if item.soumission %}Remplacer{% else %}Uploader{% endif %}
+                </span>
+              </label>
+            </form>
+            {% else %}
+            <a href="{{ item.soumission.fichier.url }}" target="_blank"
+               class="inline-flex items-center gap-2 bg-green-100 hover:bg-green-200 text-green-700 font-bold px-4 py-2 rounded-xl text-sm transition">
+              Voir le fichier
+            </a>
+            {% endif %}
+          </div>
+
+        </div>
+      </div>
+      {% empty %}
+      <div class="p-12 text-center">
+        <div class="text-4xl mb-3">📋</div>
+        <p class="text-gray-500">Aucun document requis pour le moment.</p>
+        <p class="text-sm text-gray-400 mt-1">L'administration n'a pas encore configuré de liste de documents.</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="flex justify-between items-center">
+    <a href="{% url 'payments:espace_paiement' %}" class="text-gray-500 hover:text-gray-700 text-sm">← Espace paiement</a>
+    {% if progression == 100 and dossier.statut == 'incomplet' %}
+    <p class="text-sm text-green-600 font-bold">✓ Tous les documents sont soumis — en attente de validation</p>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

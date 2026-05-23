@@ -2,6 +2,7 @@ import logging
 import uuid
 from typing import List
 from ninja import Router, Schema, File, Form
+from ninja.errors import HttpError
 from ninja.files import UploadedFile
 from ninja.pagination import paginate, PageNumberPagination
 from compositions.models import CompositionSession, StudentSubmissionFile, StudentAnswer
@@ -125,7 +126,7 @@ def report_cheat(request, session_id: uuid.UUID, data: CheatSchema):
     session.cheat_logs.append(new_log)
     
     if session.cheat_count >= 3:
-        session.statut = 'exclu'
+        session.statut = CompositionSession.Statut.EXCLU
         
     session.save()
     return {"cheat_count": session.cheat_count, "status": session.statut}

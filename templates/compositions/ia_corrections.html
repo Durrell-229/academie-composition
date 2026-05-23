@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 
 {% block title %}Corrections IA | Académie IA{% endblock %}
 
@@ -55,7 +55,7 @@
             <!-- Bottom Action -->
             <div class="p-6 bg-bg-tertiary/30 border-t border-border-standard flex items-center justify-between">
                 <span class="text-[10px] font-bold text-text-muted uppercase tracking-widest">{{ r.corrige_at|date:"d M Y" }}</span>
-                <a href="{% url 'result_detail' r.session.id %}" class="bg-primary/10 hover:bg-primary text-primary hover:text-white px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all">
+                <a href="{% url 'compositions:result_detail' r.session.id %}" class="bg-primary/10 hover:bg-primary text-primary hover:text-white px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all">
                     Voir l'Analyse
                 </a>
             </div>
@@ -70,7 +70,7 @@
         </div>
         <h2 class="text-2xl font-bold text-white mb-4">Aucune correction IA pour le moment</h2>
         <p class="text-text-secondary max-w-md mx-auto mb-10">Dès que vous soumettez un examen, notre intelligence artificielle analysera votre copie chirurgicalement.</p>
-        <a href="{% url 'exam_list' %}" class="inline-block bg-button-gradient px-10 py-5 rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl shadow-primary/20 hover:scale-105 transition">
+        <a href="{% url 'exams:exam_list' %}" class="inline-block bg-button-gradient px-10 py-5 rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl shadow-primary/20 hover:scale-105 transition">
             Passer un Examen
         </a>
     </div>

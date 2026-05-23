@@ -18,9 +18,37 @@ def create_course(request):
         return redirect('home')
     
     if request.method == 'POST':
-        # Logic de création ici...
-        messages.success(request, "Cours soumis pour approbation.")
-        return redirect('cours:index')
+        title = request.POST.get('title', '').strip()
+        description = request.POST.get('description', '').strip()
+        matiere_id = request.POST.get('matiere')
+        classe_id = request.POST.get('classe')
+        difficulty = request.POST.get('difficulty', Course.Difficulty.BEGINNER)
+
+        if not title:
+            messages.error(request, "Le titre du cours est obligatoire.")
+        else:
+            from core.models import Matiere, Classe
+            course = Course(
+                title=title,
+                description=description,
+                difficulty=difficulty,
+                creator=request.user,
+                status='pending',
+                is_published=False,
+            )
+            if matiere_id:
+                try:
+                    course.matiere = Matiere.objects.get(id=matiere_id)
+                except Matiere.DoesNotExist:
+                    pass
+            if classe_id:
+                try:
+                    course.classe = Classe.objects.get(id=classe_id)
+                except Classe.DoesNotExist:
+                    pass
+            course.save()
+            messages.success(request, "Cours soumis pour approbation.")
+            return redirect('cours:index')
         
     return render(request, 'cours/create.html', {
         'classe_choices': CLASSE_CHOICES,

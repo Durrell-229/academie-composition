@@ -124,12 +124,12 @@
                style="background: #0f172a; border: 1px solid #475569;">
             {% for classe in classes %}
             <label class="flex items-center gap-2 cursor-pointer px-1 py-0.5 rounded hover:bg-slate-800">
-              <input type="checkbox" name="classes_concernees" value="{{ classe.id }}"
+              <input type="checkbox" name="classes_concernees" value="{{ classe.nom }}"
                      class="w-4 h-4 rounded text-indigo-500"
-                     {% if classe.id|stringformat:"s" in selected_classes %}checked{% endif %}>
+                     {% if classe.nom in selected_classes %}checked{% endif %}>
               <span class="text-slate-300 text-sm">
                 {{ classe.nom }}
-                <span class="text-slate-500 text-xs ml-1">· {{ classe.etablissement.nom }}</span>
+                <span class="text-slate-500 text-xs ml-1">{{ classe.niveau }}{% if classe.section %} · {{ classe.section }}{% endif %}</span>
               </span>
             </label>
             {% empty %}

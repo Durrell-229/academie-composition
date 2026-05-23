@@ -274,12 +274,17 @@ def devoir_detail_view(request, pk):
     matieres_info = []
     for m in devoir.matieres.all():
         dm = DevoirMatiere.objects.filter(devoir=devoir, matiere=m).first()
-        coeff = devoir.coefficients_par_matiere.get(str(m.id), devoir.coefficient_default)
+        coeff = dm.coefficient if dm else devoir.coefficient_default
         matieres_info.append({
             'matiere': m,
             'epreuve': dm,
             'coefficient': coeff,
-            'horaire': devoir.horaires.get(m.nom, {}),
+            'horaire': {
+                'date': dm.date_epreuve if dm else None,
+                'start': dm.heure_debut if dm else None,
+                'end': dm.heure_fin if dm else None,
+                'salle': dm.salle if dm else '',
+            },
         })
 
     bulletins_en_attente = BulletinDevoir.objects.filter(devoir=devoir, statut=BulletinDevoir.StatutBulletin.EN_ATTENTE).count()
@@ -696,11 +701,18 @@ def prof_dashboard_view(request):
         statut__in=[Devoir.Statut.BROUILLON, Devoir.Statut.PROGRAMME_PUBLIE, Devoir.Statut.EN_COURS]
     ).prefetch_related('matieres').order_by('-date_debut')
 
-    # Build data with submission status
+    # Pre-fetch all DevoirMatiere records to avoid N+1 queries
+    devoir_ids = [d.pk for d in devoirs]
+    dm_qs = DevoirMatiere.objects.filter(devoir_id__in=devoir_ids).select_related('matiere')
+    dm_map = {}
+    for dm in dm_qs:
+        dm_map[(dm.devoir_id, dm.matiere_id)] = dm
+
+    # Build data with submission status — no extra DB hit per (devoir, matiere)
     devoirs_data = []
     for devoir in devoirs:
         for matiere in devoir.matieres.all():
-            dm = DevoirMatiere.objects.filter(devoir=devoir, matiere=matiere).first()
+            dm = dm_map.get((devoir.pk, matiere.pk))
             devoirs_data.append({
                 'devoir': devoir,
                 'matiere': matiere,
@@ -1199,11 +1211,9 @@ def _corriger_copie_ia(reponse, devoir_matiere):
 def _generer_bulletin_pour_eleve(devoir, eleve, classe):
     """Generate a BulletinDevoir for a student from their corrected copies."""
     try:
-        from bulletins.coefficients_benin import get_coefficient as get_benin_coefficient
-        from bulletins.services import BulletinService
-        
-        # Déterminer la série
-        serie = BulletinService._extract_serial(classe or (eleve.classe if eleve else ''))
+        # bulletins supprimé
+        get_benin_coefficient = lambda *a, **k: 1
+        serie = classe or (eleve.classe if eleve else '')
         
         with transaction.atomic():
             # Get all corrected responses for this student
@@ -1302,14 +1312,14 @@ def _recalculer_moyenne_bulletin(bulletin):
 
 
 def _generer_bulletin_pdf(bulletin):
-    """Generate PDF for a bulletin using bulletin.jpg-inspired template."""
-    from bulletins.coefficients_benin import get_coefficient as get_benin_coefficient
-    from bulletins.services import BulletinService
-    
-    # Déterminer la série
+    """Generate PDF — bulletins supprimé, no-op."""
+    logger.warning("_generer_bulletin_pdf appelé mais module bulletins supprimé.")
+    return
+
+    # Code désactivé — conservé pour référence future
     eleve = bulletin.eleve
     classe = bulletin.classe or (eleve.classe if eleve else '')
-    serie = BulletinService._extract_serial(classe)
+    serie = classe
     
     # Appliquer les coefficients officiels aux lignes
     lignes = bulletin.lignes.all().order_by('matiere')

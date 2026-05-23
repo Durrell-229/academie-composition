@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% block title %}Fonctionnalité Pro — QCM{% endblock %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center px-4 py-12">
+  <div class="max-w-2xl w-full text-center">
+
+    <div class="bg-white rounded-3xl shadow-2xl p-10">
+      <div class="text-6xl mb-6">🔒</div>
+      <h1 class="text-3xl font-black text-gray-800 mb-4">Fonctionnalité Pro</h1>
+      <p class="text-gray-600 text-lg mb-8">
+        Les QCM interactifs corrigés par IA et la génération de bulletins sont
+        réservés aux élèves abonnés. Choisissez un plan pour accéder à cette fonctionnalité.
+      </p>
+
+      {% if plans %}
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
+        {% for plan in plans %}
+        <div class="border-2 {% if plan.is_populaire %}border-emerald-500 ring-2 ring-emerald-300{% else %}border-gray-200{% endif %} rounded-2xl p-6 text-left hover:shadow-lg transition">
+          {% if plan.is_populaire %}<span class="bg-emerald-500 text-white text-xs font-bold px-3 py-1 rounded-full">Plus populaire</span>{% endif %}
+          <h3 class="text-xl font-black text-gray-800 mt-3">{{ plan.nom }}</h3>
+          <p class="text-3xl font-black text-emerald-600 mt-2">
+            {{ plan.prix_mensuel|floatformat:0 }} <span class="text-sm font-normal text-gray-500">FCFA/mois</span>
+          </p>
+          <ul class="mt-4 space-y-2 text-sm text-gray-600">
+            {% for feature in plan.features %}
+            <li class="flex items-start gap-2"><span class="text-emerald-500 mt-0.5">✓</span>{{ feature }}</li>
+            {% endfor %}
+          </ul>
+          <a href="{% url 'payments:souscrire' %}?plan={{ plan.slug }}"
+             class="mt-6 block w-full text-center bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition">
+            Choisir ce plan
+          </a>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <a href="{% url 'payments:abonnements' %}"
+         class="inline-block bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-10 py-4 rounded-2xl text-lg transition mb-6">
+        Voir les plans d'abonnement
+      </a>
+      {% endif %}
+
+      <p class="text-sm text-gray-400 mt-4">
+        <a href="{% url 'dashboard' %}" class="text-emerald-600 hover:underline">Retour au tableau de bord</a>
+      </p>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

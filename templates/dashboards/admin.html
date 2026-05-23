@@ -117,6 +117,267 @@
         </div>
     </div>
 
+    <!-- ═══════════════════════════════════════════════════════
+         SECTION PAIEMENTS & FINANCES
+    ═══════════════════════════════════════════════════════ -->
+
+    <!-- Titre section -->
+    <div class="flex items-center gap-3 mt-4">
+        <div class="w-1 h-8 bg-emerald-500 rounded-full"></div>
+        <h2 class="text-2xl font-black text-gray-800">Finances & Paiements</h2>
+        <span class="text-xs bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full font-bold">XOF</span>
+    </div>
+
+    <!-- KPIs financiers -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+        <div class="bg-gradient-to-br from-emerald-500 to-emerald-600 p-6 rounded-2xl shadow-lg text-white">
+            <p class="text-emerald-100 text-sm font-bold uppercase tracking-widest mb-2">Encaissé (total)</p>
+            <h3 class="text-2xl font-black">{{ paiement_total_encaisse|default:0|floatformat:0 }} FCFA</h3>
+            <p class="text-emerald-100 text-xs mt-1">Taux recouvrement : {{ taux_recouvrement|default:0 }} %</p>
+        </div>
+
+        <div class="bg-gradient-to-br from-blue-500 to-blue-600 p-6 rounded-2xl shadow-lg text-white">
+            <p class="text-blue-100 text-sm font-bold uppercase tracking-widest mb-2">Revenus ce mois</p>
+            <h3 class="text-2xl font-black">{{ revenus_totaux_mois|default:0|floatformat:0 }} FCFA</h3>
+            <p class="text-blue-100 text-xs mt-1">Abonnements + corrections IA</p>
+        </div>
+
+        <div class="bg-gradient-to-br from-violet-500 to-violet-600 p-6 rounded-2xl shadow-lg text-white">
+            <p class="text-violet-100 text-sm font-bold uppercase tracking-widest mb-2">Abonnements actifs</p>
+            <h3 class="text-2xl font-black">{{ abonnements_actifs|default:0 }}</h3>
+            <p class="text-violet-100 text-xs mt-1">{{ abonnements_en_attente|default:0 }} en attente · {{ abonnements_expires|default:0 }} expirés</p>
+        </div>
+
+        <div class="bg-gradient-to-br from-rose-500 to-rose-600 p-6 rounded-2xl shadow-lg text-white">
+            <p class="text-rose-100 text-sm font-bold uppercase tracking-widest mb-2">Impayés / En retard</p>
+            <h3 class="text-2xl font-black">{{ paiements_en_retard|default:0 }}</h3>
+            <p class="text-rose-100 text-xs mt-1">Restant dû : {{ paiement_total_restant|default:0|floatformat:0 }} FCFA</p>
+        </div>
+    </div>
+
+    <!-- Graphique revenus + Dossiers candidature -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+        <!-- Graphique revenus sur 6 mois -->
+        <div class="lg:col-span-2 bg-white p-8 rounded-2xl shadow-lg">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-gray-800">Revenus Mensuels (Abonnements)</h3>
+                <span class="text-xs text-gray-400 bg-gray-100 px-3 py-1 rounded-full">6 derniers mois</span>
+            </div>
+            <canvas id="revenusChart" height="220"></canvas>
+        </div>
+
+        <!-- Dossiers candidature -->
+        <div class="bg-white p-8 rounded-2xl shadow-lg">
+            <h3 class="text-xl font-bold text-gray-800 mb-6">Dossiers Candidature</h3>
+            <div class="space-y-4">
+                <div class="flex justify-between items-center p-4 bg-blue-50 rounded-xl">
+                    <span class="text-blue-700 font-semibold">Soumis</span>
+                    <span class="text-2xl font-black text-blue-700">{{ dossiers_soumis|default:0 }}</span>
+                </div>
+                <div class="flex justify-between items-center p-4 bg-green-50 rounded-xl">
+                    <span class="text-green-700 font-semibold">Validés</span>
+                    <span class="text-2xl font-black text-green-700">{{ dossiers_valides|default:0 }}</span>
+                </div>
+                <div class="flex justify-between items-center p-4 bg-red-50 rounded-xl">
+                    <span class="text-red-700 font-semibold">Rejetés</span>
+                    <span class="text-2xl font-black text-red-700">{{ dossiers_rejetes|default:0 }}</span>
+                </div>
+                {% if dossiers_soumis > 0 %}
+                <a href="/admin/payments/dossiercandidature/?statut=soumis"
+                   class="block text-center bg-blue-600 text-white py-3 rounded-xl font-bold text-sm hover:bg-blue-700 transition">
+                    Traiter {{ dossiers_soumis }} dossier{{ dossiers_soumis|pluralize }}
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Abonnements par plan + Derniers paiements abonnement -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+        <!-- Abonnements par plan -->
+        <div class="bg-white p-8 rounded-2xl shadow-lg">
+            <h3 class="text-xl font-bold text-gray-800 mb-6">Abonnements par Plan</h3>
+            <div class="space-y-3">
+                {% for plan in abonnements_par_plan %}
+                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                    <div class="flex items-center gap-3">
+                        {% if plan.plan__niveau == 'elite' %}
+                        <span class="w-3 h-3 rounded-full bg-violet-500"></span>
+                        {% elif plan.plan__niveau == 'premium' %}
+                        <span class="w-3 h-3 rounded-full bg-amber-500"></span>
+                        {% elif plan.plan__niveau == 'standard' %}
+                        <span class="w-3 h-3 rounded-full bg-blue-500"></span>
+                        {% else %}
+                        <span class="w-3 h-3 rounded-full bg-gray-400"></span>
+                        {% endif %}
+                        <span class="font-semibold text-gray-800">{{ plan.plan__nom }}</span>
+                    </div>
+                    <span class="font-black text-gray-700 text-lg">{{ plan.total }}</span>
+                </div>
+                {% empty %}
+                <p class="text-gray-400 text-center py-6">Aucun abonnement actif</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Derniers paiements d'abonnement -->
+        <div class="bg-white p-8 rounded-2xl shadow-lg">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-gray-800">Derniers Paiements Abonnement</h3>
+                <a href="/admin/payments/paiementabonnement/" class="text-xs text-blue-600 hover:underline font-semibold">Tout voir</a>
+            </div>
+            <div class="space-y-3">
+                {% for p in derniers_paiements_abo %}
+                <div class="flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 transition">
+                    <div class="flex items-center gap-3">
+                        <img src="https://ui-avatars.com/api/?name={{ p.eleve.first_name }}+{{ p.eleve.last_name }}&background=random&size=32"
+                             class="w-8 h-8 rounded-full">
+                        <div>
+                            <p class="font-semibold text-gray-800 text-sm">{{ p.eleve.get_full_name }}</p>
+                            <p class="text-xs text-gray-400">{{ p.abonnement.plan.nom }}</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <p class="font-black text-gray-800 text-sm">{{ p.montant|floatformat:0 }} FCFA</p>
+                        {% if p.statut == 'succes' %}
+                        <span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold">Succès</span>
+                        {% elif p.statut == 'en_attente' %}
+                        <span class="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full font-bold">En attente</span>
+                        {% elif p.statut == 'echec' %}
+                        <span class="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-bold">Échec</span>
+                        {% else %}
+                        <span class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-bold">{{ p.statut }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-gray-400 text-center py-6">Aucun paiement récent</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Derniers paiements frais scolaires + Payouts commissions -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+        <!-- Derniers paiements frais scolaires -->
+        <div class="bg-white p-8 rounded-2xl shadow-lg">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-gray-800">Frais Scolaires Récents</h3>
+                <a href="/admin/payments/paiement/" class="text-xs text-blue-600 hover:underline font-semibold">Tout voir</a>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="text-gray-400 text-xs uppercase tracking-widest border-b border-gray-100">
+                            <th class="pb-3 text-left font-medium">Élève</th>
+                            <th class="pb-3 text-left font-medium">Frais</th>
+                            <th class="pb-3 text-right font-medium">Montant</th>
+                            <th class="pb-3 text-right font-medium">Statut</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in derniers_paiements %}
+                        <tr class="border-b border-gray-50 hover:bg-gray-50 transition">
+                            <td class="py-3 font-semibold text-gray-800">{{ p.eleve.get_full_name }}</td>
+                            <td class="py-3 text-gray-500">{{ p.frais.nom }}</td>
+                            <td class="py-3 text-right font-bold text-gray-800">{{ p.montant_paye|floatformat:0 }} FCFA</td>
+                            <td class="py-3 text-right">
+                                {% if p.statut == 'complet' %}
+                                <span class="bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-xs font-bold">Complet</span>
+                                {% elif p.statut == 'partiel' %}
+                                <span class="bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full text-xs font-bold">Partiel</span>
+                                {% elif p.statut == 'en_retard' %}
+                                <span class="bg-red-100 text-red-700 px-2 py-0.5 rounded-full text-xs font-bold">Retard</span>
+                                {% else %}
+                                <span class="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs font-bold">{{ p.statut }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="py-6 text-center text-gray-400">Aucun paiement enregistré</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Payouts commissions -->
+        <div class="bg-white p-8 rounded-2xl shadow-lg">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-gray-800">Commissions (Payouts)</h3>
+                <div class="flex gap-3">
+                    <span class="text-xs bg-amber-100 text-amber-700 px-3 py-1 rounded-full font-bold">{{ payouts_en_attente|default:0 }} en attente</span>
+                    <a href="/admin/payments/payoutcommission/" class="text-xs text-blue-600 hover:underline font-semibold">Tout voir</a>
+                </div>
+            </div>
+            <div class="space-y-3">
+                {% for payout in derniers_payouts %}
+                <div class="flex items-center justify-between p-3 rounded-xl bg-gray-50">
+                    <div class="flex items-center gap-3">
+                        {% if payout.beneficiaire == 'admin' %}
+                        <span class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-xs">ADM</span>
+                        {% elif payout.beneficiaire == 'commercial' %}
+                        <span class="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-amber-700 font-bold text-xs">COM</span>
+                        {% else %}
+                        <span class="w-8 h-8 rounded-full bg-violet-100 flex items-center justify-center text-violet-700 font-bold text-xs">PRE</span>
+                        {% endif %}
+                        <div>
+                            <p class="font-semibold text-gray-800 text-sm">{{ payout.get_beneficiaire_display }}</p>
+                            <p class="text-xs text-gray-400">{{ payout.telephone }}</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <p class="font-black text-gray-800 text-sm">{{ payout.montant|floatformat:0 }} FCFA</p>
+                        {% if payout.statut == 'succes' %}
+                        <span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold">Envoyé</span>
+                        {% elif payout.statut == 'en_attente' %}
+                        <span class="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full font-bold">En attente</span>
+                        {% elif payout.statut == 'echec' %}
+                        <span class="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-bold">Échec</span>
+                        {% else %}
+                        <span class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-bold">{{ payout.statut }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-gray-400 text-center py-6">Aucun payout récent</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Corrections IA unitaires -->
+    <div class="bg-white p-6 rounded-2xl shadow-lg flex flex-wrap items-center gap-8">
+        <div>
+            <p class="text-gray-400 text-xs uppercase font-bold tracking-widest mb-1">Corrections IA unitaires</p>
+            <p class="text-3xl font-black text-gray-800">{{ corrections_unitaires_succes|default:0 }} vendues</p>
+        </div>
+        <div class="border-l border-gray-200 pl-8">
+            <p class="text-gray-400 text-xs uppercase font-bold tracking-widest mb-1">Revenus corrections ce mois</p>
+            <p class="text-3xl font-black text-emerald-600">{{ revenus_corrections_mois|default:0|floatformat:0 }} FCFA</p>
+        </div>
+        <div class="ml-auto">
+            <a href="/admin/payments/paiementcorrectionunitaire/"
+               class="inline-block bg-slate-800 text-white px-6 py-3 rounded-xl font-bold text-sm hover:bg-slate-700 transition">
+                Voir toutes les corrections &rarr;
+            </a>
+        </div>
+    </div>
+
+    <!-- Séparateur -->
+    <div class="border-t border-gray-200 pt-2">
+        <div class="flex items-center gap-3">
+            <div class="w-1 h-8 bg-slate-500 rounded-full"></div>
+            <h2 class="text-2xl font-black text-gray-800">Utilisateurs & Activité</h2>
+        </div>
+    </div>
+
     <!-- Utilisateurs récents -->
     <div class="bg-white p-8 rounded-2xl shadow-lg">
         <h3 class="text-xl font-bold text-gray-800 mb-6">Utilisateurs Récents</h3>
@@ -157,9 +418,11 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    const ctx = document.getElementById('activiteChart');
-    if (ctx) {
-        new Chart(ctx, {
+
+    /* ── Graphique activité mensuelle ── */
+    const ctxActivite = document.getElementById('activiteChart');
+    if (ctxActivite) {
+        new Chart(ctxActivite, {
             type: 'line',
             data: {
                 labels: {{ mois_labels|safe|default:"['Jan','Fév','Mar','Avr','Mai','Juin']" }},
@@ -195,6 +458,51 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+    /* ── Graphique revenus mensuels (abonnements) ── */
+    const ctxRevenus = document.getElementById('revenusChart');
+    if (ctxRevenus) {
+        new Chart(ctxRevenus, {
+            type: 'bar',
+            data: {
+                labels: {{ mois_labels|safe|default:"['Jan','Fév','Mar','Avr','Mai','Juin']" }},
+                datasets: [
+                    {
+                        label: 'Revenus abonnements (FCFA)',
+                        data: {{ revenus_par_mois|safe|default:"[0,0,0,0,0,0]" }},
+                        backgroundColor: 'rgba(16, 185, 129, 0.85)',
+                        borderColor: 'rgb(16, 185, 129)',
+                        borderWidth: 2,
+                        borderRadius: 8,
+                        borderSkipped: false,
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom' },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => `  ${ctx.parsed.y.toLocaleString('fr-FR')} FCFA`
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(0,0,0,0.05)' },
+                        ticks: {
+                            callback: v => v.toLocaleString('fr-FR') + ' F'
+                        }
+                    },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    }
+
 });
 </script>
 {% endblock %}

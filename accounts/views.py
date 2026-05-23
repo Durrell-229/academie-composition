@@ -1,3 +1,4 @@
+import secrets
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
@@ -70,8 +71,8 @@ def dashboard_view(request):
     role = user.role
 
     from exams.models import Exam, ExamAssignment
-    from compositions.models import CompositionSession
-    from correction.models import CorrectionCopie
+    from compositions.models import CompositionSession, Resultat as CompositionResultat
+    from corrections.models import CorrectionCopie
 
     now = timezone.now()
     context = {'user': user}
@@ -102,22 +103,21 @@ def dashboard_view(request):
             eleve=user
         ).select_related('exam', 'exam__matiere')
 
-        results = CorrectionCopie.objects.filter(
-            student=user,
-            status='approved'
+        results = CompositionResultat.objects.filter(
+            session__eleve=user
         ).select_related(
-            'exam', 'exam__matiere'
+            'session', 'session__exam', 'session__exam__matiere'
         ).order_by('-created_at')
 
         # Stats
-        moyenne = results.aggregate(Avg('grade'))['grade__avg'] or 0
+        moyenne = results.aggregate(Avg('note'))['note__avg'] or 0
         total_minutes = sessions.aggregate(
             Sum('exam__duree_minutes')
         )['exam__duree_minutes__sum'] or 0
 
         # Progression sur les 3 derniers vs 3 précédents
-        recent_3 = list(results.values_list('grade', flat=True)[:3])
-        prev_3 = list(results.values_list('grade', flat=True)[3:6])
+        recent_3 = list(results.values_list('note', flat=True)[:3])
+        prev_3 = list(results.values_list('note', flat=True)[3:6])
         recent_avg = sum(float(n) for n in recent_3) / len(recent_3) if recent_3 else 0
         prev_avg = sum(float(n) for n in prev_3) / len(prev_3) if prev_3 else 0
         progression = round(recent_avg - prev_avg, 1) if prev_3 else 0
@@ -199,6 +199,39 @@ def dashboard_view(request):
         except Exception:
             devoirs_programmes = 0
 
+        # ── Abonnement & Paiements élève ────────────────────────
+        try:
+            from payments.models import AbonnementEleve, PaiementAbonnement, DossierCandidature
+            mon_abonnement = AbonnementEleve.objects.filter(
+                eleve=user
+            ).select_related('plan').order_by('-date_souscription').first()
+            mes_paiements_abo = list(
+                PaiementAbonnement.objects.filter(eleve=user).order_by('-date_creation')[:5]
+            )
+            try:
+                mon_dossier = DossierCandidature.objects.filter(eleve=user).first()
+            except Exception:
+                mon_dossier = None
+        except Exception:
+            mon_abonnement = None
+            mes_paiements_abo = []
+            mon_dossier = None
+
+        # ── Organisations de l'élève ─────────────────────────────
+        try:
+            from accounts.models import MembreOrganisation
+            mes_memberships = list(
+                MembreOrganisation.objects.filter(user=user, is_active=True)
+                .select_related('organisation')
+                .order_by('-est_principal', 'organisation__nom')
+            )
+            mon_etablissement = next((m.organisation for m in mes_memberships if m.est_principal), None)
+            if not mon_etablissement and mes_memberships:
+                mon_etablissement = mes_memberships[0].organisation
+        except Exception:
+            mes_memberships = []
+            mon_etablissement = None
+
         context.update({
             'assigned_exams': assigned_qs,
             'upcoming_exams': upcoming_exams,
@@ -227,6 +260,11 @@ def dashboard_view(request):
             'cheat_logs': cheat_logs,
             'cheat_total': cheat_total,
             'devoirs_programmes': devoirs_programmes,
+            'mon_abonnement':    mon_abonnement,
+            'mes_paiements_abo': mes_paiements_abo,
+            'mon_dossier':       mon_dossier,
+            'mes_memberships':   mes_memberships,
+            'mon_etablissement': mon_etablissement,
         })
         return render(request, 'accounts/dashboard_eleve.html', context)
 
@@ -275,6 +313,15 @@ def dashboard_view(request):
         tres_bien_count = count_range(my_results, 16, 18)
         excellent_count = my_results.filter(grade__gte=18).count()
 
+        live_count_prof = CompositionSession.objects.filter(statut='en_cours').count()
+        week_ago_prof = now - timedelta(days=7)
+        new_users_week = User.objects.filter(date_joined__gte=week_ago_prof).count()
+        try:
+            from devoirs.models import DevoirMatiere
+            pending_epreuves = DevoirMatiere.objects.filter(statut=DevoirMatiere.StatutEP.SOUMIS).count()
+        except Exception:
+            pending_epreuves = 0
+
         context.update({
             'exams': my_exams.order_by('-created_at')[:20],
             'total_my_exams': total_my_exams,
@@ -295,6 +342,11 @@ def dashboard_view(request):
             'bien_count': bien_count,
             'tres_bien_count': tres_bien_count,
             'excellent_count': excellent_count,
+            # Variables requises par le template
+            'live_count': live_count_prof,
+            'pending_count': pending_corrections,
+            'new_users_week': new_users_week,
+            'pending_epreuves': pending_epreuves,
         })
         return render(request, 'accounts/dashboard_professeur.html', context)
 
@@ -325,6 +377,14 @@ def dashboard_view(request):
             statut='en_cours'
         ).select_related('eleve', 'exam')[:10]
 
+        week_ago_cp = now - timedelta(days=7)
+        new_users_week_cp = User.objects.filter(date_joined__gte=week_ago_cp).count()
+        try:
+            from devoirs.models import DevoirMatiere
+            pending_epreuves_cp = DevoirMatiere.objects.filter(statut=DevoirMatiere.StatutEP.SOUMIS).count()
+        except Exception:
+            pending_epreuves_cp = 0
+
         context.update({
             'total_users': total_users,
             'total_profs': total_profs,
@@ -338,6 +398,9 @@ def dashboard_view(request):
             'ia_corrections': ia_corrections,
             'prof_activity': prof_activity,
             'live_sessions': live_sessions,
+            'live_count': live_sessions.count(),
+            'new_users_week': new_users_week_cp,
+            'pending_epreuves': pending_epreuves_cp,
         })
         return render(request, 'accounts/dashboard_conseiller.html', context)
 
@@ -371,10 +434,10 @@ def dashboard_view(request):
         week_ago = now - timedelta(days=7)
         new_users_week = User.objects.filter(date_joined__gte=week_ago).count()
 
-        recent_results = CorrectionCopie.objects.filter(
-            status='approved'
+        recent_results = CompositionResultat.objects.filter(
+            note__isnull=False
         ).select_related(
-            'student', 'exam'
+            'session', 'session__eleve', 'session__exam', 'session__exam__matiere'
         ).order_by('-created_at')[:15]
 
         try:
@@ -502,6 +565,130 @@ def dashboard_view(request):
         except Exception:
             all_badges = []
 
+        # ── 9. PAIEMENTS & FINANCES ─────────────────────────────
+        _MOIS_FR = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc']
+        trente_jours = now - timedelta(days=30)
+        try:
+            from payments.models import (
+                Paiement, AbonnementEleve, PaiementAbonnement,
+                PaiementCorrectionUnitaire, DossierCandidature,
+                PayoutCommission, PayoutCorrectionUnitaire,
+            )
+            from django.db.models import Sum as _Sum
+
+            # Frais scolaires
+            pay_total_encaisse = Paiement.objects.filter(
+                statut='complet'
+            ).aggregate(s=_Sum('montant_paye'))['s'] or 0
+            pay_total_attendu = Paiement.objects.aggregate(
+                s=_Sum('montant_total')
+            )['s'] or 0
+            pay_total_restant = Paiement.objects.exclude(
+                statut='annule'
+            ).aggregate(s=_Sum('montant_restant'))['s'] or 0
+            pay_en_retard = Paiement.objects.filter(statut='en_retard').count()
+            taux_recouvrement = (
+                round(float(pay_total_encaisse) / float(pay_total_attendu) * 100, 1)
+                if pay_total_attendu else 0
+            )
+            derniers_paiements_frais = list(
+                Paiement.objects.select_related('eleve', 'frais').order_by('-date_paiement')[:8]
+            )
+
+            # Abonnements
+            abo_actifs = AbonnementEleve.objects.filter(statut='actif', date_fin__gt=now).count()
+            abo_expires = AbonnementEleve.objects.filter(statut='expire').count()
+            abo_attente = AbonnementEleve.objects.filter(statut='attente').count()
+            abo_par_plan = list(
+                AbonnementEleve.objects.filter(statut='actif')
+                .values('plan__nom', 'plan__niveau')
+                .annotate(total=Count('id'))
+                .order_by('-total')[:5]
+            )
+            rev_abo_mois = PaiementAbonnement.objects.filter(
+                statut='succes', date_paiement__gte=trente_jours
+            ).aggregate(s=_Sum('montant'))['s'] or 0
+            derniers_paiements_abo = list(
+                PaiementAbonnement.objects.select_related(
+                    'eleve', 'abonnement__plan'
+                ).order_by('-date_creation')[:6]
+            )
+
+            # Corrections unitaires
+            cor_succes = PaiementCorrectionUnitaire.objects.filter(statut='succes').count()
+            rev_cor_mois = PaiementCorrectionUnitaire.objects.filter(
+                statut='succes', date_paiement__gte=trente_jours
+            ).aggregate(s=_Sum('montant'))['s'] or 0
+
+            # Payouts répartition corrections (dev1/dev2/entretien/prof)
+            cor_payout_attente = PayoutCorrectionUnitaire.objects.filter(statut='en_attente').count()
+            cor_payout_echec = PayoutCorrectionUnitaire.objects.filter(statut='echec').count()
+            cor_payout_envoye = PayoutCorrectionUnitaire.objects.filter(statut='envoye').count()
+            rev_cor_distribue = PayoutCorrectionUnitaire.objects.filter(
+                statut__in=['envoye', 'succes']
+            ).aggregate(s=_Sum('montant'))['s'] or 0
+            derniers_correction_payouts = list(
+                PayoutCorrectionUnitaire.objects.select_related(
+                    'paiement__session__exam'
+                ).order_by('-date_creation')[:6]
+            )
+
+            # Dossiers candidature
+            dossiers_soumis = DossierCandidature.objects.filter(statut='soumis').count()
+            dossiers_valides = DossierCandidature.objects.filter(statut='valide').count()
+            dossiers_rejetes = DossierCandidature.objects.filter(statut='rejete').count()
+            derniers_dossiers = list(
+                DossierCandidature.objects.select_related('eleve').order_by('-date_modification')[:5]
+            )
+
+            # Payouts commissions abonnements
+            payouts_attente = PayoutCommission.objects.filter(statut='en_attente').count()
+            derniers_payouts = list(
+                PayoutCommission.objects.order_by('-date_creation')[:5]
+            )
+
+            revenus_totaux_mois = (rev_abo_mois or 0) + (rev_cor_mois or 0)
+
+            # Graphique revenus 6 mois (abonnements + corrections)
+            revenus_par_mois = []
+            revenus_cor_par_mois = []
+            mois_labels_pay = []
+            for i in range(5, -1, -1):
+                d = now - timedelta(days=i * 30)
+                debut = d.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+                fin = (debut + timedelta(days=32)).replace(day=1)
+                rev_abo = PaiementAbonnement.objects.filter(
+                    statut='succes', date_paiement__gte=debut, date_paiement__lt=fin
+                ).aggregate(s=_Sum('montant'))['s'] or 0
+                rev_cor = PaiementCorrectionUnitaire.objects.filter(
+                    statut='succes', date_paiement__gte=debut, date_paiement__lt=fin
+                ).aggregate(s=_Sum('montant'))['s'] or 0
+                revenus_par_mois.append(int(rev_abo))
+                revenus_cor_par_mois.append(int(rev_cor))
+                mois_labels_pay.append(_MOIS_FR[debut.month - 1])
+
+        except Exception as _e:
+            import logging as _log
+            _log.getLogger(__name__).warning(f"Paiements admin: {_e}")
+            pay_total_encaisse = pay_total_attendu = pay_total_restant = 0
+            pay_en_retard = taux_recouvrement = 0
+            derniers_paiements_frais = []
+            abo_actifs = abo_expires = abo_attente = 0
+            abo_par_plan = []
+            rev_abo_mois = rev_cor_mois = revenus_totaux_mois = 0
+            derniers_paiements_abo = []
+            cor_succes = 0
+            cor_payout_attente = cor_payout_echec = cor_payout_envoye = 0
+            rev_cor_distribue = 0
+            derniers_correction_payouts = []
+            dossiers_soumis = dossiers_valides = dossiers_rejetes = 0
+            derniers_dossiers = []
+            payouts_attente = 0
+            derniers_payouts = []
+            revenus_par_mois = [0, 0, 0, 0, 0, 0]
+            revenus_cor_par_mois = [0, 0, 0, 0, 0, 0]
+            mois_labels_pay = _MOIS_FR[-6:]
+
         context.update({
             'is_admin': True,
             'total_users': total_users,
@@ -545,6 +732,36 @@ def dashboard_view(request):
             'pending_epreuves': pending_epreuves,
             'all_users': all_users,
             'all_badges': all_badges,
+            # ── Paiements ──
+            'pay_total_encaisse':      pay_total_encaisse,
+            'pay_total_attendu':       pay_total_attendu,
+            'pay_total_restant':       pay_total_restant,
+            'pay_en_retard':           pay_en_retard,
+            'taux_recouvrement':       taux_recouvrement,
+            'derniers_paiements_frais': derniers_paiements_frais,
+            'abo_actifs':              abo_actifs,
+            'abo_expires':             abo_expires,
+            'abo_attente':             abo_attente,
+            'abo_par_plan':            abo_par_plan,
+            'rev_abo_mois':            rev_abo_mois,
+            'rev_cor_mois':            rev_cor_mois,
+            'revenus_totaux_mois':     revenus_totaux_mois,
+            'derniers_paiements_abo':  derniers_paiements_abo,
+            'cor_succes':              cor_succes,
+            'cor_payout_attente':      cor_payout_attente,
+            'cor_payout_echec':        cor_payout_echec,
+            'cor_payout_envoye':       cor_payout_envoye,
+            'rev_cor_distribue':       rev_cor_distribue,
+            'derniers_correction_payouts': derniers_correction_payouts,
+            'revenus_cor_par_mois':    revenus_cor_par_mois,
+            'dossiers_soumis':         dossiers_soumis,
+            'dossiers_valides':        dossiers_valides,
+            'dossiers_rejetes':        dossiers_rejetes,
+            'derniers_dossiers':       derniers_dossiers,
+            'payouts_attente':         payouts_attente,
+            'derniers_payouts':        derniers_payouts,
+            'revenus_par_mois':        revenus_par_mois,
+            'mois_labels_pay':         mois_labels_pay,
         })
         return render(request, 'accounts/dashboard_admin.html', context)
 
@@ -592,7 +809,7 @@ def register_view(request):
         if role in role_password_map:
             var_name = role_password_map[role]
             expected = getattr(settings, var_name, None)
-            if not expected or role_password != expected:
+            if not expected or not secrets.compare_digest(role_password, expected):
                 messages.error(request, "Code d'accès invalide pour ce rôle.")
                 return render(request, 'accounts/register.html', {'is_auth_page': True, 'classes': classes})
 
@@ -775,7 +992,7 @@ def oauth_choose_role_view(request):
         if role in role_password_map:
             var_name = role_password_map[role]
             expected = getattr(settings, var_name, None)
-            if not expected or role_password != expected:
+            if not expected or not secrets.compare_digest(role_password, expected):
                 messages.error(request, "Code d'accès invalide pour ce rôle.")
                 return render(request, 'auth/oauth_choose_role.html', {'user': user})
 
@@ -1016,10 +1233,10 @@ def admin_eleve_detail_view(request, user_id):
 
         # Statistiques de l'élève
         from exams.models import Exam
-        from compositions.models import Composition
+        from compositions.models import CompositionSession
 
         exams_count = Exam.objects.filter(classe__nom=eleve.classe).count()
-        compositions_count = Composition.objects.filter(eleve=eleve).count()
+        compositions_count = CompositionSession.objects.filter(eleve=eleve).count()
 
         return render(request, 'admin/eleve_detail.html', {
             'eleve': eleve,
@@ -1237,3 +1454,47 @@ def admin_user_delete_view(request, user_id):
         'user': request.user,
     })
 
+
+@login_required
+def grant_badge_view(request):
+    """Attribuer un badge à un utilisateur (admin seulement)."""
+    if request.user.role != 'admin':
+        messages.error(request, "Accès réservé aux administrateurs.")
+        return redirect('dashboard')
+    if request.method == 'POST':
+        try:
+            from gamification.models import UserBadge, Badge
+            user_id = request.POST.get('user_id')
+            badge_id = request.POST.get('badge_id')
+            target = User.objects.get(id=user_id)
+            badge = Badge.objects.get(id=badge_id)
+            UserBadge.objects.get_or_create(user=target, badge=badge)
+            messages.success(request, f"Badge « {badge.nom} » attribué à {target.full_name}.")
+        except ImportError:
+            messages.error(request, "Le module gamification n'est pas disponible.")
+        except Exception as e:
+            messages.error(request, f"Erreur : {e}")
+    return redirect('dashboard')
+
+
+@login_required
+def grant_xp_view(request):
+    """Attribuer des XP à un utilisateur (admin seulement)."""
+    if request.user.role != 'admin':
+        messages.error(request, "Accès réservé aux administrateurs.")
+        return redirect('dashboard')
+    if request.method == 'POST':
+        try:
+            from gamification.models import GlobalLeaderboard
+            user_id = request.POST.get('user_id')
+            amount = int(request.POST.get('amount', 0))
+            target = User.objects.get(id=user_id)
+            entry, _ = GlobalLeaderboard.objects.get_or_create(user=target)
+            entry.points_xp = (entry.points_xp or 0) + amount
+            entry.save()
+            messages.success(request, f"{amount} XP attribués à {target.full_name}.")
+        except ImportError:
+            messages.error(request, "Le module gamification n'est pas disponible.")
+        except Exception as e:
+            messages.error(request, f"Erreur : {e}")
+    return redirect('dashboard')

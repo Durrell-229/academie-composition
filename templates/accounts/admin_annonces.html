@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% block title %}Annonces Globales — Admin{% endblock %}
+{% block content %}
+<div class="min-h-screen px-4 py-8" style="background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);">
+<div class="max-w-5xl mx-auto space-y-6">
+
+  <div class="flex items-center gap-4">
+    <a href="/gestion/" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-arrow-left"></i></a>
+    <div>
+      <h1 class="text-2xl font-black text-white">Annonces Globales</h1>
+      <p class="text-slate-400 text-sm">Affiché à tous les utilisateurs connectés</p>
+    </div>
+    <button onclick="document.getElementById('modal-annonce').classList.remove('hidden')"
+            class="ml-auto px-5 py-2.5 rounded-xl font-bold text-white text-sm" style="background:linear-gradient(135deg,#7c3aed,#6d28d9);">
+      + Nouvelle annonce
+    </button>
+  </div>
+
+  {% if messages %}
+  <div class="space-y-2">{% for msg in messages %}
+    <div class="rounded-xl px-4 py-3 text-sm font-medium {% if msg.tags == 'success' %}text-emerald-400{% elif msg.tags == 'error' %}text-red-400{% else %}text-yellow-400{% endif %}" style="background:#1e293b;border:1px solid #334155;">{{ msg }}</div>
+  {% endfor %}</div>
+  {% endif %}
+
+  <!-- Liste annonces -->
+  {% if annonces %}
+  <div class="space-y-3">
+    {% for ann in annonces %}
+    <div class="rounded-2xl p-5" style="background:#1e293b;border:1px solid {% if ann.type_alerte == 'danger' %}#dc2626{% elif ann.type_alerte == 'warning' %}#d97706{% elif ann.type_alerte == 'success' %}#059669{% else %}#2563eb{% endif %};">
+      <div class="flex items-start gap-4">
+        <div class="w-10 h-10 rounded-xl flex items-center justify-center text-lg flex-shrink-0"
+             style="background:{% if ann.type_alerte == 'danger' %}#7f1d1d{% elif ann.type_alerte == 'warning' %}#78350f{% elif ann.type_alerte == 'success' %}#065f46{% else %}#1e3a8a{% endif %};">
+          {% if ann.type_alerte == 'danger' %}&#9888;{% elif ann.type_alerte == 'warning' %}&#9888;{% elif ann.type_alerte == 'success' %}&#10003;{% else %}&#8505;{% endif %}
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 mb-1 flex-wrap">
+            <p class="text-white font-black">{{ ann.titre }}</p>
+            {% if ann.est_actif %}
+            <span class="text-xs px-2 py-0.5 rounded-full font-bold" style="background:#065f46;color:#6ee7b7;">Active</span>
+            {% else %}
+            <span class="text-xs px-2 py-0.5 rounded-full font-bold" style="background:#1e293b;color:#64748b;border:1px solid #334155;">Inactive</span>
+            {% endif %}
+            <span class="text-xs px-2 py-0.5 rounded-full font-bold" style="background:#1e293b;color:#94a3b8;">{{ ann.type_alerte }}</span>
+          </div>
+          <p class="text-slate-300 text-sm">{{ ann.message }}</p>
+          <p class="text-slate-500 text-xs mt-1">
+            Créée le {{ ann.created_at|date:"d/m/Y" }}
+            {% if ann.date_expiration %} · Expire le {{ ann.date_expiration|date:"d/m/Y" }}{% endif %}
+          </p>
+        </div>
+        <div class="flex gap-2 flex-shrink-0">
+          <form method="post" action="/gestion/annonces/{{ ann.id }}/toggle/">
+            {% csrf_token %}
+            <button type="submit" class="px-3 py-1.5 rounded-lg text-xs font-bold transition {% if ann.est_actif %}text-amber-400{% else %}text-emerald-400{% endif %}" style="border:1px solid {% if ann.est_actif %}#d97706{% else %}#059669{% endif %};">
+              {% if ann.est_actif %}Désactiver{% else %}Activer{% endif %}
+            </button>
+          </form>
+          <button onclick="editAnnonce({{ ann.id }}, '{{ ann.titre|escapejs }}', '{{ ann.message|escapejs }}', '{{ ann.type_alerte }}', {{ ann.est_actif|yesno:'true,false' }}, '{{ ann.date_expiration|date:"Y-m-d"|default:"" }}')"
+                  class="px-3 py-1.5 rounded-lg text-xs font-bold text-blue-400" style="border:1px solid #2563eb;">
+            Modifier
+          </button>
+          <form method="post" action="/gestion/annonces/{{ ann.id }}/delete/" onsubmit="return confirm('Supprimer cette annonce ?');">
+            {% csrf_token %}
+            <button type="submit" class="px-3 py-1.5 rounded-lg text-xs font-bold text-red-400" style="border:1px solid #dc2626;">
+              &#10007;
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="rounded-2xl p-10 text-center" style="background:#1e293b;border:1px solid #334155;">
+    <i class="fa-solid fa-bullhorn text-violet-400 text-4xl mb-3"></i>
+    <p class="text-white font-bold">Aucune annonce</p>
+    <p class="text-slate-400 text-sm mt-1">Créez une annonce pour informer tous les utilisateurs.</p>
+  </div>
+  {% endif %}
+
+</div>
+</div>
+
+<!-- Modal créer/modifier annonce -->
+<div id="modal-annonce" class="hidden fixed inset-0 z-50 flex items-center justify-center" style="background:rgba(0,0,0,0.7);">
+  <div class="rounded-2xl p-6 w-full max-w-lg mx-4" style="background:#1e293b;border:1px solid #334155;">
+    <h3 id="modal-annonce-titre-label" class="text-white font-black mb-4">Nouvelle annonce</h3>
+    <form id="form-annonce" method="post" action="/gestion/annonces/create/" class="space-y-4">
+      {% csrf_token %}
+      <div>
+        <label class="block text-slate-400 text-xs font-semibold mb-1 uppercase">Titre *</label>
+        <input id="ann-titre" name="titre" required class="w-full rounded-lg px-3 py-2 text-sm text-white" style="background:#0f172a;border:1px solid #475569;">
+      </div>
+      <div>
+        <label class="block text-slate-400 text-xs font-semibold mb-1 uppercase">Message *</label>
+        <textarea id="ann-message" name="message" rows="3" required class="w-full rounded-lg px-3 py-2 text-sm text-white resize-none" style="background:#0f172a;border:1px solid #475569;"></textarea>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-slate-400 text-xs font-semibold mb-1 uppercase">Type</label>
+          <select id="ann-type" name="type_alerte" class="w-full rounded-lg px-3 py-2 text-sm text-white" style="background:#0f172a;border:1px solid #475569;">
+            {% for val, label in types_alerte %}
+            <option value="{{ val }}">{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="block text-slate-400 text-xs font-semibold mb-1 uppercase">Date expiration</label>
+          <input type="date" id="ann-expiration" name="date_expiration" class="w-full rounded-lg px-3 py-2 text-sm text-white" style="background:#0f172a;border:1px solid #475569;">
+        </div>
+      </div>
+      <label class="flex items-center gap-2 cursor-pointer">
+        <input type="checkbox" id="ann-actif" name="est_actif" checked class="rounded">
+        <span class="text-slate-300 text-sm">Publier immédiatement</span>
+      </label>
+      <div class="flex gap-3 pt-2">
+        <button type="button" onclick="closeAnnonceModal()" class="flex-1 py-2.5 rounded-xl text-sm font-bold text-slate-400" style="background:#0f172a;border:1px solid #334155;">Annuler</button>
+        <button type="submit" class="flex-1 py-2.5 rounded-xl text-sm font-bold text-white" style="background:linear-gradient(135deg,#7c3aed,#6d28d9);">Enregistrer</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function editAnnonce(id, titre, message, type, actif, expiration) {
+  document.getElementById('modal-annonce-titre-label').textContent = 'Modifier l\'annonce';
+  document.getElementById('ann-titre').value = titre;
+  document.getElementById('ann-message').value = message;
+  document.getElementById('ann-type').value = type;
+  document.getElementById('ann-actif').checked = actif;
+  document.getElementById('ann-expiration').value = expiration;
+  document.getElementById('form-annonce').action = '/gestion/annonces/' + id + '/edit/';
+  document.getElementById('modal-annonce').classList.remove('hidden');
+}
+function closeAnnonceModal() {
+  document.getElementById('modal-annonce').classList.add('hidden');
+  document.getElementById('modal-annonce-titre-label').textContent = 'Nouvelle annonce';
+  document.getElementById('form-annonce').action = '/gestion/annonces/create/';
+  document.getElementById('form-annonce').reset();
+}
+</script>
+{% endblock %}

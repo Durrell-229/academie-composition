@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 60" width="320" height="60">
+  <defs>
+    <linearGradient id="bg2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4F46E5"/>
+      <stop offset="55%" stop-color="#7C3AED"/>
+      <stop offset="100%" stop-color="#0891B2"/>
+    </linearGradient>
+    <linearGradient id="glow2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00E5FF"/>
+      <stop offset="100%" stop-color="#7C4DFF"/>
+    </linearGradient>
+    <linearGradient id="txtGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#C4B5FD"/>
+    </linearGradient>
+    <linearGradient id="shine2" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fff" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- ── Icône carré arrondi ── -->
+  <rect x="0" y="5" width="50" height="50" rx="11" fill="url(#bg2)"/>
+  <rect x="0" y="5" width="50" height="50" rx="11" fill="url(#shine2)"/>
+
+  <!-- Toque -->
+  <polygon points="25,13 41,21 25,29 9,21" fill="#FFFFFF" opacity="0.95"/>
+  <path d="M17,24 L17,33 Q25,38 33,33 L33,24 L25,30 Z" fill="#FFFFFF" opacity="0.82"/>
+  <line x1="9" y1="21" x2="9" y2="30" stroke="#fff" stroke-width="1.5" stroke-linecap="round" opacity="0.7"/>
+  <circle cx="9" cy="31.5" r="1.5" fill="#00E5FF"/>
+
+  <!-- Nœuds IA -->
+  <circle cx="17" cy="43" r="2.5" fill="url(#glow2)"/>
+  <circle cx="25" cy="40" r="2.5" fill="url(#glow2)"/>
+  <circle cx="33" cy="43" r="2.5" fill="url(#glow2)"/>
+  <circle cx="25" cy="48" r="2" fill="#00E5FF"/>
+  <line x1="17" y1="43" x2="25" y2="40" stroke="#00E5FF" stroke-width="1" opacity="0.75"/>
+  <line x1="25" y1="40" x2="33" y2="43" stroke="#00E5FF" stroke-width="1" opacity="0.75"/>
+  <line x1="17" y1="43" x2="25" y2="48" stroke="#7C4DFF" stroke-width="1" opacity="0.75"/>
+  <line x1="33" y1="43" x2="25" y2="48" stroke="#7C4DFF" stroke-width="1" opacity="0.75"/>
+
+  <rect x="0" y="5" width="50" height="50" rx="11" fill="none" stroke="#fff" stroke-width="0.8" opacity="0.18"/>
+
+  <!-- ── Texte ── -->
+  <text x="62" y="28" font-family="'Arial Black', Arial, sans-serif" font-size="18" font-weight="900"
+        fill="url(#txtGrad)" letter-spacing="0.5">ACADÉMIE</text>
+  <text x="62" y="48" font-family="'Arial Black', Arial, sans-serif" font-size="18" font-weight="900"
+        fill="#00E5FF" letter-spacing="0.5">NUMÉRIQUE</text>
+</svg>

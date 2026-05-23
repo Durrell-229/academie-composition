@@ -1,0 +1,487 @@
+{% extends "base.html" %}
+{% block title %}Gestion Paiements — Admin{% endblock %}
+
+{% block content %}
+<div class="min-h-screen px-4 py-8" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);">
+<div class="max-w-7xl mx-auto space-y-6">
+
+  <!-- En-tête -->
+  <div class="flex flex-wrap items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-black text-white">Gestion Paiements</h1>
+      <p class="text-slate-400 text-sm mt-1">Abonnements · Paiements · Répartition · Configuration</p>
+    </div>
+    <!-- Liens configuration rapide -->
+    <div class="flex flex-wrap gap-2">
+      <a href="{% url 'payments:admin_config_fedapay' %}"
+         class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-emerald-400"
+         style="background:#0f2a1d;border:1px solid #059669;">
+        <i class="fa-solid fa-key text-xs"></i> FedaPay
+      </a>
+      <a href="{% url 'payments:admin_plans_abonnement' %}"
+         class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-violet-400"
+         style="background:#1a1040;border:1px solid #7c3aed;">
+        <i class="fa-solid fa-layer-group text-xs"></i> Plans
+      </a>
+      <a href="{% url 'payments:admin_frais_list' %}"
+         class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-amber-400"
+         style="background:#1c1500;border:1px solid #d97706;">
+        <i class="fa-solid fa-file-invoice-dollar text-xs"></i> Frais
+      </a>
+      <a href="{% url 'payments:admin_dossiers_candidature' %}"
+         class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-blue-400"
+         style="background:#0c1929;border:1px solid #2563eb;">
+        <i class="fa-solid fa-folder-open text-xs"></i> Dossiers
+      </a>
+      <a href="{% url 'payments:commission_dashboard' %}"
+         class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-pink-400"
+         style="background:#1f0d1a;border:1px solid #db2777;">
+        <i class="fa-solid fa-percent text-xs"></i> Commissions
+      </a>
+    </div>
+  </div>
+
+  {% if messages %}
+  <div class="space-y-2">
+    {% for msg in messages %}
+    <div class="rounded-xl px-4 py-3 text-sm font-medium
+        {% if msg.tags == 'success' %}text-emerald-400{% elif msg.tags == 'error' %}text-red-400{% else %}text-yellow-400{% endif %}"
+        style="background: #1e293b; border: 1px solid #334155;">{{ msg }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Onglets -->
+  <div class="flex gap-1 p-1 rounded-2xl" style="background:#0f172a;border:1px solid #1e293b;">
+    <a href="?tab=abonnements"
+       class="flex-1 text-center py-2.5 px-4 rounded-xl text-sm font-bold transition
+              {% if tab == 'abonnements' %}text-white{% else %}text-slate-500 hover:text-slate-300{% endif %}"
+       style="{% if tab == 'abonnements' %}background:linear-gradient(135deg,#4f46e5,#7c3aed);{% endif %}">
+      Abonnements
+      <span class="ml-1 text-xs px-1.5 py-0.5 rounded-full
+                   {% if tab == 'abonnements' %}bg-white/20{% else %}bg-slate-700{% endif %}">
+        {{ abo_stats.actifs }}
+      </span>
+    </a>
+    <a href="?tab=paiements_abo"
+       class="flex-1 text-center py-2.5 px-4 rounded-xl text-sm font-bold transition
+              {% if tab == 'paiements_abo' %}text-white{% else %}text-slate-500 hover:text-slate-300{% endif %}"
+       style="{% if tab == 'paiements_abo' %}background:linear-gradient(135deg,#0891b2,#0e7490);{% endif %}">
+      Paiements Abo
+    </a>
+    <a href="?tab=corrections"
+       class="flex-1 text-center py-2.5 px-4 rounded-xl text-sm font-bold transition
+              {% if tab == 'corrections' %}text-white{% else %}text-slate-500 hover:text-slate-300{% endif %}"
+       style="{% if tab == 'corrections' %}background:linear-gradient(135deg,#059669,#047857);{% endif %}">
+      Corrections IA
+    </a>
+    <a href="?tab=repartition"
+       class="flex-1 text-center py-2.5 px-4 rounded-xl text-sm font-bold transition
+              {% if tab == 'repartition' %}text-white{% else %}text-slate-500 hover:text-slate-300{% endif %}"
+       style="{% if tab == 'repartition' %}background:linear-gradient(135deg,#d97706,#b45309);{% endif %}">
+      Répartition
+      {% if payout_stats.echec > 0 %}
+      <span class="ml-1 text-xs px-1.5 py-0.5 rounded-full bg-red-500/80">{{ payout_stats.echec }}</span>
+      {% endif %}
+    </a>
+  </div>
+
+  <!-- ═══════════ ONGLET ABONNEMENTS ═══════════ -->
+  {% if tab == 'abonnements' %}
+
+  <!-- KPIs -->
+  <div class="grid grid-cols-3 gap-4">
+    <div class="rounded-2xl p-5 text-center" style="background:#0f2a1d;border:1px solid #059669;">
+      <p class="text-3xl font-black text-emerald-400">{{ abo_stats.actifs }}</p>
+      <p class="text-xs text-slate-400 mt-1">Actifs</p>
+    </div>
+    <div class="rounded-2xl p-5 text-center" style="background:#1c1500;border:1px solid #d97706;">
+      <p class="text-3xl font-black text-amber-400">{{ abo_stats.attente }}</p>
+      <p class="text-xs text-slate-400 mt-1">En attente</p>
+    </div>
+    <div class="rounded-2xl p-5 text-center" style="background:#1f0d0d;border:1px solid #dc2626;">
+      <p class="text-3xl font-black text-red-400">{{ abo_stats.expires }}</p>
+      <p class="text-xs text-slate-400 mt-1">Expirés</p>
+    </div>
+  </div>
+
+  <!-- Filtre statut -->
+  <div class="flex gap-2 flex-wrap">
+    <a href="?tab=abonnements" class="px-3 py-1.5 rounded-full text-xs font-semibold
+       {% if not statut_filtre %}text-white{% else %}text-slate-400{% endif %}"
+       style="{% if not statut_filtre %}background:#4f46e5;{% else %}background:#1e293b;border:1px solid #334155;{% endif %}">
+      Tous
+    </a>
+    <a href="?tab=abonnements&statut_abo=actif" class="px-3 py-1.5 rounded-full text-xs font-semibold
+       {% if statut_filtre == 'actif' %}text-white{% else %}text-slate-400{% endif %}"
+       style="{% if statut_filtre == 'actif' %}background:#059669;{% else %}background:#1e293b;border:1px solid #334155;{% endif %}">Actif</a>
+    <a href="?tab=abonnements&statut_abo=expire" class="px-3 py-1.5 rounded-full text-xs font-semibold
+       {% if statut_filtre == 'expire' %}text-white{% else %}text-slate-400{% endif %}"
+       style="{% if statut_filtre == 'expire' %}background:#dc2626;{% else %}background:#1e293b;border:1px solid #334155;{% endif %}">Expiré</a>
+    <a href="?tab=abonnements&statut_abo=attente" class="px-3 py-1.5 rounded-full text-xs font-semibold
+       {% if statut_filtre == 'attente' %}text-white{% else %}text-slate-400{% endif %}"
+       style="{% if statut_filtre == 'attente' %}background:#d97706;{% else %}background:#1e293b;border:1px solid #334155;{% endif %}">Attente</a>
+  </div>
+
+  <!-- Tableau abonnements -->
+  <div class="rounded-2xl overflow-hidden" style="border:1px solid #334155;">
+    <table class="w-full text-sm">
+      <thead style="background:#0f172a;">
+        <tr>
+          <th class="text-left text-slate-400 font-semibold px-5 py-3 text-xs uppercase">Élève</th>
+          <th class="text-left text-slate-400 font-semibold px-5 py-3 text-xs uppercase">Plan</th>
+          <th class="text-left text-slate-400 font-semibold px-5 py-3 text-xs uppercase">Début</th>
+          <th class="text-left text-slate-400 font-semibold px-5 py-3 text-xs uppercase">Fin</th>
+          <th class="text-center text-slate-400 font-semibold px-5 py-3 text-xs uppercase">Statut</th>
+          <th class="text-center text-slate-400 font-semibold px-5 py-3 text-xs uppercase">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for abo in abonnements %}
+        <tr style="border-top:1px solid #1e293b;" class="hover:bg-slate-800/30 transition">
+          <td class="px-5 py-3">
+            <p class="font-semibold text-white">{{ abo.eleve.get_full_name }}</p>
+            <p class="text-slate-500 text-xs">{{ abo.eleve.email }}</p>
+          </td>
+          <td class="px-5 py-3">
+            <p class="text-slate-300 font-medium">{{ abo.plan.nom }}</p>
+            <p class="text-slate-500 text-xs">{{ abo.plan.get_niveau_display }}</p>
+          </td>
+          <td class="px-5 py-3 text-slate-400 text-xs">{{ abo.date_debut|date:"d/m/Y" }}</td>
+          <td class="px-5 py-3 text-xs {% if abo.jours_restants <= 7 and abo.statut == 'actif' %}text-red-400 font-bold{% else %}text-slate-400{% endif %}">
+            {{ abo.date_fin|date:"d/m/Y" }}
+            {% if abo.statut == 'actif' %}<span class="text-slate-500"> · {{ abo.jours_restants }}j</span>{% endif %}
+          </td>
+          <td class="px-5 py-3 text-center">
+            {% if abo.statut == 'actif' %}
+            <span class="text-xs px-2 py-0.5 rounded-full font-bold" style="background:#065f46;color:#6ee7b7;">Actif</span>
+            {% elif abo.statut == 'expire' %}
+            <span class="text-xs px-2 py-0.5 rounded-full font-bold" style="background:#7f1d1d;color:#fca5a5;">Expiré</span>
+            {% elif abo.statut == 'attente' %}
+            <span class="text-xs px-2 py-0.5 rounded-full font-bold" style="background:#78350f;color:#fcd34d;">Attente</span>
+            {% else %}
+            <span class="text-xs px-2 py-0.5 rounded-full font-bold" style="background:#1e293b;color:#94a3b8;">{{ abo.statut }}</span>
+            {% endif %}
+          </td>
+          <td class="px-5 py-3 text-center">
+            <div class="flex justify-center gap-2">
+              {% if abo.statut != 'actif' %}
+              <form method="post" action="{% url 'payments:admin_toggle_abonnement' abo.id %}">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="activer">
+                <button type="submit"
+                        class="text-xs px-3 py-1.5 rounded-lg font-semibold text-emerald-400 hover:bg-emerald-900/40 transition"
+                        style="border:1px solid #059669;">
+                  Activer
+                </button>
+              </form>
+              {% else %}
+              <form method="post" action="{% url 'payments:admin_toggle_abonnement' abo.id %}">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="suspendre">
+                <button type="submit"
+                        class="text-xs px-3 py-1.5 rounded-lg font-semibold text-amber-400 hover:bg-amber-900/30 transition"
+                        style="border:1px solid #d97706;">
+                  Suspendre
+                </button>
+              </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" class="px-5 py-10 text-center text-slate-500">Aucun abonnement trouvé</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  <!-- ═══════════ ONGLET PAIEMENTS ABONNEMENTS ═══════════ -->
+  {% if tab == 'paiements_abo' %}
+
+  <div class="flex items-center justify-between">
+    <div class="rounded-xl px-5 py-3 flex items-center gap-3" style="background:#0f2a1d;border:1px solid #059669;">
+      <i class="fa-solid fa-coins text-emerald-400"></i>
+      <span class="text-emerald-400 font-black text-xl">{{ rev_abo_total|floatformat:0 }} FCFA</span>
+      <span class="text-slate-400 text-xs">total encaissé</span>
+    </div>
+    <!-- Filtre statut -->
+    <div class="flex gap-2">
+      <a href="?tab=paiements_abo" class="px-3 py-1.5 rounded-full text-xs font-semibold
+         {% if not statut_pay %}text-white{% else %}text-slate-400{% endif %}"
+         style="{% if not statut_pay %}background:#4f46e5;{% else %}background:#1e293b;border:1px solid #334155;{% endif %}">Tous</a>
+      <a href="?tab=paiements_abo&statut_pay=succes" class="px-3 py-1.5 rounded-full text-xs font-semibold
+         {% if statut_pay == 'succes' %}text-white{% else %}text-slate-400{% endif %}"
+         style="{% if statut_pay == 'succes' %}background:#059669;{% else %}background:#1e293b;border:1px solid #334155;{% endif %}">Succès</a>
+      <a href="?tab=paiements_abo&statut_pay=en_attente" class="px-3 py-1.5 rounded-full text-xs font-semibold
+         {% if statut_pay == 'en_attente' %}text-white{% else %}text-slate-400{% endif %}"
+         style="{% if statut_pay == 'en_attente' %}background:#d97706;{% else %}background:#1e293b;border:1px solid #334155;{% endif %}">Attente</a>
+      <a href="?tab=paiements_abo&statut_pay=echec" class="px-3 py-1.5 rounded-full text-xs font-semibold
+         {% if statut_pay == 'echec' %}text-white{% else %}text-slate-400{% endif %}"
+         style="{% if statut_pay == 'echec' %}background:#dc2626;{% else %}background:#1e293b;border:1px solid #334155;{% endif %}">Échec</a>
+    </div>
+  </div>
+
+  <div class="rounded-2xl overflow-hidden" style="border:1px solid #334155;">
+    <table class="w-full text-sm">
+      <thead style="background:#0f172a;">
+        <tr>
+          <th class="text-left text-slate-400 font-semibold px-5 py-3 text-xs uppercase">Élève</th>
+          <th class="text-left text-slate-400 font-semibold px-5 py-3 text-xs uppercase">Plan</th>
+          <th class="text-right text-slate-400 font-semibold px-5 py-3 text-xs uppercase">Montant</th>
+          <th class="text-left text-slate-400 font-semibold px-5 py-3 text-xs uppercase">Date</th>
+          <th class="text-center text-slate-400 font-semibold px-5 py-3 text-xs uppercase">Statut</th>
+          <th class="text-left text-slate-400 font-semibold px-5 py-3 text-xs uppercase">Réf FedaPay</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in paiements_abo %}
+        <tr style="border-top:1px solid #1e293b;" class="hover:bg-slate-800/30 transition">
+          <td class="px-5 py-3">
+            <p class="font-semibold text-white">{{ p.eleve.get_full_name }}</p>
+            <p class="text-slate-500 text-xs">{{ p.eleve.email }}</p>
+          </td>
+          <td class="px-5 py-3 text-slate-300">{{ p.abonnement.plan.nom }}</td>
+          <td class="px-5 py-3 text-right font-black text-white">{{ p.montant|floatformat:0 }} F</td>
+          <td class="px-5 py-3 text-slate-400 text-xs">{{ p.date_creation|date:"d/m/Y H:i" }}</td>
+          <td class="px-5 py-3 text-center">
+            {% if p.statut == 'succes' %}
+            <span class="text-xs px-2 py-0.5 rounded-full font-bold" style="background:#065f46;color:#6ee7b7;">&#10003; Succès</span>
+            {% elif p.statut == 'en_attente' %}
+            <span class="text-xs px-2 py-0.5 rounded-full font-bold" style="background:#78350f;color:#fcd34d;">&#8987; Attente</span>
+            {% elif p.statut == 'echec' %}
+            <span class="text-xs px-2 py-0.5 rounded-full font-bold" style="background:#7f1d1d;color:#fca5a5;">&#10007; Échec</span>
+            {% else %}
+            <span class="text-xs px-2 py-0.5 rounded-full font-bold" style="background:#1e293b;color:#94a3b8;">{{ p.statut }}</span>
+            {% endif %}
+          </td>
+          <td class="px-5 py-3 text-slate-500 text-xs font-mono">{{ p.fedapay_transaction_id|default:"—" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="px-5 py-10 text-center text-slate-500">Aucun paiement trouvé</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  <!-- ═══════════ ONGLET CORRECTIONS IA ═══════════ -->
+  {% if tab == 'corrections' %}
+
+  <div class="flex items-center justify-between">
+    <div class="rounded-xl px-5 py-3 flex items-center gap-3" style="background:#0c2318;border:1px solid #059669;">
+      <i class="fa-solid fa-brain text-emerald-400"></i>
+      <span class="text-emerald-400 font-black text-xl">{{ rev_cor_total|floatformat:0 }} FCFA</span>
+      <span class="text-slate-400 text-xs">total corrections vendues · {{ prix_correction }} FCFA/unité</span>
+    </div>
+    <div class="flex gap-2">
+      <a href="?tab=corrections" class="px-3 py-1.5 rounded-full text-xs font-semibold
+         {% if not statut_cor %}text-white{% else %}text-slate-400{% endif %}"
+         style="{% if not statut_cor %}background:#4f46e5;{% else %}background:#1e293b;border:1px solid #334155;{% endif %}">Tous</a>
+      <a href="?tab=corrections&statut_cor=succes" class="px-3 py-1.5 rounded-full text-xs font-semibold
+         {% if statut_cor == 'succes' %}text-white{% else %}text-slate-400{% endif %}"
+         style="{% if statut_cor == 'succes' %}background:#059669;{% else %}background:#1e293b;border:1px solid #334155;{% endif %}">Succès</a>
+      <a href="?tab=corrections&statut_cor=en_attente" class="px-3 py-1.5 rounded-full text-xs font-semibold
+         {% if statut_cor == 'en_attente' %}text-white{% else %}text-slate-400{% endif %}"
+         style="{% if statut_cor == 'en_attente' %}background:#d97706;{% else %}background:#1e293b;border:1px solid #334155;{% endif %}">Attente</a>
+      <a href="?tab=corrections&statut_cor=echec" class="px-3 py-1.5 rounded-full text-xs font-semibold
+         {% if statut_cor == 'echec' %}text-white{% else %}text-slate-400{% endif %}"
+         style="{% if statut_cor == 'echec' %}background:#dc2626;{% else %}background:#1e293b;border:1px solid #334155;{% endif %}">Échec</a>
+    </div>
+  </div>
+
+  <div class="rounded-2xl overflow-hidden" style="border:1px solid #334155;">
+    <table class="w-full text-sm">
+      <thead style="background:#0f172a;">
+        <tr>
+          <th class="text-left text-slate-400 font-semibold px-5 py-3 text-xs uppercase">Élève</th>
+          <th class="text-left text-slate-400 font-semibold px-5 py-3 text-xs uppercase">Épreuve</th>
+          <th class="text-right text-slate-400 font-semibold px-5 py-3 text-xs uppercase">Montant</th>
+          <th class="text-left text-slate-400 font-semibold px-5 py-3 text-xs uppercase">Date paiement</th>
+          <th class="text-center text-slate-400 font-semibold px-5 py-3 text-xs uppercase">Statut</th>
+          <th class="text-center text-slate-400 font-semibold px-5 py-3 text-xs uppercase">Correction</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in paiements_corrections %}
+        <tr style="border-top:1px solid #1e293b;" class="hover:bg-slate-800/30 transition">
+          <td class="px-5 py-3">
+            <p class="font-semibold text-white">{{ p.session.eleve.get_full_name }}</p>
+            <p class="text-slate-500 text-xs">{{ p.session.eleve.email }}</p>
+          </td>
+          <td class="px-5 py-3">
+            <p class="text-slate-300 text-sm truncate max-w-xs">{{ p.session.exam.titre }}</p>
+          </td>
+          <td class="px-5 py-3 text-right font-black text-white">{{ p.montant|floatformat:0 }} F</td>
+          <td class="px-5 py-3 text-slate-400 text-xs">
+            {% if p.date_paiement %}{{ p.date_paiement|date:"d/m/Y H:i" }}{% else %}—{% endif %}
+          </td>
+          <td class="px-5 py-3 text-center">
+            {% if p.statut == 'succes' %}
+            <span class="text-xs px-2 py-0.5 rounded-full font-bold" style="background:#065f46;color:#6ee7b7;">&#10003; Payé</span>
+            {% elif p.statut == 'en_attente' %}
+            <span class="text-xs px-2 py-0.5 rounded-full font-bold" style="background:#78350f;color:#fcd34d;">&#8987; Attente</span>
+            {% elif p.statut == 'echec' %}
+            <span class="text-xs px-2 py-0.5 rounded-full font-bold" style="background:#7f1d1d;color:#fca5a5;">&#10007; Échec</span>
+            {% else %}
+            <span class="text-xs px-2 py-0.5 rounded-full font-bold" style="background:#1e293b;color:#94a3b8;">{{ p.statut }}</span>
+            {% endif %}
+          </td>
+          <td class="px-5 py-3 text-center">
+            {% if p.session.resultat.correction_complete %}
+            <span class="text-xs text-emerald-400 font-semibold">&#10003; Débloquée</span>
+            {% else %}
+            <span class="text-xs text-slate-500">En attente</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="px-5 py-10 text-center text-slate-500">Aucun paiement correction trouvé</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  <!-- ═══════════ ONGLET RÉPARTITION ═══════════ -->
+  {% if tab == 'repartition' %}
+
+  <!-- KPIs répartition -->
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+    <div class="rounded-2xl p-5 text-center" style="background:#0c2318;border:1px solid #059669;">
+      <p class="text-2xl font-black text-emerald-400">{{ payout_stats.envoye }}</p>
+      <p class="text-xs text-slate-400 mt-1">Envoyés</p>
+    </div>
+    <div class="rounded-2xl p-5 text-center" style="background:#1c1500;border:1px solid #d97706;">
+      <p class="text-2xl font-black text-amber-400">{{ payout_stats.attente }}</p>
+      <p class="text-xs text-slate-400 mt-1">En attente</p>
+    </div>
+    <div class="rounded-2xl p-5 text-center" style="background:#1f0d0d;border:1px solid #dc2626;">
+      <p class="text-2xl font-black text-red-400">{{ payout_stats.echec }}</p>
+      <p class="text-xs text-slate-400 mt-1">Échecs</p>
+    </div>
+    <div class="rounded-2xl p-5 text-center" style="background:#1a1040;border:1px solid #7c3aed;">
+      <p class="text-lg font-black text-violet-400">{{ payout_stats.distribue|floatformat:0 }}</p>
+      <p class="text-xs text-slate-400 mt-1">FCFA distribués</p>
+    </div>
+  </div>
+
+  <!-- Filtre statut -->
+  <div class="flex gap-2 flex-wrap">
+    <a href="?tab=repartition" class="px-3 py-1.5 rounded-full text-xs font-semibold
+       {% if not statut_payout %}text-white{% else %}text-slate-400{% endif %}"
+       style="{% if not statut_payout %}background:#4f46e5;{% else %}background:#1e293b;border:1px solid #334155;{% endif %}">Tous</a>
+    <a href="?tab=repartition&statut_payout=en_attente" class="px-3 py-1.5 rounded-full text-xs font-semibold
+       {% if statut_payout == 'en_attente' %}text-white{% else %}text-slate-400{% endif %}"
+       style="{% if statut_payout == 'en_attente' %}background:#d97706;{% else %}background:#1e293b;border:1px solid #334155;{% endif %}">Attente</a>
+    <a href="?tab=repartition&statut_payout=echec" class="px-3 py-1.5 rounded-full text-xs font-semibold
+       {% if statut_payout == 'echec' %}text-white{% else %}text-slate-400{% endif %}"
+       style="{% if statut_payout == 'echec' %}background:#dc2626;{% else %}background:#1e293b;border:1px solid #334155;{% endif %}">Échecs</a>
+    <a href="?tab=repartition&statut_payout=envoye" class="px-3 py-1.5 rounded-full text-xs font-semibold
+       {% if statut_payout == 'envoye' %}text-white{% else %}text-slate-400{% endif %}"
+       style="{% if statut_payout == 'envoye' %}background:#059669;{% else %}background:#1e293b;border:1px solid #334155;{% endif %}">Envoyés</a>
+  </div>
+
+  <!-- Tableau payouts corrections -->
+  <div class="rounded-2xl overflow-hidden" style="border:1px solid #334155;">
+    <table class="w-full text-sm">
+      <thead style="background:#0f172a;">
+        <tr>
+          <th class="text-left text-slate-400 font-semibold px-5 py-3 text-xs uppercase">Bénéficiaire</th>
+          <th class="text-left text-slate-400 font-semibold px-5 py-3 text-xs uppercase">Téléphone</th>
+          <th class="text-right text-slate-400 font-semibold px-5 py-3 text-xs uppercase">Montant</th>
+          <th class="text-center text-slate-400 font-semibold px-5 py-3 text-xs uppercase">Taux</th>
+          <th class="text-left text-slate-400 font-semibold px-5 py-3 text-xs uppercase">Épreuve</th>
+          <th class="text-left text-slate-400 font-semibold px-5 py-3 text-xs uppercase">Date</th>
+          <th class="text-center text-slate-400 font-semibold px-5 py-3 text-xs uppercase">Statut</th>
+          <th class="text-center text-slate-400 font-semibold px-5 py-3 text-xs uppercase">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for payout in payouts_corrections %}
+        <tr style="border-top:1px solid #1e293b;" class="hover:bg-slate-800/30 transition">
+          <td class="px-5 py-3">
+            {% if payout.beneficiaire == 'dev1' %}
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-black" style="background:#1e3a5f;color:#93c5fd;">DEV1</span>
+            {% elif payout.beneficiaire == 'dev2' %}
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-black" style="background:#164e63;color:#67e8f9;">DEV2</span>
+            {% elif payout.beneficiaire == 'entretien' %}
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-black" style="background:#78350f;color:#fcd34d;">ENTRETIEN</span>
+            {% else %}
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-black" style="background:#2e1065;color:#c4b5fd;">PROF</span>
+            {% endif %}
+          </td>
+          <td class="px-5 py-3 text-slate-400 text-xs font-mono">{{ payout.telephone }}</td>
+          <td class="px-5 py-3 text-right font-black text-white">{{ payout.montant|floatformat:0 }} F</td>
+          <td class="px-5 py-3 text-center text-slate-400 text-xs">{{ payout.taux_applique }}%</td>
+          <td class="px-5 py-3 text-slate-300 text-xs truncate max-w-[140px]">
+            {{ payout.paiement.session.exam.titre|truncatechars:30 }}
+          </td>
+          <td class="px-5 py-3 text-slate-500 text-xs">{{ payout.date_creation|date:"d/m/Y H:i" }}</td>
+          <td class="px-5 py-3 text-center">
+            {% if payout.statut == 'envoye' or payout.statut == 'succes' %}
+            <span class="text-xs px-2 py-0.5 rounded-full font-bold" style="background:#065f46;color:#6ee7b7;">&#10003; Envoyé</span>
+            {% elif payout.statut == 'en_attente' %}
+            <span class="text-xs px-2 py-0.5 rounded-full font-bold" style="background:#78350f;color:#fcd34d;">&#8987;</span>
+            {% elif payout.statut == 'echec' %}
+            <span class="text-xs px-2 py-0.5 rounded-full font-bold" style="background:#7f1d1d;color:#fca5a5;">&#10007; Échec</span>
+            {% endif %}
+          </td>
+          <td class="px-5 py-3 text-center">
+            {% if payout.statut == 'echec' or payout.statut == 'en_attente' %}
+            <form method="post" action="{% url 'payments:admin_retry_payout_correction' payout.id %}">
+              {% csrf_token %}
+              <button type="submit"
+                      class="text-xs px-3 py-1.5 rounded-lg font-semibold text-amber-400 hover:bg-amber-900/30 transition"
+                      style="border:1px solid #d97706;"
+                      title="Relancer le payout">
+                &#8635; Relancer
+              </button>
+            </form>
+            {% else %}
+            <span class="text-slate-600 text-xs">—</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="8" class="px-5 py-10 text-center text-slate-500">
+            Aucun payout correction — ils apparaîtront après le premier paiement de correction
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Explication répartition -->
+  <div class="rounded-2xl p-5" style="background:#0f172a;border:1px solid #1e293b;">
+    <p class="text-slate-400 text-xs font-semibold uppercase mb-3">Règle de répartition automatique</p>
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div class="text-center p-3 rounded-xl" style="background:#1e293b;">
+        <p class="text-blue-400 font-black text-lg">5%</p>
+        <p class="text-slate-400 text-xs">Développeur 1</p>
+      </div>
+      <div class="text-center p-3 rounded-xl" style="background:#1e293b;">
+        <p class="text-cyan-400 font-black text-lg">5%</p>
+        <p class="text-slate-400 text-xs">Développeur 2</p>
+      </div>
+      <div class="text-center p-3 rounded-xl" style="background:#1e293b;">
+        <p class="text-amber-400 font-black text-lg">40%</p>
+        <p class="text-slate-400 text-xs">Entretien plateforme</p>
+      </div>
+      <div class="text-center p-3 rounded-xl" style="background:#1e293b;">
+        <p class="text-violet-400 font-black text-lg">50%</p>
+        <p class="text-slate-400 text-xs">Professeur (par épreuve)</p>
+        <p class="text-slate-600 text-[10px] mt-0.5">Configurable par exam</p>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+</div>
+{% endblock %}

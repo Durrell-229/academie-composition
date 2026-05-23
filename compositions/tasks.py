@@ -1,16 +1,68 @@
 import logging
 import hashlib
+import os
+import tempfile
 from django.shortcuts import get_object_or_404
 from .models import CompositionSession, Resultat
 from ai_engine.multi_ai import multi_ai
+from ai_engine.nvidia_ocr import nvidia_ocr_service
 from ai_engine.services import extract_text_from_file
-from bulletins.services import BulletinService, link_callback
 from io import BytesIO
 from django.template.loader import render_to_string
 from xhtml2pdf import pisa
 from django.core.files.base import ContentFile
+from django.conf import settings
 
 from core.redis_tasks import redis_task
+
+
+def _get_local_path(field_file):
+    """
+    Retourne un chemin local utilisable pour l'OCR.
+    - Stockage local : retourne field_file.path directement.
+    - Cloudinary / S3 : télécharge dans un fichier temporaire et retourne son chemin.
+    Lève une exception si le téléchargement échoue.
+    """
+    try:
+        path = field_file.path
+        if os.path.exists(path):
+            return path, False  # (chemin, is_temp)
+    except (NotImplementedError, AttributeError, ValueError):
+        pass
+
+    # Fichier distant (Cloudinary / S3) — téléchargement
+    import requests as req
+    url = field_file.url
+    resp = req.get(url, timeout=30)
+    resp.raise_for_status()
+    ext = os.path.splitext(field_file.name)[1] or '.bin'
+    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=ext)
+    tmp.write(resp.content)
+    tmp.close()
+    return tmp.name, True  # (chemin, is_temp)
+
+
+def link_callback(uri, rel):
+    """
+    Résout les URIs (fichiers statiques / media) pour xhtml2pdf lors
+    de la génération du bulletin PDF.
+    """
+    # Fichiers statiques
+    static_root = getattr(settings, 'STATIC_ROOT', '') or ''
+    static_url = getattr(settings, 'STATIC_URL', '/static/')
+    media_root = getattr(settings, 'MEDIA_ROOT', '') or ''
+    media_url = getattr(settings, 'MEDIA_URL', '/media/')
+
+    if uri.startswith(media_url):
+        path = os.path.join(media_root, uri[len(media_url):])
+    elif uri.startswith(static_url):
+        path = os.path.join(static_root, uri[len(static_url):])
+    else:
+        return uri
+
+    if not os.path.isfile(path):
+        return uri
+    return path
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +78,11 @@ def process_ia_correction(session_id):
     
     exam = session.exam
     logger.info(f"[Correction] Début pour session {session_id}, examen: {exam.titre}")
-    
+
+    # Marquer la session comme en cours de correction IA
+    session.statut = CompositionSession.Statut.EN_CORRECTION
+    session.save(update_fields=['statut'])
+
     # ═══ 1. VÉRIFICATION STRICTE DU CORRIGÉ TYPE ═══
     corrige_file = exam.files.filter(type_fichier='corrige_type').first()
     corrige_text = ""
@@ -47,20 +103,25 @@ def process_ia_correction(session_id):
                 'details_correction': {'error': 'no_corrige_type', 'exam_id': str(exam.id)},
             }
         )
-        session.statut = 'corrige'
+        session.statut = CompositionSession.Statut.CORRIGE
         session.save()
         return f"Erreur: Aucun corrigé type pour {exam.titre}"
     
-    # Vérifier que le fichier existe physiquement
+    # Charger le corrigé type (local ou Cloudinary/S3)
+    corrige_local_path = None
+    corrige_is_temp = False
     try:
-        corrige_text = extract_text_from_file(corrige_file.fichier.path)
-        # Hash du corrigé pour traçabilité
+        corrige_local_path, corrige_is_temp = _get_local_path(corrige_file.fichier)
+        corrige_text = extract_text_from_file(corrige_local_path)
         corrige_hash = hashlib.sha256(corrige_text.encode('utf-8', errors='ignore')).hexdigest()[:16]
-        corrige_doc_id = corrige_file.document_id  # ID unique du corrigé
-        logger.info(f"[Correction] Corrigé type chargé: {corrige_file.fichier.path} (hash: {corrige_hash}, doc_id: {corrige_doc_id})")
+        corrige_doc_id = corrige_file.document_id
+        logger.info(f"[Correction] Corrigé type chargé (hash: {corrige_hash}, doc_id: {corrige_doc_id})")
     except Exception as e:
         logger.error(f"[Correction] Erreur lecture corrigé type: {e}")
         corrige_text = ""
+    finally:
+        if corrige_is_temp and corrige_local_path and os.path.exists(corrige_local_path):
+            os.unlink(corrige_local_path)
     
     if not corrige_text.strip():
         logger.warning(f"[Correction] Corrigé type vide pour {exam.titre}")
@@ -71,17 +132,35 @@ def process_ia_correction(session_id):
     files_info = []
     copie_doc_ids = []
     
+    image_paths = []
+    temp_paths_to_cleanup = []
     if submission_files.exists():
         for sub in submission_files:
             try:
-                text = extract_text_from_file(sub.fichier.path)
-                copie_text += text + "\n"
                 doc_id = getattr(sub, 'document_id', f"COPIE-{sub.id.hex[:8]}")
                 files_info.append({'file': str(sub.fichier.name), 'page': sub.page_number, 'document_id': doc_id})
                 copie_doc_ids.append(doc_id)
-                logger.info(f"[Correction] Copie page {sub.page_number} extraite: {sub.fichier.path} (doc_id: {doc_id})")
+
+                local_path, is_temp = _get_local_path(sub.fichier)
+                image_paths.append(local_path)
+                if is_temp:
+                    temp_paths_to_cleanup.append(local_path)
+                try:
+                    # OCR via nemotron-ocr-v1 (haute précision)
+                    ocr_result = nvidia_ocr_service.extract_text_from_image(local_path)
+                    if ocr_result.get('success') and ocr_result.get('text', '').strip():
+                        copie_text += ocr_result['text'] + "\n"
+                        logger.info(f"[Correction] OCR Nemotron page {sub.page_number}: {len(ocr_result['text'])} chars (conf: {ocr_result.get('confidence', 0):.0f}%)")
+                    else:
+                        # Fallback Tesseract si Nemotron OCR échoue
+                        text = extract_text_from_file(local_path)
+                        if text.strip():
+                            copie_text += text + "\n"
+                            logger.info(f"[Correction] Fallback Tesseract page {sub.page_number}: {len(text)} chars")
+                except Exception as e_ocr:
+                    logger.warning(f"[Correction] Erreur OCR page {sub.page_number}: {e_ocr}")
             except Exception as e:
-                logger.warning(f"[Correction] Erreur extraction page {sub.page_number}: {e}")
+                logger.warning(f"[Correction] Erreur page {sub.page_number}: {e}")
     
     # Réponses texte directes (TinyMCE)
     answers = session.answers.all()
@@ -104,19 +183,64 @@ def process_ia_correction(session_id):
         'session_id': str(session.id),
     }
     
-    logger.info(f"[Correction] Appel IA avec corrigé ({len(corrige_text)} chars) et copie ({len(copie_text)} chars) — corrige:{corrige_doc_id} copie:{copie_doc_ids}")
-    correction_result = multi_ai.correct_copy(corrige_text, copie_text, exam_info)
+    logger.info(f"[Correction] Appel NVIDIA vision: {len(image_paths)} image(s) + corrigé {len(corrige_text)} chars — corrige:{corrige_doc_id} copie:{copie_doc_ids}")
+    correction_result = {}
+    try:
+        correction_result = multi_ai.correct_copy(corrige_text, copie_text, exam_info, image_paths=image_paths)
+    except Exception as e:
+        logger.error(f"[Correction] Erreur appel IA: {e}")
+        correction_result = {
+            'note': 0,
+            'appreciation': f"Erreur lors de la correction automatique : {e}",
+            'details': [],
+            'points_forts_global': '',
+            'axes_amelioration': '',
+        }
+    finally:
+        for _tmp_path in temp_paths_to_cleanup:
+            try:
+                if os.path.exists(_tmp_path):
+                    os.unlink(_tmp_path)
+            except Exception:
+                pass
 
     # ═══ 4. ENREGISTREMENT DU RÉSULTAT ═══
     from django.utils import timezone
-    note_finale = float(correction_result.get('note', 0))
-    
+
+    # Détecter une erreur technique (IA indisponible ou note null)
+    note_brute = correction_result.get('note')
+    erreur_technique = correction_result.get('erreur_technique', False) or note_brute is None
+
+    if erreur_technique or note_brute is None:
+        # Pas de note valide : marquer comme erreur, ne pas mettre 0
+        Resultat.objects.update_or_create(
+            session=session,
+            defaults={
+                'note': 0,
+                'note_sur': exam.note_maximale,
+                'mention': '',
+                'appreciation': correction_result.get('appreciation', 'Erreur technique lors de la correction. Veuillez réessayer ou contacter un administrateur.'),
+                'corrige_par_ia': False,
+                'details_correction': {
+                    'erreur': True,
+                    'message': correction_result.get('appreciation', ''),
+                    'conseil': 'Vérifiez les clés API dans le fichier .env et relancez la correction.',
+                },
+            }
+        )
+        session.statut = CompositionSession.Statut.EN_ATTENTE
+        session.save()
+        logger.error(f"[Correction] Erreur technique pour session {session_id} — note non attribuée")
+        return f"Erreur technique correction — session {session_id}"
+
+    note_finale = float(note_brute)
+
     # Validation de la note
     if note_finale < 0:
         note_finale = 0
     if note_finale > exam_info['note_maximale']:
         note_finale = exam_info['note_maximale']
-    
+
     # Calcul de la mention
     mention = ''
     if note_finale >= 16: mention = 'excellent'
@@ -161,42 +285,52 @@ def process_ia_correction(session_id):
 
     # ═══ 5. GÉNÉRATION DU BULLETIN PDF ═══
     try:
-        from bulletins.services import BulletinService
-        from bulletins.coefficients_benin import get_coefficient as get_benin_coefficient
-        from api.services.qr_service import QRService
-        
-        # Extraire la série de la classe de l'élève
         eleve = session.eleve
-        classe = eleve.classe or ''
-        serie = BulletinService._extract_serial(classe)
-        
-        # Obtenir le coefficient officiel
-        matiere_nom = exam.matiere.nom if exam.matiere else ''
-        coeff_officiel = get_benin_coefficient(matiere_nom, serie)
+        classe_str = eleve.classe or ''
 
-        from bulletins.services import get_logo_data_uri
+        # Coefficient officiel (extraction de la série si dispo)
+        serie = ''
+        for token in classe_str.upper().split():
+            if token in ('A', 'B', 'C', 'D', 'E', 'F', 'G'):
+                serie = token
+                break
+
+        coeff_officiel = float(exam.coefficient or 1)
+        matiere_nom = exam.matiere.nom if exam.matiere else exam.titre
+
         context = {
             'resultat': resultat,
             'annee_scolaire': '2025-2026',
             'serie': serie,
             'coefficient_officiel': coeff_officiel,
-            'qr_data_uri': QRService.generate_composition_qr(resultat),
-            'logo_data_uri': get_logo_data_uri(),
+            'matiere_nom': matiere_nom,
+            'qr_data_uri': None,
+            'logo_data_uri': None,
         }
-        html = render_to_string('compositions/bulletin_composition_benin.html', context)
+
+        # Tenter le QR optionnel
+        try:
+            from api.services.qr_service import QRService
+            context['qr_data_uri'] = QRService.generate_composition_qr(resultat)
+        except Exception:
+            pass
+
+        from compositions.views import _get_bulletin_template, _build_composition_bulletin_context
+        bulletin_template = _get_bulletin_template(exam.type_exam)
+        html = render_to_string(bulletin_template, _build_composition_bulletin_context(resultat))
         pdf_file = BytesIO()
         pisa_status = pisa.CreatePDF(BytesIO(html.encode("UTF-8")), dest=pdf_file, link_callback=link_callback)
-        
+
         if not pisa_status.err:
             pdf_content = pdf_file.getvalue()
-            filename = f"bulletin_{session.eleve.last_name}_{exam.titre[:10]}.pdf"
+            filename = f"bulletin_{eleve.last_name}_{exam.titre[:10]}.pdf"
             resultat.bulletin_pdf.save(filename, ContentFile(pdf_content), save=True)
             logger.info(f"[Correction] Bulletin PDF généré: {filename}")
     except Exception as e:
         logger.error(f"[Correction] Erreur génération bulletin PDF: {e}")
 
     # ═══ 6. STATUT SESSION ═══
-    session.statut = 'corrige' if a_acces else 'bloque'
+    session.statut = CompositionSession.Statut.CORRIGE if a_acces else CompositionSession.Statut.BLOQUE
     session.save()
     
     # ═══ 7. GAMIFICATION (XP) ═══

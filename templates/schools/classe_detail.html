@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block title %}{{ classe.nom }} | Académie Numérique{% endblock %}
+{% block breadcrumb %}
+<a href="{% url 'schools:etablissement_list' %}" class="text-text-muted hover:text-text-primary">Établissements</a>
+<span class="mx-2 text-text-muted">/</span>
+<a href="{% url 'schools:etablissement_detail' etablissement.id %}" class="text-text-muted hover:text-text-primary">{{ etablissement.nom }}</a>
+<span class="mx-2 text-text-muted">/</span>
+<a href="{% url 'schools:classe_list' etablissement.id %}" class="text-text-muted hover:text-text-primary">Classes</a>
+<span class="mx-2 text-text-muted">/</span>
+<span class="text-text-primary font-semibold">{{ classe.nom }}</span>
+{% endblock %}
+{% block content %}
+<div class="space-y-6">
+  <div class="animate-in p-6 rounded-2xl bg-bg-card border border-border-standard flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-xl font-black text-text-primary flex items-center gap-3"><i class="fa-solid fa-chalkboard text-accent"></i> {{ classe.nom }}</h1>
+      <p class="text-sm text-text-muted mt-1">{{ classe.code }} · {{ etablissement.nom }}{% if classe.niveau %} · {{ classe.niveau.nom }}{% endif %}</p>
+      {% if classe.professeur_principal %}<p class="text-xs text-text-muted mt-0.5"><i class="fa-solid fa-chalkboard-user mr-1"></i>{{ classe.professeur_principal.full_name }}</p>{% endif %}
+    </div>
+    <div class="flex gap-2">
+      <span class="px-3 py-1.5 bg-accent/10 text-accent text-xs font-bold rounded-lg">{{ classe.capacite_max }} places max</span>
+      <span class="px-3 py-1.5 bg-bg-card border border-border-standard text-text-muted text-xs font-bold rounded-lg">{{ classe.annee_scolaire }}</span>
+    </div>
+  </div>
+
+  <div class="animate-in delay-1 bg-bg-card border border-border-standard rounded-2xl p-5">
+    <h2 class="font-bold text-text-primary mb-4 flex items-center gap-2"><i class="fa-solid fa-users text-primary"></i> Élèves ({{ eleves.count }})</h2>
+    {% if eleves %}
+    <div class="space-y-2">
+      {% for eleve in eleves %}
+      <div class="flex items-center gap-3 p-3 rounded-xl bg-bg-card border border-border-standard">
+        <div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-black flex-shrink-0">{{ eleve.first_name|slice:":1" }}{{ eleve.last_name|slice:":1" }}</div>
+        <div>
+          <p class="text-sm font-bold text-text-primary">{{ eleve.full_name }}</p>
+          <p class="text-xs text-text-muted">{{ eleve.email }} · {{ eleve.matricule }}</p>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-sm text-text-muted text-center py-6">Aucun élève assigné à cette classe.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

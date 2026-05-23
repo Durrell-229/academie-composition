@@ -17,6 +17,7 @@ from .models import (
     PaiementAbonnement,
 )
 from .fedapay_service import FedaPayService
+from accounts.models import MembreOrganisation
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +26,21 @@ def _admin_requis(request):
     """Retourne True si l'utilisateur est admin ou superadmin."""
     role = getattr(request.user, 'role', '')
     return request.user.is_superuser or role in ('admin', 'directeur')
+
+
+def _get_organisation_plateforme():
+    """Retourne (ou crée) l'organisation globale unique de la plateforme."""
+    from core.models import Organisation
+    org, _ = Organisation.objects.get_or_create(
+        code='PLATEFORME',
+        defaults={
+            'nom': 'Académie Numérique',
+            'pays': 'Bénin',
+            'devise': 'XOF',
+            'is_active': True,
+        }
+    )
+    return org
 
 
 @login_required
@@ -65,12 +81,19 @@ def commission_dashboard(request):
         payouts__isnull=True
     ).select_related('eleve', 'abonnement__plan')[:10]
 
-    # Config commission active
-    try:
-        etablissement = request.user.etablissement
-        config = ConfigurationCommission.objects.get(etablissement=etablissement)
-    except Exception:
-        config = None
+    # Config commission globale de la plateforme
+    org = _get_organisation_plateforme()
+    config, _ = ConfigurationCommission.objects.get_or_create(
+        etablissement=org,
+        defaults={
+            'taux_admin': 10,
+            'taux_commercial': 20,
+            'taux_prestataire': 70,
+            'telephone_admin': '',
+            'telephone_commercial': '',
+            'telephone_prestataire': '',
+        }
+    )
 
     context = {
         'stats': stats,
@@ -89,11 +112,7 @@ def config_commission(request):
         messages.error(request, "Accès réservé aux administrateurs.")
         return redirect('payments:abonnements')
 
-    try:
-        etablissement = request.user.etablissement
-    except AttributeError:
-        messages.error(request, "Aucun établissement associé à votre compte.")
-        return redirect('payments:commission_dashboard')
+    etablissement = _get_organisation_plateforme()
 
     config, _ = ConfigurationCommission.objects.get_or_create(
         etablissement=etablissement,

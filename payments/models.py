@@ -8,7 +8,7 @@ from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django.conf import settings
-from schools.models import Etablissement, Classe
+from core.models import Organisation
 
 
 class FraisScolaire(models.Model):
@@ -27,7 +27,7 @@ class FraisScolaire(models.Model):
         AUTRE = 'autre', _('Autres frais')
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    etablissement = models.ForeignKey(Etablissement, on_delete=models.CASCADE, related_name='frais_scolaires')
+    etablissement = models.ForeignKey(Organisation, on_delete=models.CASCADE, related_name='frais_scolaires')
     
     code = models.CharField(_('code'), max_length=20, unique=True)
     nom = models.CharField(_('nom'), max_length=200)
@@ -39,7 +39,7 @@ class FraisScolaire(models.Model):
     est_obligatoire = models.BooleanField(_('frais obligatoire'), default=True)
     
     # Applicabilité
-    classes_concernees = models.ManyToManyField(Classe, related_name='frais_scolaires', blank=True)
+    classes_concernees = models.JSONField(_('classes concernées'), blank=True, null=True, help_text="Liste des noms de classes")
     niveaux_concernes = models.JSONField(_('niveaux concernés'), blank=True, null=True)
     
     # Paiement
@@ -83,7 +83,7 @@ class Paiement(models.Model):
     # Relations
     eleve = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='paiements', limit_choices_to={'role': 'eleve'})
     frais = models.ForeignKey(FraisScolaire, on_delete=models.CASCADE, related_name='paiements')
-    classe = models.ForeignKey(Classe, on_delete=models.CASCADE, related_name='paiements')
+    classe = models.ForeignKey('core.Classe', on_delete=models.SET_NULL, null=True, blank=True, related_name='paiements')
     annee_scolaire = models.CharField(_('année scolaire'), max_length=9, default='2024-2025')
     
     # Montants
@@ -273,7 +273,7 @@ class RapportFinancier(models.Model):
         ANNUEL = 'annuel', _('Annuel')
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    etablissement = models.ForeignKey(Etablissement, on_delete=models.CASCADE, related_name='rapports_financiers')
+    etablissement = models.ForeignKey(Organisation, on_delete=models.CASCADE, related_name='rapports_financiers')
     
     type_rapport = models.CharField(_('type de rapport'), max_length=20, choices=TypeRapport.choices)
     periode_debut = models.DateField(_('début de période'))
@@ -330,7 +330,7 @@ class PlanAbonnementScolaire(models.Model):
         ELITE = 'elite', _('Élite')
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    etablissement = models.ForeignKey(Etablissement, on_delete=models.CASCADE, related_name='plans_abonnement')
+    etablissement = models.ForeignKey(Organisation, on_delete=models.CASCADE, related_name='plans_abonnement')
     
     # Informations de base
     nom = models.CharField(_('nom du plan'), max_length=100)
@@ -416,7 +416,7 @@ class AbonnementEleve(models.Model):
     # Relations
     eleve = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='abonnements', limit_choices_to={'role': 'eleve'})
     plan = models.ForeignKey(PlanAbonnementScolaire, on_delete=models.PROTECT, related_name='abonnements')
-    etablissement = models.ForeignKey(Etablissement, on_delete=models.CASCADE, related_name='abonnements_eleves')
+    etablissement = models.ForeignKey(Organisation, on_delete=models.CASCADE, related_name='abonnements_eleves')
     
     # Période
     date_debut = models.DateTimeField(_('date de début'))
@@ -450,7 +450,14 @@ class AbonnementEleve(models.Model):
         verbose_name = _('Abonnement élève')
         verbose_name_plural = _('Abonnements élèves')
         ordering = ['-date_souscription']
-        # Pas de unique_together : un élève peut renouveler le même plan après résiliation
+        # Un élève peut renouveler le même plan après résiliation, mais pas en avoir deux actifs simultanément
+        constraints = [
+            models.UniqueConstraint(
+                fields=['eleve', 'plan'],
+                condition=models.Q(statut='actif'),
+                name='unique_abonnement_actif'
+            )
+        ]
     
     def __str__(self):
         return f"{self.eleve.get_full_name()} - {self.plan.nom} ({self.get_statut_display()})"
@@ -475,7 +482,8 @@ class AbonnementEleve(models.Model):
     def save(self, *args, **kwargs):
         if not self.numero_abonnement:
             import random
-            annee = self.date_souscription.year if hasattr(self, 'date_souscription') else 2024
+            from django.utils import timezone as tz
+            annee = tz.now().year
             random_part = ''.join([str(random.randint(0, 9)) for _ in range(6)])
             self.numero_abonnement = f"ABN-{annee}-{random_part}"
         super().save(*args, **kwargs)
@@ -556,7 +564,7 @@ class ConfigurationFedaPay(models.Model):
         PRODUCTION = 'production', _('Production')
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    etablissement = models.OneToOneField(Etablissement, on_delete=models.CASCADE, related_name='config_fedapay')
+    etablissement = models.OneToOneField(Organisation, on_delete=models.CASCADE, related_name='config_fedapay')
     
     # Clés API
     environnement = models.CharField(_('environnement'), max_length=20, choices=Environnement.choices, default=Environnement.SANDBOX)
@@ -599,7 +607,7 @@ class PromotionAbonnement(models.Model):
         MOIS_GRATUIT = 'mois_gratuit', _('Mois gratuit')
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    etablissement = models.ForeignKey(Etablissement, on_delete=models.CASCADE, related_name='promotions_abonnement')
+    etablissement = models.ForeignKey(Organisation, on_delete=models.CASCADE, related_name='promotions_abonnement')
     
     # Informations
     nom = models.CharField(_('nom'), max_length=100)
@@ -658,7 +666,7 @@ class ConfigurationCommission(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     etablissement = models.OneToOneField(
-        Etablissement, on_delete=models.CASCADE, related_name='config_commission'
+        Organisation, on_delete=models.CASCADE, related_name='config_commission'
     )
 
     # Taux (doivent totaliser 100 %)
@@ -684,6 +692,14 @@ class ConfigurationCommission(models.Model):
     @property
     def total_taux(self):
         return float(self.taux_admin) + float(self.taux_commercial) + float(self.taux_prestataire)
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        total = float(self.taux_admin) + float(self.taux_commercial) + float(self.taux_prestataire)
+        if abs(total - 100) > 0.01:
+            raise ValidationError(
+                f"La somme des taux doit être égale à 100 % (actuellement {total:.2f} %)."
+            )
 
     def calculer_parts(self, montant_total: int) -> dict:
         """Retourne un dict avec la part de chaque bénéficiaire en entier XOF."""
@@ -781,3 +797,320 @@ class PaiementCorrectionUnitaire(models.Model):
             import random
             self.reference = f"COR-{timezone.now().year}-{''.join([str(random.randint(0,9)) for _ in range(6)])}"
         super().save(*args, **kwargs)
+
+
+# ═══════════════════════════════════════════════════════════════
+# RÉPARTITION AUTOMATIQUE — PAIEMENTS CORRECTION UNITAIRE
+# ═══════════════════════════════════════════════════════════════
+
+class PayoutCorrectionUnitaire(models.Model):
+    """
+    Trace chaque virement envoyé suite à un paiement de correction unitaire.
+    Un paiement → 4 lignes : dev1 (5%), dev2 (5%), entretien (40%), prof (50%).
+    """
+
+    class Beneficiaire(models.TextChoices):
+        DEV1 = 'dev1', 'Développeur 1'
+        DEV2 = 'dev2', 'Développeur 2'
+        ENTRETIEN = 'entretien', 'Entretien plateforme'
+        PROF = 'prof', 'Professeur'
+
+    class Statut(models.TextChoices):
+        EN_ATTENTE = 'en_attente', 'En attente'
+        ENVOYE = 'envoye', 'Envoyé'
+        SUCCES = 'succes', 'Succès'
+        ECHEC = 'echec', 'Échec'
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    paiement = models.ForeignKey(
+        PaiementCorrectionUnitaire, on_delete=models.CASCADE,
+        related_name='payouts'
+    )
+    beneficiaire = models.CharField(max_length=20, choices=Beneficiaire.choices)
+    telephone = models.CharField(max_length=20)
+    montant = models.DecimalField(max_digits=12, decimal_places=0)
+    taux_applique = models.DecimalField(max_digits=5, decimal_places=2)
+    statut = models.CharField(max_length=20, choices=Statut.choices, default=Statut.EN_ATTENTE)
+    fedapay_payout_id = models.CharField(max_length=100, blank=True)
+    reponse_api = models.JSONField(blank=True, null=True)
+    message_erreur = models.TextField(blank=True)
+    date_creation = models.DateTimeField(auto_now_add=True)
+    date_traitement = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        verbose_name = 'Payout correction unitaire'
+        verbose_name_plural = 'Payouts correction unitaire'
+        ordering = ['-date_creation']
+
+    def __str__(self):
+        return f"{self.get_beneficiaire_display()} — {self.montant:,.0f} FCFA ({self.get_statut_display()})"
+
+
+# ═══════════════════════════════════════════════════════════════
+# TARIFS PAR TYPE DE CANDIDAT (définis par l'admin)
+# ═══════════════════════════════════════════════════════════════
+
+class ConfigTarifCandidature(models.Model):
+    """
+    L'admin définit les prix d'abonnement selon le type de candidat :
+    - Candidat Académie Numérique (inscrit à l'académie)
+    - Candidat Libre (externe, présente aux examens de son côté)
+    """
+
+    class TypeCandidat(models.TextChoices):
+        ACADEMIE = 'academie', _('Candidat Académie Numérique')
+        LIBRE = 'libre', _('Candidat Libre')
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    etablissement = models.ForeignKey(
+        Organisation, on_delete=models.CASCADE,
+        related_name='tarifs_candidature', null=True, blank=True,
+        help_text="Laisser vide pour un tarif global (tous établissements)"
+    )
+    type_candidat = models.CharField(
+        _('type de candidat'), max_length=20, choices=TypeCandidat.choices
+    )
+
+    # Tarifs abonnement
+    tarif_mensuel = models.DecimalField(_('mensuel (XOF)'), max_digits=12, decimal_places=0, default=0)
+    tarif_trimestriel = models.DecimalField(_('trimestriel (XOF)'), max_digits=12, decimal_places=0, default=0)
+    tarif_annuel = models.DecimalField(_('annuel (XOF)'), max_digits=12, decimal_places=0, default=0)
+
+    # Tarifs à l'unité (accès service par service)
+    tarif_correction_unitaire = models.DecimalField(
+        _('correction unitaire (XOF)'), max_digits=10, decimal_places=0, default=0,
+        help_text="Prix pour corriger une copie sans abonnement"
+    )
+    tarif_qcm_unitaire = models.DecimalField(
+        _('QCM unitaire (XOF)'), max_digits=10, decimal_places=0, default=0,
+        help_text="Prix pour passer un QCM sans abonnement"
+    )
+
+    # Paiement échelonné
+    paiement_echelonne_autorise = models.BooleanField(_('paiement par tranches autorisé'), default=True)
+    nombre_tranches_max = models.PositiveIntegerField(_('nombre de tranches max'), default=3)
+
+    is_actif = models.BooleanField(_('actif'), default=True)
+    date_creation = models.DateTimeField(auto_now_add=True)
+    date_modification = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = _('Tarif par type de candidat')
+        verbose_name_plural = _('Tarifs par type de candidat')
+        unique_together = ['etablissement', 'type_candidat']
+        ordering = ['type_candidat']
+
+    def __str__(self):
+        etab = self.etablissement.nom if self.etablissement else 'Global'
+        return f"Tarifs {self.get_type_candidat_display()} — {etab}"
+
+    @property
+    def tarif_par_periode(self):
+        return {
+            'mensuel': int(self.tarif_mensuel),
+            'trimestriel': int(self.tarif_trimestriel),
+            'annuel': int(self.tarif_annuel),
+        }
+
+
+# ═══════════════════════════════════════════════════════════════
+# PAIEMENT PAR TRANCHES (échelonnement)
+# ═══════════════════════════════════════════════════════════════
+
+class PlanEchelonnement(models.Model):
+    """Plan de paiement échelonné lié à un abonnement élève."""
+
+    class Statut(models.TextChoices):
+        ACTIF = 'actif', _('En cours')
+        SOLDE = 'solde', _('Soldé')
+        ABANDONNE = 'abandonne', _('Abandonné')
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    abonnement = models.OneToOneField(
+        AbonnementEleve, on_delete=models.CASCADE, related_name='plan_echelonnement'
+    )
+    nombre_tranches = models.PositiveIntegerField(_('nombre de tranches'))
+    montant_total = models.DecimalField(_('montant total (XOF)'), max_digits=12, decimal_places=0)
+    montant_par_tranche = models.DecimalField(_('montant par tranche (XOF)'), max_digits=12, decimal_places=0)
+    statut = models.CharField(_('statut'), max_length=20, choices=Statut.choices, default=Statut.ACTIF)
+    date_creation = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = _('Plan d\'échelonnement')
+        verbose_name_plural = _('Plans d\'échelonnement')
+
+    def __str__(self):
+        return f"{self.abonnement.eleve.get_full_name()} — {self.nombre_tranches} tranches"
+
+    @property
+    def tranches_payees(self):
+        return self.tranches.filter(statut=TranchePaiement.Statut.PAYE).count()
+
+    @property
+    def prochaine_tranche_impayee(self):
+        return self.tranches.filter(
+            statut__in=[TranchePaiement.Statut.EN_ATTENTE, TranchePaiement.Statut.EN_RETARD]
+        ).order_by('numero').first()
+
+
+class TranchePaiement(models.Model):
+    """Une tranche individuelle d'un plan d'échelonnement."""
+
+    class Statut(models.TextChoices):
+        EN_ATTENTE = 'en_attente', _('En attente')
+        EN_COURS = 'en_cours', _('Paiement initié')
+        PAYE = 'paye', _('Payé')
+        EN_RETARD = 'en_retard', _('En retard')
+        ANNULE = 'annule', _('Annulé')
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    plan = models.ForeignKey(PlanEchelonnement, on_delete=models.CASCADE, related_name='tranches')
+    numero = models.PositiveIntegerField(_('numéro de tranche'))
+    montant = models.DecimalField(_('montant (XOF)'), max_digits=12, decimal_places=0)
+    date_echeance = models.DateField(_('date d\'échéance'))
+    statut = models.CharField(_('statut'), max_length=20, choices=Statut.choices, default=Statut.EN_ATTENTE)
+
+    # Lien vers le paiement FedaPay réel
+    fedapay_transaction_id = models.CharField(_('FedaPay transaction ID'), max_length=100, blank=True)
+    fedapay_url_paiement = models.URLField(_('URL de paiement'), blank=True)
+    date_paiement = models.DateTimeField(_('date de paiement effectif'), null=True, blank=True)
+
+    class Meta:
+        verbose_name = _('Tranche de paiement')
+        verbose_name_plural = _('Tranches de paiement')
+        ordering = ['numero']
+        unique_together = ['plan', 'numero']
+
+    def __str__(self):
+        return f"Tranche {self.numero}/{self.plan.nombre_tranches} — {self.montant:,.0f} FCFA ({self.get_statut_display()})"
+
+    @property
+    def est_en_retard(self):
+        from datetime import date
+        return self.statut == self.Statut.EN_ATTENTE and self.date_echeance < date.today()
+
+
+# ═══════════════════════════════════════════════════════════════
+# DOSSIER DE CANDIDATURE & DOCUMENTS
+# ═══════════════════════════════════════════════════════════════
+
+class DocumentRequis(models.Model):
+    """
+    Document requis pour l'inscription aux examens.
+    Défini par l'admin par type de candidat.
+    """
+
+    class TypeCandidat(models.TextChoices):
+        ACADEMIE = 'academie', _('Candidat Académie Numérique')
+        LIBRE = 'libre', _('Candidat Libre')
+        TOUS = 'tous', _('Tous les candidats')
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    etablissement = models.ForeignKey(
+        Organisation, on_delete=models.CASCADE,
+        related_name='documents_requis', null=True, blank=True
+    )
+    type_candidat = models.CharField(
+        _('pour quel type'), max_length=20, choices=TypeCandidat.choices, default=TypeCandidat.TOUS
+    )
+    nom = models.CharField(_('nom du document'), max_length=200)
+    description = models.TextField(_('description / instructions'), blank=True)
+    est_obligatoire = models.BooleanField(_('obligatoire'), default=True)
+    formats_acceptes = models.CharField(
+        _('formats acceptés'), max_length=100, default='PDF, JPG, PNG',
+        help_text="Ex: PDF, JPG, PNG"
+    )
+    taille_max_mo = models.PositiveIntegerField(_('taille max (Mo)'), default=5)
+    is_actif = models.BooleanField(_('actif'), default=True)
+    ordre = models.PositiveIntegerField(_('ordre d\'affichage'), default=1)
+    date_creation = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = _('Document requis')
+        verbose_name_plural = _('Documents requis')
+        ordering = ['ordre', 'nom']
+
+    def __str__(self):
+        obligatoire = '* ' if self.est_obligatoire else ''
+        return f"{obligatoire}{self.nom} ({self.get_type_candidat_display()})"
+
+
+class DossierCandidature(models.Model):
+    """Dossier de candidature d'un élève pour les examens."""
+
+    class Statut(models.TextChoices):
+        INCOMPLET = 'incomplet', _('Incomplet')
+        SOUMIS = 'soumis', _('Soumis — en attente de validation')
+        VALIDE = 'valide', _('Validé')
+        REJETE = 'rejete', _('Rejeté — corrections requises')
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    eleve = models.OneToOneField(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='dossier_candidature'
+    )
+    statut = models.CharField(_('statut'), max_length=20, choices=Statut.choices, default=Statut.INCOMPLET)
+    commentaire_admin = models.TextField(_('commentaire de l\'admin'), blank=True)
+    date_soumission = models.DateTimeField(_('date de soumission'), null=True, blank=True)
+    date_validation = models.DateTimeField(_('date de validation'), null=True, blank=True)
+    valide_par = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='dossiers_valides'
+    )
+    date_creation = models.DateTimeField(auto_now_add=True)
+    date_modification = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = _('Dossier de candidature')
+        verbose_name_plural = _('Dossiers de candidature')
+        ordering = ['-date_modification']
+
+    def __str__(self):
+        return f"Dossier {self.eleve.get_full_name()} — {self.get_statut_display()}"
+
+    @property
+    def est_complet(self):
+        """Vérifie si tous les documents obligatoires ont été soumis."""
+        type_c = getattr(self.eleve, 'type_candidat', 'non_defini')
+        docs_requis = DocumentRequis.objects.filter(
+            est_obligatoire=True, is_actif=True
+        ).filter(
+            models.Q(type_candidat='tous') | models.Q(type_candidat=type_c)
+        )
+        soumis_ids = set(
+            self.soumissions.filter(
+                statut__in=['en_attente', 'valide']
+            ).values_list('document_requis_id', flat=True)
+        )
+        return all(str(d.id) in soumis_ids for d in docs_requis)
+
+
+class SoumissionDocument(models.Model):
+    """Document soumis par un élève dans son dossier."""
+
+    class Statut(models.TextChoices):
+        EN_ATTENTE = 'en_attente', _('En attente de validation')
+        VALIDE = 'valide', _('Validé')
+        REJETE = 'rejete', _('Rejeté')
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    dossier = models.ForeignKey(DossierCandidature, on_delete=models.CASCADE, related_name='soumissions')
+    document_requis = models.ForeignKey(DocumentRequis, on_delete=models.CASCADE, related_name='soumissions')
+    fichier = models.FileField(_('fichier'), upload_to='candidatures/documents/%Y/%m/')
+    nom_fichier_original = models.CharField(_('nom original'), max_length=255, blank=True)
+    statut = models.CharField(_('statut'), max_length=20, choices=Statut.choices, default=Statut.EN_ATTENTE)
+    commentaire_admin = models.TextField(_('commentaire admin'), blank=True)
+    valide_par = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='documents_valides'
+    )
+    date_soumission = models.DateTimeField(auto_now_add=True)
+    date_validation = models.DateTimeField(_('date de validation'), null=True, blank=True)
+
+    class Meta:
+        verbose_name = _('Document soumis')
+        verbose_name_plural = _('Documents soumis')
+        unique_together = ['dossier', 'document_requis']
+        ordering = ['-date_soumission']
+
+    def __str__(self):
+        return f"{self.document_requis.nom} — {self.dossier.eleve.get_full_name()}"

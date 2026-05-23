@@ -78,8 +78,13 @@ def composition_room_view(request, exam_id):
     # Vérifier que la session n'est pas exclue ou déjà soumise
     if session.statut == CompositionSession.Statut.EXCLU:
         return render(request, 'compositions/banned.html', {'session': session, 'exam': exam})
-    if session.statut in [CompositionSession.Statut.SOUMIS, CompositionSession.Statut.CORRIGE, CompositionSession.Statut.EN_CORRECTION]:
-        return redirect('result_detail', session_id=session.id)
+    if session.statut in [
+        CompositionSession.Statut.SOUMIS,
+        CompositionSession.Statut.CORRIGE,
+        CompositionSession.Statut.EN_CORRECTION,
+        CompositionSession.Statut.BLOQUE,
+    ]:
+        return redirect('compositions:result_detail', session_id=session.id)
 
     # Ne montrer que les fichiers d'épreuve et annexes, JAMAIS les corrigés types aux élèves
     files = exam.files.exclude(type_fichier='corrige_type')
@@ -97,10 +102,10 @@ def submit_paper_view(request, session_id):
     session = get_object_or_404(CompositionSession, id=session_id, eleve=request.user)
     exam = session.exam
     
-    if session.statut in ['soumis', 'corrige', 'exclu']:
+    if session.statut in ['soumis', 'corrige', 'en_correction', 'bloque', 'exclu']:
         from django.contrib import messages
         messages.error(request, "Cette composition a déjà été soumise ou est exclue.")
-        return redirect('result_detail', session_id=session.id)
+        return redirect('compositions:result_detail', session_id=session.id)
     
     if request.method == 'POST':
         from .models import StudentSubmissionFile
@@ -109,15 +114,12 @@ def submit_paper_view(request, session_id):
         # Handle file uploads
         uploaded_files = request.FILES.getlist('copies')
         if uploaded_files:
-            # Validate files
+            # Seul le format est vérifié — pas de limite de taille (copies HD acceptées)
             for f in uploaded_files:
-                if f.size > 10 * 1024 * 1024:  # 10MB max per file
-                    messages.error(request, "Chaque fichier ne doit pas dépasser 10 Mo.")
+                if not (f.content_type.startswith('image/') or f.content_type == 'application/pdf'):
+                    messages.error(request, "Seules les images (JPG, PNG) et PDF sont acceptés pour les copies.")
                     return render(request, 'compositions/submit_paper.html', {'session': session})
-                if not f.content_type.startswith('image/'):
-                    messages.error(request, "Seules les images sont acceptées pour les copies.")
-                    return render(request, 'compositions/submit_paper.html', {'session': session})
-            
+
             for i, f in enumerate(uploaded_files):
                 StudentSubmissionFile.objects.create(
                     session=session,
@@ -236,11 +238,17 @@ def result_view(request, session_id):
 def ia_corrections_list_view(request):
     from .models import Resultat
     if request.user.role == 'eleve':
-        resultats = Resultat.objects.filter(session__eleve=request.user, corrige_par_ia=True)
+        resultats = Resultat.objects.filter(
+            session__eleve=request.user, corrige_par_ia=True
+        ).select_related('session__eleve', 'session__exam')
     elif request.user.role == 'professeur':
-        resultats = Resultat.objects.filter(session__exam__createur=request.user, corrige_par_ia=True)
-    else: # admin
-        resultats = Resultat.objects.filter(corrige_par_ia=True)
+        resultats = Resultat.objects.filter(
+            session__exam__createur=request.user, corrige_par_ia=True
+        ).select_related('session__eleve', 'session__exam')
+    else:  # admin / directeur
+        resultats = Resultat.objects.filter(
+            corrige_par_ia=True
+        ).select_related('session__eleve', 'session__exam')
         
     return render(request, 'compositions/ia_corrections.html', {'resultats': resultats})
 
@@ -453,10 +461,11 @@ def nemotron_analyze_screenshot(request):
                 result['banned'] = False
                 # Avertissements progressifs
                 if session.cheat_count >= 2:
-                    result['warning'] = f"⚠️ Avertissement: comportement suspect ({session.cheat_count}/8 avant exclusion)"
+                    result['warning'] = f"Avertissement : comportement suspect ({session.cheat_count}/8 avant exclusion)"
                 if session.cheat_count >= 5:
-                    result['warning'] = f"🚨 DERNIER AVERTISSEMENT: ({session.cheat_count}/8 avant exclusion)"
+                    result['warning'] = f"Dernier avertissement : {session.cheat_count} violations sur 8 avant exclusion"
 
+            result['violation_count'] = session.cheat_count
             session.save()
 
             logger.info(f"👁️ Nemotron [{risk_level}] pour {request.user.email} - Action: {action} - Violations: {session.cheat_count}")
@@ -484,7 +493,7 @@ def submit_from_room(request):
         
         session = get_object_or_404(CompositionSession, id=session_id, eleve=request.user)
         
-        if session.statut in ['soumis', 'corrige', 'exclu']:
+        if session.statut in ['soumis', 'corrige', 'en_correction', 'bloque', 'exclu']:
             return JsonResponse({'success': False, 'error': 'Session déjà terminée'}, status=400)
         
         # Handle file uploads
@@ -493,11 +502,9 @@ def submit_from_room(request):
         
         if uploaded_files:
             for i, f in enumerate(uploaded_files):
-                if f.size > 10 * 1024 * 1024:  # 10MB max
+                # Pas de limite de taille — copies HD et scans haute résolution acceptés
+                if not (f.content_type.startswith('image/') or f.content_type == 'application/pdf'):
                     continue
-                if not f.content_type.startswith('image/') and not f.content_type == 'application/pdf':
-                    continue
-                    
                 StudentSubmissionFile.objects.create(
                     session=session,
                     fichier=f,
@@ -534,10 +541,28 @@ def submit_from_room(request):
         }, status=500)
 
 
+# Mapping type d'épreuve → template bulletin HTML+PDF
+# Interrogation : format A5 compact, une seule matière, note + appréciation
+# Devoir/Composition/Examen : bulletin scolaire officiel béninois complet
+_BULLETIN_TEMPLATE_MAP = {
+    'interrogation': 'bulletins/bulletin_interrogation.html',
+    'devoir':        'bulletins/bulletin_scolaire.html',
+    'composition':   'bulletins/bulletin_scolaire.html',
+    'examen':        'bulletins/bulletin_scolaire.html',
+    'concours':      'bulletins/bulletin_scolaire.html',
+    'eval_prof':     'bulletins/bulletin_interrogation.html',
+}
+_BULLETIN_TEMPLATE_DEFAULT = 'bulletins/bulletin_scolaire.html'
+
+
+def _get_bulletin_template(type_exam: str) -> str:
+    return _BULLETIN_TEMPLATE_MAP.get(type_exam, _BULLETIN_TEMPLATE_DEFAULT)
+
+
 def _build_composition_bulletin_context(resultat):
     """
-    Construit le contexte au format bulletin_scolaire à partir d'un Resultat de composition.
-    Compatible avec templates/bulletins/bulletin.html.
+    Construit le contexte compatible avec bulletin_scolaire.html.
+    Le template sélectionné dépend du type d'épreuve (exam.type_exam).
     """
     session = resultat.session
     eleve = session.eleve
@@ -597,11 +622,17 @@ def _build_composition_bulletin_context(resultat):
     else:
         nom_prenoms = getattr(eleve, 'username', '')
 
+    trimestre_val = exam.trimestre if hasattr(exam, 'trimestre') and exam.trimestre else 'T1'
+    trimestre_display = exam.get_trimestre_display() if hasattr(exam, 'get_trimestre_display') else trimestre_val
+
     return {
         'logo_benin': '/static/images/armoiries_benin.png',
-        'etablissement': {'bp': '', 'tel': '', 'ville': 'Cotonou'},
+        'etablissement': {'tel': '', 'ville': 'Cotonou', 'nom': 'Académie Numérique'},
         'annee': annee,
-        'trimestre': 1,
+        'trimestre': trimestre_val,
+        'trimestre_display': trimestre_display,
+        'type_exam': exam.type_exam,
+        'type_exam_display': exam.get_type_exam_display(),
         'eleve': {
             'nom_prenoms': nom_prenoms,
             'date_naissance': getattr(eleve, 'date_naissance', '') or '',
@@ -610,7 +641,6 @@ def _build_composition_bulletin_context(resultat):
             'classe': getattr(eleve, 'classe', None) and str(eleve.classe) or '',
             'effectif': resultat.total_participants or '',
             'matricule': getattr(eleve, 'matricule', '') or getattr(eleve, 'username', ''),
-            'statut': '',
         },
         'matieres': matieres,
         'totaux': {
@@ -640,12 +670,13 @@ def bulletin_composition_html(request, session_id):
     URL : /compositions/<session_id>/bulletin/
     """
     session = get_object_or_404(CompositionSession, id=session_id)
-    if request.user.role == 'eleve' and session.eleve != request.user:
+    if getattr(request.user, 'role', '') == 'eleve' and session.eleve != request.user:
         return HttpResponseForbidden("Accès non autorisé.")
 
     resultat = get_object_or_404(Resultat, session=session)
     context = _build_composition_bulletin_context(resultat)
-    return render(request, 'bulletins/bulletin.html', context)
+    template = _get_bulletin_template(session.exam.type_exam)
+    return render(request, template, context)
 
 
 @login_required
@@ -659,21 +690,23 @@ def bulletin_composition_pdf(request, session_id):
     from .access import verifier_acces_correction
 
     session = get_object_or_404(CompositionSession, id=session_id)
-    if request.user.role == 'eleve' and session.eleve != request.user:
+    role = getattr(request.user, 'role', '')
+    if role == 'eleve' and session.eleve != request.user:
         return HttpResponseForbidden("Accès non autorisé.")
 
     # Vérification paywall sur le bulletin aussi
-    if request.user.role == 'eleve':
+    if role == 'eleve':
         resultat = getattr(session, 'resultat', None)
         if resultat and not resultat.correction_complete:
             a_acces, _ = verifier_acces_correction(request.user, session)
             if not a_acces:
                 from django.shortcuts import redirect
-                return redirect('result_detail', session_id=session_id)
+                return redirect('compositions:result_detail', session_id=session_id)
 
     resultat = get_object_or_404(Resultat, session=session)
     context = _build_composition_bulletin_context(resultat)
-    html_string = render_to_string('bulletins/bulletin.html', context, request=request)
+    template = _get_bulletin_template(session.exam.type_exam)
+    html_string = render_to_string(template, context, request=request)
 
     eleve = session.eleve
     filename = f"bulletin_{getattr(eleve, 'last_name', 'eleve')}_{session.exam.titre[:15].replace(' ', '_')}.pdf"
@@ -719,11 +752,18 @@ def download_composition_bulletin(request, resultat_id):
     if not resultat.bulletin_pdf:
         return HttpResponse("Bulletin PDF non disponible.", status=404)
 
-    response = HttpResponse(resultat.bulletin_pdf.read(), content_type='application/pdf')
     eleve = resultat.session.eleve
     filename = f"bulletin_{eleve.last_name}_{resultat.session.exam.titre[:10]}.pdf"
-    response['Content-Disposition'] = f'attachment; filename="{filename}"'
-    return response
+
+    # Stockage local : lecture directe ; Cloudinary/S3 : redirection vers l'URL
+    try:
+        resultat.bulletin_pdf.seek(0)
+        response = HttpResponse(resultat.bulletin_pdf.read(), content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        return response
+    except (NotImplementedError, AttributeError):
+        from django.shortcuts import redirect as _redirect
+        return _redirect(resultat.bulletin_pdf.url)
 
 
 @login_required
@@ -760,3 +800,26 @@ def serve_exam_file(request, file_id):
         return response
     except Exception as e:
         return HttpResponse(f"Erreur lors de l'accès au fichier: {str(e)}", status=500)
+
+
+@login_required
+def correction_status_view(request, session_id):
+    """API JSON : statut de correction d'une session (polling depuis la page confirmation)."""
+    session = get_object_or_404(CompositionSession, id=session_id, eleve=request.user)
+    resultat = getattr(session, 'resultat', None)
+    corrige = session.statut in [CompositionSession.Statut.CORRIGE, CompositionSession.Statut.BLOQUE]
+    en_correction = session.statut in [
+        CompositionSession.Statut.EN_CORRECTION,
+        CompositionSession.Statut.SOUMIS,
+    ]
+    # Ne révèle la note que si la correction est débloquée (accès payé ou abonnement actif)
+    correction_complete = resultat.correction_complete if resultat else False
+    return JsonResponse({
+        'statut': session.statut,
+        'corrige': corrige,
+        'en_correction': en_correction,
+        'paywall': corrige and not correction_complete,
+        'note': float(resultat.note) if (resultat and correction_complete and resultat.note is not None) else None,
+        'note_sur': float(resultat.note_sur) if (resultat and correction_complete) else None,
+        'result_url': f'/compositions/result/{session.id}/',
+    })

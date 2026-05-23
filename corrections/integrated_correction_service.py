@@ -2,7 +2,7 @@
 from ai_engine.enhanced_multi_ai import multi_ai
 from ai_engine.nvidia_ocr import nvidia_ocr_service
 from corrections.baremes_service import baremes_service
-from bulletins.bulletin_auto_generator import bulletin_auto_generator
+
 import logging
 
 logger = logging.getLogger(__name__)
@@ -13,7 +13,7 @@ class IntegratedCorrectionService:
     def __init__(self):
         self.ocr_service = nvidia_ocr_service
         self.baremes_service = baremes_service
-        self.bulletin_generator = bulletin_auto_generator
+        self.bulletin_generator = None  # bulletins supprimé
         self.min_confidence = 70
     
     def correct_student_copy(self, session, files, text_response="") -> dict:
@@ -55,20 +55,11 @@ class IntegratedCorrectionService:
             # 5. Sauvegarder le résultat
             self._save_correction_result(session, correction_result, bareme)
             
-            # 6. Générer automatiquement le bulletin
-            logger.info(f"Étape 4: Génération bulletin automatique")
-            bulletin_result = self.bulletin_generator.generate_after_correction(
-                session,
-                correction_result
-            )
-            
-            correction_result['bulletin'] = bulletin_result
-            
             return {
                 'note': correction_result.get('note_totale', 0),
                 'success': True,
                 'correction': correction_result,
-                'message': 'Correction effectuée avec succès - Bulletin généré'
+                'message': 'Correction effectuée avec succès'
             }
             
         except Exception as e:

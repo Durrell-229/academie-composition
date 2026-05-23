@@ -1,6 +1,8 @@
 from django.urls import path
 from . import views
 
+app_name = 'compositions'
+
 urlpatterns = [
     path('room/<uuid:exam_id>/', views.composition_room_view, name='composition_room'),
     path('submit-paper/<uuid:session_id>/', views.submit_paper_view, name='submit_paper'),
@@ -15,6 +17,8 @@ urlpatterns = [
     path('<uuid:session_id>/bulletin/pdf/', views.bulletin_composition_pdf, name='bulletin_pdf'),
     # Endpoint public pour téléchargement bulletin via QR
     path('bulletin/<uuid:resultat_id>/download/', views.download_composition_bulletin, name='bulletin_download'),
+    # Polling statut correction IA (utilisé depuis la page de confirmation)
+    path('api/correction-status/<uuid:session_id>/', views.correction_status_view, name='correction_status'),
     # Vue protégée pour servir les fichiers d'examen (bloque les corrigés types aux élèves)
     path('file/<uuid:file_id>/', views.serve_exam_file, name='serve_exam_file'),
 ]

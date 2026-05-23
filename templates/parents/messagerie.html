@@ -1,0 +1,180 @@
+{% extends 'app_base.html' %}
+{% block title %}Messagerie – {{ eleve.get_full_name }}{% endblock %}
+
+{% block breadcrumb %}
+  <a href="{% url 'parents:dashboard' %}" class="hover:text-white transition">Portail Parents</a>
+  <span class="mx-2 opacity-40">/</span>
+  Messagerie – {{ eleve.first_name }}
+{% endblock %}
+
+{% block content %}
+<div class="space-y-8" x-data="{ modalOuvert: false, enseignantId: '', enseignantNom: '' }">
+
+  <!-- En-tête -->
+  <div class="bg-bg-secondary border border-bg-tertiary rounded-2xl p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div class="flex items-center gap-4">
+      <div class="h-14 w-14 rounded-2xl bg-button-gradient flex items-center justify-center text-white text-2xl font-black shadow-lg shadow-primary/20">
+        {{ eleve.first_name|slice:":1"|upper }}
+      </div>
+      <div>
+        <h1 class="text-2xl font-black text-white">Messagerie – {{ eleve.get_full_name }}</h1>
+        <p class="text-text-muted text-sm">Communiquez directement avec les enseignants</p>
+      </div>
+    </div>
+    <button @click="modalOuvert = true"
+      class="bg-primary hover:bg-primary/80 text-white font-black px-6 py-3 rounded-xl transition-all flex items-center gap-2 shadow-lg shadow-primary/30">
+      <i class="fa-solid fa-pen-to-square"></i> Nouveau message
+    </button>
+  </div>
+
+  <!-- Enseignants disponibles -->
+  {% if enseignants %}
+  <div class="bg-bg-secondary border border-bg-tertiary rounded-2xl p-5">
+    <h2 class="font-black text-white mb-4 text-sm uppercase tracking-widest">Enseignants de la classe</h2>
+    <div class="flex flex-wrap gap-3">
+      {% for prof in enseignants %}
+      <button
+        @click="modalOuvert = true; enseignantId = '{{ prof.professeur__id }}'; enseignantNom = '{{ prof.professeur__first_name }} {{ prof.professeur__last_name }}'"
+        class="flex items-center gap-3 bg-bg-primary hover:bg-primary/20 border border-bg-tertiary hover:border-primary/50 rounded-xl px-4 py-2 transition-all group">
+        <div class="h-8 w-8 rounded-lg bg-primary/20 flex items-center justify-center text-primary font-black text-sm group-hover:bg-primary group-hover:text-white transition-all">
+          {{ prof.professeur__first_name|slice:":1"|upper }}
+        </div>
+        <div class="text-left">
+          <p class="text-white text-xs font-black">{{ prof.professeur__first_name }} {{ prof.professeur__last_name }}</p>
+          <p class="text-text-muted text-[10px]">{{ prof.matiere__nom }}</p>
+        </div>
+        <i class="fa-solid fa-envelope text-text-muted text-xs ml-1"></i>
+      </button>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Historique des messages -->
+  <div class="bg-bg-secondary border border-bg-tertiary rounded-2xl overflow-hidden">
+    <div class="p-5 border-b border-bg-tertiary">
+      <h2 class="font-black text-white">Historique des messages</h2>
+    </div>
+
+    {% if messages_liste %}
+    <div class="divide-y divide-bg-tertiary">
+      {% for msg in messages_liste %}
+      <div class="p-5 hover:bg-bg-primary/30 transition-colors">
+        <div class="flex flex-col md:flex-row md:items-start justify-between gap-4">
+          <!-- Infos message -->
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-3 mb-2">
+              <span class="text-xs font-black px-2 py-0.5 rounded-full
+                {% if msg.statut == 'repondu' %}bg-success/20 text-success
+                {% elif msg.statut == 'lu' %}bg-blue-400/20 text-blue-400
+                {% else %}bg-yellow-400/20 text-yellow-400{% endif %}">
+                {% if msg.statut == 'repondu' %}Répondu{% elif msg.statut == 'lu' %}Lu{% else %}Envoyé{% endif %}
+              </span>
+              <span class="text-text-muted text-xs">{{ msg.date_envoi|date:"d/m/Y à H:i" }}</span>
+            </div>
+            <h3 class="font-black text-white">{{ msg.sujet }}</h3>
+            <p class="text-text-muted text-xs mt-0.5">
+              À : <span class="text-text-secondary font-bold">{{ msg.enseignant.get_full_name }}</span>
+            </p>
+            <p class="text-text-secondary text-sm mt-2 leading-relaxed">{{ msg.contenu|truncatewords:40 }}</p>
+          </div>
+
+          <!-- Pièce jointe -->
+          {% if msg.piece_jointe %}
+          <a href="{{ msg.piece_jointe.url }}" target="_blank"
+            class="shrink-0 flex items-center gap-2 bg-bg-primary hover:bg-primary/20 border border-bg-tertiary hover:border-primary/50 rounded-xl px-3 py-2 text-xs text-text-secondary hover:text-white transition-all">
+            <i class="fa-solid fa-paperclip text-primary"></i>
+            Pièce jointe
+          </a>
+          {% endif %}
+        </div>
+
+        <!-- Réponse de l'enseignant -->
+        {% if msg.reponse %}
+        <div class="mt-4 ml-4 pl-4 border-l-2 border-success/50">
+          <div class="flex items-center gap-2 mb-2">
+            <i class="fa-solid fa-reply text-success text-xs"></i>
+            <span class="text-xs font-black text-success">Réponse de {{ msg.enseignant.get_full_name }}</span>
+            <span class="text-text-muted text-xs">{{ msg.date_reponse|date:"d/m/Y à H:i" }}</span>
+          </div>
+          <p class="text-text-secondary text-sm leading-relaxed">{{ msg.reponse }}</p>
+        </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="p-16 text-center">
+      <i class="fa-solid fa-envelope-open text-5xl text-text-muted mb-4"></i>
+      <p class="text-white font-bold text-lg">Aucun message envoyé</p>
+      <p class="text-text-muted mt-2">Utilisez le bouton « Nouveau message » pour contacter un enseignant.</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Modal : nouveau message -->
+  <div x-show="modalOuvert" x-cloak
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+    @keydown.escape.window="modalOuvert = false">
+    <div class="bg-bg-secondary border border-bg-tertiary rounded-2xl w-full max-w-2xl shadow-2xl" @click.stop>
+      <div class="flex justify-between items-center p-6 border-b border-bg-tertiary">
+        <h3 class="text-xl font-black text-white">Nouveau message</h3>
+        <button @click="modalOuvert = false" class="text-text-muted hover:text-white transition">
+          <i class="fa-solid fa-xmark text-xl"></i>
+        </button>
+      </div>
+
+      <form method="post" action="{% url 'parents:envoyer_message' eleve.id %}" enctype="multipart/form-data" class="p-6 space-y-5">
+        {% csrf_token %}
+
+        <!-- Enseignant -->
+        <div>
+          <label class="block text-xs font-black text-text-muted uppercase tracking-widest mb-2">Enseignant *</label>
+          <select name="enseignant_id" x-model="enseignantId" required
+            class="w-full bg-bg-primary border border-bg-tertiary text-white rounded-xl px-4 py-3 text-sm focus:border-primary focus:outline-none transition">
+            <option value="">— Sélectionner un enseignant —</option>
+            {% for prof in enseignants %}
+            <option value="{{ prof.professeur__id }}">
+              {{ prof.professeur__first_name }} {{ prof.professeur__last_name }} ({{ prof.matiere__nom }})
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Sujet -->
+        <div>
+          <label class="block text-xs font-black text-text-muted uppercase tracking-widest mb-2">Sujet *</label>
+          <input type="text" name="sujet" required maxlength="200" placeholder="Ex: Question sur les résultats du dernier devoir"
+            class="w-full bg-bg-primary border border-bg-tertiary text-white rounded-xl px-4 py-3 text-sm focus:border-primary focus:outline-none transition placeholder-text-muted">
+        </div>
+
+        <!-- Message -->
+        <div>
+          <label class="block text-xs font-black text-text-muted uppercase tracking-widest mb-2">Message *</label>
+          <textarea name="contenu" required rows="5" placeholder="Écrivez votre message ici…"
+            class="w-full bg-bg-primary border border-bg-tertiary text-white rounded-xl px-4 py-3 text-sm focus:border-primary focus:outline-none transition placeholder-text-muted resize-none"></textarea>
+        </div>
+
+        <!-- Pièce jointe -->
+        <div>
+          <label class="block text-xs font-black text-text-muted uppercase tracking-widest mb-2">Pièce jointe (optionnel)</label>
+          <input type="file" name="piece_jointe" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+            class="w-full bg-bg-primary border border-bg-tertiary text-text-secondary rounded-xl px-4 py-2.5 text-sm file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:bg-primary/20 file:text-primary file:font-bold file:text-xs">
+        </div>
+
+        <div class="flex gap-3 pt-2">
+          <button type="button" @click="modalOuvert = false"
+            class="flex-1 bg-bg-primary hover:bg-bg-tertiary border border-bg-tertiary text-text-secondary hover:text-white rounded-xl py-3 font-bold transition-all text-sm">
+            Annuler
+          </button>
+          <button type="submit"
+            class="flex-1 bg-primary hover:bg-primary/80 text-white rounded-xl py-3 font-black transition-all text-sm shadow-lg shadow-primary/30 flex items-center justify-center gap-2">
+            <i class="fa-solid fa-paper-plane"></i> Envoyer
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

@@ -1,4 +1,4 @@
-<ul role="list" class="-mx-2 space-y-1">
+﻿<ul role="list" class="-mx-2 space-y-1">
     <li>
         <a href="{% url 'dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}bg-primary text-white{% else %}text-text-secondary hover:bg-primary/50 hover:text-white{% endif %} group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6">
             <i class="fa-solid fa-gauge-high text-lg"></i>
@@ -12,13 +12,13 @@
         <div class="text-[10px] font-bold leading-6 text-text-secondary uppercase tracking-widest px-2 opacity-60">Gestion Pédagogique</div>
         <ul role="list" class="-mx-2 mt-1 space-y-1">
             <li>
-                <a href="{% url 'exam_create' %}" class="text-text-secondary hover:bg-primary/50 hover:text-white group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6">
+                <a href="{% url 'exams:exam_create' %}" class="text-text-secondary hover:bg-primary/50 hover:text-white group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6">
                     <i class="fa-solid fa-file-circle-plus text-lg"></i>
                     Créer une Épreuve
                 </a>
             </li>
             <li>
-                <a href="{% url 'exam_list' %}" class="text-text-secondary hover:bg-primary/50 hover:text-white group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6">
+                <a href="{% url 'exams:exam_list' %}" class="text-text-secondary hover:bg-primary/50 hover:text-white group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6">
                     <i class="fa-solid fa-layer-group text-lg"></i>
                     Banque d'Épreuves
                 </a>
@@ -36,7 +36,7 @@
                 </a>
             </li>
             <li>
-                <a href="{% url 'ia_corrections_list' %}" class="text-text-secondary hover:bg-primary/50 hover:text-white group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6">
+                <a href="{% url 'compositions:ia_corrections_list' %}" class="text-text-secondary hover:bg-primary/50 hover:text-white group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6">
                     <i class="fa-solid fa-robot text-lg"></i>
                     Corrections IA
                 </a>
@@ -63,9 +63,24 @@
                 </a>
             </li>
             <li>
-                <a href="{% url 'bulletins:index' %}" class="text-text-secondary hover:bg-primary/50 hover:text-white group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6">
+                <a href="{% url 'compositions:ia_corrections_list' %}" class="text-text-secondary hover:bg-primary/50 hover:text-white group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6">
                     <i class="fa-solid fa-chart-line text-lg"></i>
                     Mes Bulletins
+                </a>
+            </li>
+        </ul>
+    </li>
+    {% endif %}
+
+    <!-- SECTION PARENT -->
+    {% if user.role == 'parent' %}
+    <li class="mt-4">
+        <div class="text-[10px] font-bold leading-6 text-text-secondary uppercase tracking-widest px-2 opacity-60">Portail Parents</div>
+        <ul role="list" class="-mx-2 mt-1 space-y-1">
+            <li>
+                <a href="{% url 'parents:dashboard' %}" class="{% if 'parents' in request.path %}bg-primary text-white{% else %}text-text-secondary hover:bg-primary/50 hover:text-white{% endif %} group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6">
+                    <i class="fa-solid fa-house-user text-lg"></i>
+                    Mon tableau de bord
                 </a>
             </li>
         </ul>

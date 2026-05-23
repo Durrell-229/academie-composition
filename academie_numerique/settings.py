@@ -9,7 +9,13 @@ load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'change-me-in-production-very-secret-key-2025')
+_secret_key = os.environ.get('DJANGO_SECRET_KEY')
+if not _secret_key:
+    raise ValueError(
+        "DJANGO_SECRET_KEY environment variable is not set. "
+        "Set it to a long random string before starting the server."
+    )
+SECRET_KEY = _secret_key
 
 DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 
@@ -39,37 +45,33 @@ THIRD_PARTY_APPS = [
 ]
 
 LOCAL_APPS = [
+    # ── Cœur de la plateforme ──────────────────────────────────
     'accounts',
     'core',
-    'exams',
-    'compositions',
-    'correction',
-    'bulletins',
     'notifications',
-    'ai_engine',
-    'certifications',
-    'qcm',
-    'plagiat',
-    'gamification',
     'audittrail',
     'webhooks',
-    'subscriptions',
-    'realtime',
+
+    # ── Compositions & corrections ─────────────────────────────
+    'exams',
+    'compositions',
     'corrections',
+    'ai_engine',
+    'qcm',
+
+    # ── Cours & devoirs ────────────────────────────────────────
     'cours',
     'devoirs',
-    'schools',
-    'academic',
-    'schedule',
-    'attendance',
-    'cahier',
-    'messaging',
-    'certificats',
+
+    # ── Paiements & abonnements ───────────────────────────────
     'payments',
-    'parents',
-    'library',
-    'analytics',
+    'subscriptions',
 ]
+
+# Apps supprimées (hors périmètre plateforme de composition) :
+# correction (fusionné dans corrections), bulletins, certifications,
+# plagiat, gamification, realtime, schools, academic, schedule,
+# attendance, cahier, messaging, certificats, parents, library, analytics
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
@@ -156,7 +158,7 @@ AUTH_USER_MODEL = 'accounts.User'
 
 # Internationalization
 LANGUAGE_CODE = 'fr'
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Africa/Porto-Novo'
 USE_I18N = True
 USE_TZ = True
 
@@ -177,6 +179,11 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 # Media files
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+# Copies d'élèves : photos haute résolution, pas de limite restrictive
+FILE_UPLOAD_MAX_MEMORY_SIZE = 100 * 1024 * 1024   # 100 MB en mémoire
+DATA_UPLOAD_MAX_MEMORY_SIZE = 100 * 1024 * 1024   # 100 MB formulaire multipart
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 5000
 
 # Cloud Storage for production (Render) - Choose ONE: S3, Cloudinary, or local
 USE_S3_STORAGE = os.environ.get('USE_S3_STORAGE', 'False').lower() == 'true'
@@ -261,16 +268,27 @@ NVIDIA_API_KEY = os.environ.get('NVIDIA_API_KEY', '')
 NVIDIA_API_BASE_URL = os.environ.get('NVIDIA_API_BASE_URL', 'https://integrate.api.nvidia.com/v1')
 NVIDIA_MODEL = os.environ.get('NVIDIA_MODEL', 'nvidia/nemotron-4-340b-instruct')
 
-# Email via Resend API (free 3000/day, HTTP API, no SMTP timeout)
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.resend.com'
-EMAIL_PORT = 465
-EMAIL_USE_SSL = True
-EMAIL_USE_TLS = False
-EMAIL_HOST_USER = 'resend'
-EMAIL_HOST_PASSWORD = os.environ.get('RESEND_API_KEY', '')
+# FedaPay — Paiements Mobile Money (Bénin/Afrique de l'Ouest)
+PRIX_CORRECTION_UNITAIRE = int(os.environ.get('PRIX_CORRECTION_UNITAIRE', '500'))  # XOF
+FEDAPAY_ENVIRONMENT = os.environ.get('FEDAPAY_ENVIRONMENT', 'sandbox')
+FEDAPAY_PUBLIC_KEY = os.environ.get('FEDAPAY_PUBLIC_KEY', '')
+FEDAPAY_SECRET_KEY = os.environ.get('FEDAPAY_SECRET_KEY', '')
+FEDAPAY_WEBHOOK_SECRET = os.environ.get('FEDAPAY_WEBHOOK_SECRET', '')
+
+# Email via Resend API (free 3000/day)
+# Si RESEND_API_KEY absent → console backend (emails affichés dans les logs, rien envoyé)
 RESEND_API_KEY = os.environ.get('RESEND_API_KEY', '')
-DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'Académie Numérique <onboarding@resend.dev>')
+if RESEND_API_KEY:
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_HOST = 'smtp.resend.com'
+    EMAIL_PORT = 465
+    EMAIL_USE_SSL = True
+    EMAIL_USE_TLS = False
+    EMAIL_HOST_USER = 'resend'
+    EMAIL_HOST_PASSWORD = RESEND_API_KEY
+else:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'Académie Numérique <noreply@academie-numerique.com>')
 
 # Role Passwords (configurable via env — aucune valeur par défaut en prod)
 ROLE_PASSWORD_ADMIN = os.environ.get('ROLE_PASSWORD_ADMIN', '')
@@ -320,11 +338,8 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = 'DENY'
 
 # Production Security
+SECURE_SSL_REDIRECT = False
 if not DEBUG:
-    SECURE_SSL_REDIRECT = True
-    SECURE_HSTS_SECONDS = 31536000  # 1 year
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-    SECURE_HSTS_PRELOAD = True
     SESSION_COOKIE_SECURE = True
 
 # Security Headers (anti-vulnérabilités)

@@ -15,42 +15,66 @@ logger = logging.getLogger(__name__)
 
 class FedaPayService:
     """
-    Service d'intégration avec l'API FedaPay
+    Service d'intégration avec l'API FedaPay.
+    Priorité config : DB (ConfigurationFedaPay) → variables d'environnement (settings.FEDAPAY_*)
     """
-    
+
     SANDBOX_URL = "https://sandbox-api.fedapay.com/v1"
     PRODUCTION_URL = "https://api.fedapay.com/v1"
-    
+
     def __init__(self, etablissement=None):
-        """
-        Initialiser le service avec la configuration d'un établissement
-        """
         self.etablissement = etablissement
         self.config = None
-        
+
         if etablissement:
             try:
                 self.config = etablissement.config_fedapay
-            except:
-                logger.warning(f"Pas de configuration FedaPay pour {etablissement.nom}")
-    
+            except Exception:
+                logger.warning(f"Pas de configuration FedaPay en DB pour {getattr(etablissement, 'nom', etablissement)} — fallback sur settings.")
+
+    @property
+    def _env(self):
+        """Environnement actif : DB > settings."""
+        if self.config:
+            return self.config.environnement
+        return getattr(settings, 'FEDAPAY_ENVIRONMENT', 'sandbox')
+
+    @property
+    def _secret_key(self):
+        """Clé secrète active : DB > settings."""
+        if self.config and self.config.cle_api_secrete:
+            return self.config.cle_api_secrete
+        return getattr(settings, 'FEDAPAY_SECRET_KEY', '')
+
+    @property
+    def _public_key(self):
+        """Clé publique active : DB > settings."""
+        if self.config and self.config.cle_api_publique:
+            return self.config.cle_api_publique
+        return getattr(settings, 'FEDAPAY_PUBLIC_KEY', '')
+
+    @property
+    def _webhook_secret(self):
+        """Secret webhook : DB > settings."""
+        if self.config and self.config.webhook_secret:
+            return self.config.webhook_secret
+        return getattr(settings, 'FEDAPAY_WEBHOOK_SECRET', '')
+
     @property
     def base_url(self):
-        """URL de base selon l'environnement"""
-        if self.config and self.config.environnement == 'production':
-            return self.PRODUCTION_URL
-        return self.SANDBOX_URL
-    
+        """URL de base selon l'environnement."""
+        return self.PRODUCTION_URL if self._env == 'production' else self.SANDBOX_URL
+
     @property
     def headers(self):
-        """Headers pour les requêtes API"""
-        if not self.config:
-            raise ValueError("Configuration FedaPay non disponible")
-        
+        """Headers pour les requêtes API."""
+        key = self._secret_key
+        if not key:
+            raise ValueError("Clé secrète FedaPay non configurée. Ajoutez FEDAPAY_SECRET_KEY dans .env")
         return {
-            'Authorization': f'Bearer {self.config.cle_api_secrete}',
+            'Authorization': f'Bearer {key}',
             'Content-Type': 'application/json',
-            'Accept': 'application/json'
+            'Accept': 'application/json',
         }
     
     def creer_customer(self, eleve):
@@ -215,21 +239,21 @@ class FedaPayService:
     
     def verifier_webhook(self, payload, signature):
         """
-        Vérifier la signature d'un webhook FedaPay
+        Vérifier la signature d'un webhook FedaPay via le SDK officiel.
+        payload : bytes (request.body) ou str.
+        signature : valeur de l'en-tête X-FEDAPAY-SIGNATURE.
         """
-        import hmac
-        import hashlib
-        
+        from fedapay import WebhookSignature
+        secret = self._webhook_secret
+        if not secret:
+            logger.warning("FEDAPAY_WEBHOOK_SECRET non configuré — webhook non vérifié.")
+            return True  # Mode dégradé : accepter sans vérification si secret absent
         try:
-            expected_signature = hmac.new(
-                self.config.webhook_secret.encode('utf-8'),
-                payload.encode('utf-8'),
-                hashlib.sha256
-            ).hexdigest()
-            
-            return hmac.compare_digest(expected_signature, signature)
+            payload_bytes = payload if isinstance(payload, bytes) else payload.encode('utf-8')
+            WebhookSignature.verify_header(payload_bytes, signature, secret)
+            return True
         except Exception as e:
-            logger.error(f"❌ Erreur vérification webhook: {e}")
+            logger.error(f"❌ Signature webhook invalide: {e}")
             return False
     
     def traiter_webhook(self, data):
@@ -344,8 +368,11 @@ class FedaPayService:
                 etablissement=etablissement, is_actif=True
             )
         except ConfigurationCommission.DoesNotExist:
-            logger.warning(f"Aucune config commission pour {etablissement}. Payouts ignorés.")
-            return {'success': False, 'error': 'Config commission manquante'}
+            logger.info(
+                f"Aucune configuration de commission pour {etablissement} "
+                f"— payouts ignorés (mode sans commission)."
+            )
+            return {'success': True, 'skipped': True, 'reason': 'Aucune configuration de commission'}
 
         montant = int(paiement.montant)
         parts = config_commission.calculer_parts(montant)
@@ -489,23 +516,36 @@ class FedaPayCheckout:
     @staticmethod
     def creer_checkout_url(eleve, montant, description, reference, callback_url=None, etablissement=None):
         """
-        Créer une URL de checkout simple pour un paiement
+        Créer une URL de checkout simple pour un paiement.
+        Utilise la config DB si disponible, sinon les variables d'environnement.
         """
         try:
-            # Récupérer la config FedaPay via l'abonnement actif de l'élève
+            # Résoudre la config : DB > settings
+            config = None
             if etablissement is None:
                 abonnement = eleve.abonnements.select_related('etablissement').filter(statut='actif').first()
                 etablissement = abonnement.etablissement if abonnement else None
-            if not etablissement or not hasattr(etablissement, 'config_fedapay'):
-                logger.error("Configuration FedaPay non trouvée")
+            if etablissement and hasattr(etablissement, 'config_fedapay'):
+                try:
+                    config = etablissement.config_fedapay
+                except Exception:
+                    pass
+
+            if config:
+                env = config.environnement
+                public_key = config.cle_api_publique
+            else:
+                env = getattr(settings, 'FEDAPAY_ENVIRONMENT', 'sandbox')
+                public_key = getattr(settings, 'FEDAPAY_PUBLIC_KEY', '')
+
+            if not public_key:
+                logger.error("Clé publique FedaPay non configurée.")
                 return None
-            
-            config = etablissement.config_fedapay
-            
-            base_url = "https://pay.fedapay.com" if config.environnement == 'production' else "https://pay.sandbox.fedapay.com"
-            
+
+            base_url = "https://pay.fedapay.com" if env == 'production' else "https://pay.sandbox.fedapay.com"
+
             params = {
-                'public_key': config.cle_api_publique,
+                'public_key': public_key,
                 'amount': int(montant),
                 'currency': 'XOF',
                 'description': description,

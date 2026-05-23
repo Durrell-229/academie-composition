@@ -1,5 +1,5 @@
 import logging
-from correction.models import CorrectionCopie, StatutCorrection
+from corrections.models import CorrectionCopie, StatutCorrection
 
 from core.redis_tasks import redis_task
 

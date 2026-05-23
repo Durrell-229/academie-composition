@@ -71,4 +71,4 @@ def create_and_send_notification(user_id: str, type_notif: str, titre: str, mess
         title=titre,
         message=message,
     )
-    send_notification_email(str(notif.id))
+    send_notification_email.delay(str(notif.id))

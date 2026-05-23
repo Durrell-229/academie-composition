@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block title %}Membres — {{ organisation.nom }}{% endblock %}
+{% block content %}
+<div class="max-w-2xl mx-auto mt-10 p-6 bg-slate-900 rounded-2xl border border-slate-700">
+  <h1 class="text-xl font-bold text-white mb-6">Membres de {{ organisation.nom }}</h1>
+  {% if membres %}
+  <ul class="space-y-3">
+    {% for m in membres %}
+    <li class="flex items-center justify-between bg-slate-800 rounded-xl px-4 py-3">
+      <span class="text-white text-sm font-medium">{{ m.user.get_full_name|default:m.user.email }}</span>
+      <span class="text-xs text-slate-400">{{ m.role }}{% if m.est_principal %} &bull; Principal{% endif %}</span>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="text-slate-400 text-sm">Aucun membre pour le moment.</p>
+  {% endif %}
+</div>
+{% endblock %}
