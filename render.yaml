@@ -16,17 +16,23 @@ services:
     numInstances: 1
 
     envVars:
-      # ── DJANGO ──────────────────────────────────
+      # ════════════════════════════════════════════════════════════
+      # DJANGO — Configuration de base
+      # ════════════════════════════════════════════════════════════
       - key: DJANGO_SECRET_KEY
         generateValue: true
       - key: DEBUG
-        value: false
+        value: "False"
       - key: ALLOWED_HOSTS
-        scope: run
+        value: "*.onrender.com,votre-domaine.com"
       - key: RENDER_EXTERNAL_HOSTNAME
         scope: run
+      - key: SITE_URL
+        value: "https://academie-numerique.onrender.com"
 
-      # ── BASE DE DONNÉES ─────────────────────────
+      # ════════════════════════════════════════════════════════════
+      # BASE DE DONNÉES — PostgreSQL (Auto-lié)
+      # ════════════════════════════════════════════════════════════
       - key: DB_ENGINE
         value: postgresql
       - key: DATABASE_URL
@@ -34,84 +40,123 @@ services:
           name: academie-db
           property: connectionString
 
-      # ── REDIS ───────────────────────────────────
+      # ════════════════════════════════════════════════════════════
+      # REDIS — Cache & Session (Auto-lié)
+      # ════════════════════════════════════════════════════════════
       - key: REDIS_URL
         fromService:
           type: redis
           name: academie-redis
           property: connectionString
-
-      # ── ASGI/CHANNELS ──────────────────────────
       - key: CHANNEL_LAYERS_REDIS
         fromService:
           type: redis
           name: academie-redis
           property: connectionString
 
-      # ── IA PROVIDERS (à configurer) ─────────────
+      # ════════════════════════════════════════════════════════════
+      # IA PROVIDERS — Groq + Fallbacks
+      # ════════════════════════════════════════════════════════════
       - key: AI_PROVIDER
         value: groq
-        sync: false
       - key: GROQ_API_KEY
-        sync: false
+        value: "ENTREZ_VOTRE_CLE_GROQ_ICI"
       - key: GEMINI_API_KEY
-        sync: false
+        value: "OPTIONNEL_GEMINI"
       - key: MISTRAL_API_KEY
-        sync: false
+        value: "OPTIONNEL_MISTRAL"
       - key: DEEPSEEK_API_KEY
-        sync: false
+        value: "OPTIONNEL_DEEPSEEK"
 
-      # ── NVIDIA OCR ──────────────────────────────
+      # ════════════════════════════════════════════════════════════
+      # NVIDIA OCR — Reconnaissance optique des copies scannées
+      # ════════════════════════════════════════════════════════════
       - key: NVIDIA_API_KEY
-        sync: false
+        value: "ENTREZ_VOTRE_CLE_NVIDIA_ICI"
+      - key: NVIDIA_API_BASE_URL
+        value: "https://integrate.api.nvidia.com/v1"
+      - key: NVIDIA_MODEL
+        value: "nvidia/nemotron-4-340b-instruct"
 
-      # ── EMAIL (Resend) ──────────────────────────
+      # ════════════════════════════════════════════════════════════
+      # EMAIL — Resend (Gratuit 3000 emails/jour)
+      # ════════════════════════════════════════════════════════════
       - key: RESEND_API_KEY
-        sync: false
+        value: "ENTREZ_VOTRE_CLE_RESEND_ICI"
       - key: DEFAULT_FROM_EMAIL
         value: "Académie Numérique <noreply@academie-numerique.com>"
-        sync: false
 
-      # ── PAIEMENTS (FedaPay) ─────────────────────
+      # ════════════════════════════════════════════════════════════
+      # PAIEMENTS — FedaPay (Mobile Money Bénin)
+      # ════════════════════════════════════════════════════════════
       - key: FEDAPAY_ENVIRONMENT
-        value: production
-        sync: false
+        value: "production"
       - key: FEDAPAY_PUBLIC_KEY
-        sync: false
+        value: "ENTREZ_VOTRE_CLE_PUBLIQUE_FEDAPAY_ICI"
       - key: FEDAPAY_SECRET_KEY
-        sync: false
+        value: "ENTREZ_VOTRE_CLE_SECRETE_FEDAPAY_ICI"
       - key: FEDAPAY_WEBHOOK_SECRET
-        sync: false
+        value: "ENTREZ_VOTRE_SECRET_WEBHOOK_FEDAPAY_ICI"
       - key: PRIX_CORRECTION_UNITAIRE
         value: "500"
 
-      # ── STOCKAGE FICHIERS (Cloudinary) ─────────
+      # ════════════════════════════════════════════════════════════
+      # STOCKAGE FICHIERS — Cloudinary (Gratuit 25GB)
+      # ════════════════════════════════════════════════════════════
       - key: USE_CLOUDINARY_STORAGE
         value: "True"
       - key: CLOUDINARY_URL
-        sync: false
+        value: "ENTREZ_VOTRE_CLOUDINARY_URL_ICI"
 
-      # ── RÔLES ───────────────────────────────────
+      # ════════════════════════════════════════════════════════════
+      # MOTS DE PASSE DES RÔLES — À changer après déploiement!
+      # ════════════════════════════════════════════════════════════
       - key: ROLE_PASSWORD_ADMIN
-        sync: false
+        value: "CHANGEZ_CE_MOT_DE_PASSE_ADMIN"
       - key: ROLE_PASSWORD_CP
-        sync: false
+        value: "CHANGEZ_CE_MOT_DE_PASSE_CP"
       - key: ROLE_PASSWORD_PROF
-        sync: false
+        value: "CHANGEZ_CE_MOT_DE_PASSE_PROF"
 
-      # ── DOMAINE & URLS ──────────────────────────
-      - key: SITE_URL
-        scope: run
+      # ════════════════════════════════════════════════════════════
+      # CORS — Cross-Origin Resource Sharing
+      # ════════════════════════════════════════════════════════════
+      - key: CORS_ALLOW_ALL_ORIGINS
+        value: "False"
       - key: CORS_ALLOWED_ORIGINS
-        scope: run
+        value: "https://academie-numerique.onrender.com"
+      - key: CORS_ALLOW_CREDENTIALS
+        value: "True"
 
-      # ── SÉCURITÉ ────────────────────────────────
+      # ════════════════════════════════════════════════════════════
+      # SÉCURITÉ HTTPS — À activer en production
+      # ════════════════════════════════════════════════════════════
       - key: SECURE_SSL_REDIRECT
         value: "True"
       - key: SESSION_COOKIE_SECURE
         value: "True"
       - key: CSRF_COOKIE_SECURE
         value: "True"
+      - key: SECURE_HSTS_SECONDS
+        value: "31536000"
+      - key: SECURE_HSTS_INCLUDE_SUBDOMAINS
+        value: "True"
+      - key: SECURE_HSTS_PRELOAD
+        value: "True"
+
+      # ════════════════════════════════════════════════════════════
+      # SESSIONS & COOKIES
+      # ════════════════════════════════════════════════════════════
+      - key: SESSION_COOKIE_AGE
+        value: "604800"
+      - key: SESSION_COOKIE_HTTPONLY
+        value: "True"
+
+      # ════════════════════════════════════════════════════════════
+      # LOGGING & MONITORING
+      # ════════════════════════════════════════════════════════════
+      - key: LOG_LEVEL
+        value: "info"
 
   # ─────────────────────────────────────────────────────────────
   # WORKER — Celery pour les tâches asynchrones
@@ -130,30 +175,34 @@ services:
           type: web
           name: academie-numerique-web
           envVarKey: DJANGO_SECRET_KEY
-
       - key: DATABASE_URL
         fromDatabase:
           name: academie-db
           property: connectionString
-
       - key: REDIS_URL
         fromService:
           type: redis
           name: academie-redis
           property: connectionString
-
       - key: DEBUG
-        value: false
-
+        value: "False"
       - key: AI_PROVIDER
         value: groq
-        sync: false
       - key: GROQ_API_KEY
-        sync: false
+        fromService:
+          type: web
+          name: academie-numerique-web
+          envVarKey: GROQ_API_KEY
       - key: NVIDIA_API_KEY
-        sync: false
+        fromService:
+          type: web
+          name: academie-numerique-web
+          envVarKey: NVIDIA_API_KEY
       - key: CLOUDINARY_URL
-        sync: false
+        fromService:
+          type: web
+          name: academie-numerique-web
+          envVarKey: CLOUDINARY_URL
 
   # ─────────────────────────────────────────────────────────────
   # BEAT — Celery Beat pour les tâches planifiées
@@ -172,23 +221,20 @@ services:
           type: web
           name: academie-numerique-web
           envVarKey: DJANGO_SECRET_KEY
-
       - key: DATABASE_URL
         fromDatabase:
           name: academie-db
           property: connectionString
-
       - key: REDIS_URL
         fromService:
           type: redis
           name: academie-redis
           property: connectionString
-
       - key: DEBUG
-        value: false
+        value: "False"
 
   # ─────────────────────────────────────────────────────────────
-  # REDIS — Cache & session store
+  # REDIS — Cache & Session Store
   # ─────────────────────────────────────────────────────────────
   - type: redis
     name: academie-redis
