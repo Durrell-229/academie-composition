@@ -22,6 +22,8 @@ class Command(BaseCommand):
             User.objects.create_superuser(
                 email='admin@academie-numerique.fr',
                 password='admin2025',
+                first_name='Admin',
+                last_name='Système',
             )
             self.stdout.write('  ✅ Superuser créé')
         else:
