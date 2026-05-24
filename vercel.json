@@ -1,0 +1,123 @@
+{
+  "$schema": "https://openapi.vercel.sh",
+  "version": 2,
+  "name": "academie-numerique",
+  "public": false,
+  "regions": ["cdg1"],
+
+  "buildCommand": "pip install -r requirements.txt && python manage.py collectstatic --noinput",
+  "outputDirectory": "staticfiles",
+
+  "env": {
+    "DJANGO_SETTINGS_MODULE": {
+      "description": "Django settings module",
+      "value": "academie_numerique.settings"
+    },
+    "DEBUG": {
+      "description": "Debug mode (false en production)",
+      "value": "False"
+    },
+    "ALLOWED_HOSTS": {
+      "description": "Domaines autorisés",
+      "value": "*.vercel.app,votre-domaine.com"
+    },
+    "DJANGO_SECRET_KEY": {
+      "description": "Django secret key - généré automatiquement par Vercel"
+    },
+    "DATABASE_URL": {
+      "description": "PostgreSQL connection string (externe, ex: Neon, Supabase)"
+    },
+    "REDIS_URL": {
+      "description": "Redis connection string (externe, optionnel)"
+    },
+    "AI_PROVIDER": {
+      "description": "IA provider: groq, gemini, mistral, deepseek",
+      "value": "groq"
+    },
+    "GROQ_API_KEY": {
+      "description": "Clé API Groq"
+    },
+    "GEMINI_API_KEY": {
+      "description": "Clé API Google Gemini"
+    },
+    "CLOUDINARY_URL": {
+      "description": "Cloudinary storage URL"
+    },
+    "RESEND_API_KEY": {
+      "description": "Clé API Resend pour emails"
+    },
+    "FEDAPAY_PUBLIC_KEY": {
+      "description": "FedaPay public key"
+    },
+    "FEDAPAY_SECRET_KEY": {
+      "description": "FedaPay secret key"
+    },
+    "FEDAPAY_WEBHOOK_SECRET": {
+      "description": "FedaPay webhook secret"
+    },
+    "FEDAPAY_ENVIRONMENT": {
+      "description": "FedaPay environment: sandbox ou production",
+      "value": "production"
+    },
+    "USE_CLOUDINARY_STORAGE": {
+      "description": "Utiliser Cloudinary pour le stockage",
+      "value": "True"
+    },
+    "DEFAULT_FROM_EMAIL": {
+      "description": "Email par défaut",
+      "value": "Académie Numérique <noreply@academie-numerique.com>"
+    },
+    "PRIX_CORRECTION_UNITAIRE": {
+      "description": "Prix unitaire correction en XOF",
+      "value": "500"
+    },
+    "SITE_URL": {
+      "description": "URL du site"
+    },
+    "CORS_ALLOWED_ORIGINS": {
+      "description": "Origins CORS autorisés"
+    },
+    "SECURE_SSL_REDIRECT": {
+      "description": "Redirection HTTPS",
+      "value": "True"
+    },
+    "SESSION_COOKIE_SECURE": {
+      "description": "Session cookies sécurisés",
+      "value": "True"
+    },
+    "CSRF_COOKIE_SECURE": {
+      "description": "CSRF cookies sécurisés",
+      "value": "True"
+    }
+  },
+
+  "functions": {
+    "api/**/*.py": {
+      "runtime": "python3.11"
+    }
+  },
+
+  "routes": [
+    {
+      "src": "/static/(.*)",
+      "dest": "/staticfiles/$1",
+      "headers": {
+        "cache-control": "public, max-age=31536000, immutable"
+      }
+    },
+    {
+      "src": "/(.*)",
+      "dest": "api/asgi.py"
+    }
+  ],
+
+  "ignores": [
+    "node_modules",
+    ".git",
+    ".env.local",
+    "*.pyc",
+    "__pycache__",
+    ".pytest_cache",
+    "db.sqlite3"
+  ]
+}

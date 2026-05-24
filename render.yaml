@@ -1,60 +1,207 @@
 services:
+  # ─────────────────────────────────────────────────────────────
+  # SERVICE WEB — Application Django principale avec Daphne
+  # ─────────────────────────────────────────────────────────────
   - type: web
-    name: academie-numerique
+    name: academie-numerique-web
     env: python
     region: frankfurt
-    plan: free
-    buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate --noinput && python manage.py sync_all_data
-    startCommand: gunicorn academie_numerique.wsgi:application
+    plan: pro
+    buildCommand: |
+      pip install -r requirements.txt && \
+      python manage.py collectstatic --noinput && \
+      python manage.py migrate --noinput
+    startCommand: daphne -b 0.0.0.0 -p 10000 academie_numerique.asgi:application
+    healthCheckPath: /health/
+    numInstances: 1
+
     envVars:
+      # ── DJANGO ──────────────────────────────────
       - key: DJANGO_SECRET_KEY
         generateValue: true
       - key: DEBUG
         value: false
-      - key: REDIS_URL
-        fromService:
-          type: redis
-          name: academie-redis
-          property: connectionString
+      - key: ALLOWED_HOSTS
+        scope: run
+      - key: RENDER_EXTERNAL_HOSTNAME
+        scope: run
+
+      # ── BASE DE DONNÉES ─────────────────────────
       - key: DB_ENGINE
         value: postgresql
       - key: DATABASE_URL
         fromDatabase:
           name: academie-db
           property: connectionString
-      - key: AI_PROVIDER
-        sync: false
-      - key: GROQ_API_KEY
-        sync: false
-      - key: GEMINI_API_KEY
-        sync: false
 
-  - type: worker
-    name: academie-worker
-    env: python
-    plan: free
-    buildCommand: pip install -r requirements.txt
-    startCommand: python manage.py run_worker
-    envVars:
+      # ── REDIS ───────────────────────────────────
       - key: REDIS_URL
         fromService:
           type: redis
           name: academie-redis
           property: connectionString
+
+      # ── ASGI/CHANNELS ──────────────────────────
+      - key: CHANNEL_LAYERS_REDIS
+        fromService:
+          type: redis
+          name: academie-redis
+          property: connectionString
+
+      # ── IA PROVIDERS (à configurer) ─────────────
+      - key: AI_PROVIDER
+        value: groq
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: MISTRAL_API_KEY
+        sync: false
+      - key: DEEPSEEK_API_KEY
+        sync: false
+
+      # ── NVIDIA OCR ──────────────────────────────
+      - key: NVIDIA_API_KEY
+        sync: false
+
+      # ── EMAIL (Resend) ──────────────────────────
+      - key: RESEND_API_KEY
+        sync: false
+      - key: DEFAULT_FROM_EMAIL
+        value: "Académie Numérique <noreply@academie-numerique.com>"
+        sync: false
+
+      # ── PAIEMENTS (FedaPay) ─────────────────────
+      - key: FEDAPAY_ENVIRONMENT
+        value: production
+        sync: false
+      - key: FEDAPAY_PUBLIC_KEY
+        sync: false
+      - key: FEDAPAY_SECRET_KEY
+        sync: false
+      - key: FEDAPAY_WEBHOOK_SECRET
+        sync: false
+      - key: PRIX_CORRECTION_UNITAIRE
+        value: "500"
+
+      # ── STOCKAGE FICHIERS (Cloudinary) ─────────
+      - key: USE_CLOUDINARY_STORAGE
+        value: "True"
+      - key: CLOUDINARY_URL
+        sync: false
+
+      # ── RÔLES ───────────────────────────────────
+      - key: ROLE_PASSWORD_ADMIN
+        sync: false
+      - key: ROLE_PASSWORD_CP
+        sync: false
+      - key: ROLE_PASSWORD_PROF
+        sync: false
+
+      # ── DOMAINE & URLS ──────────────────────────
+      - key: SITE_URL
+        scope: run
+      - key: CORS_ALLOWED_ORIGINS
+        scope: run
+
+      # ── SÉCURITÉ ────────────────────────────────
+      - key: SECURE_SSL_REDIRECT
+        value: "True"
+      - key: SESSION_COOKIE_SECURE
+        value: "True"
+      - key: CSRF_COOKIE_SECURE
+        value: "True"
+
+  # ─────────────────────────────────────────────────────────────
+  # WORKER — Celery pour les tâches asynchrones
+  # ─────────────────────────────────────────────────────────────
+  - type: worker
+    name: academie-celery-worker
+    env: python
+    plan: pro
+    buildCommand: pip install -r requirements.txt
+    startCommand: celery -A academie_numerique worker -l info --concurrency=4
+    numInstances: 1
+
+    envVars:
       - key: DJANGO_SECRET_KEY
         fromService:
           type: web
-          name: academie-numerique
+          name: academie-numerique-web
           envVarKey: DJANGO_SECRET_KEY
 
+      - key: DATABASE_URL
+        fromDatabase:
+          name: academie-db
+          property: connectionString
+
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: academie-redis
+          property: connectionString
+
+      - key: DEBUG
+        value: false
+
+      - key: AI_PROVIDER
+        value: groq
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: NVIDIA_API_KEY
+        sync: false
+      - key: CLOUDINARY_URL
+        sync: false
+
+  # ─────────────────────────────────────────────────────────────
+  # BEAT — Celery Beat pour les tâches planifiées
+  # ─────────────────────────────────────────────────────────────
+  - type: worker
+    name: academie-celery-beat
+    env: python
+    plan: pro
+    buildCommand: pip install -r requirements.txt
+    startCommand: celery -A academie_numerique beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    numInstances: 1
+
+    envVars:
+      - key: DJANGO_SECRET_KEY
+        fromService:
+          type: web
+          name: academie-numerique-web
+          envVarKey: DJANGO_SECRET_KEY
+
+      - key: DATABASE_URL
+        fromDatabase:
+          name: academie-db
+          property: connectionString
+
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: academie-redis
+          property: connectionString
+
+      - key: DEBUG
+        value: false
+
+  # ─────────────────────────────────────────────────────────────
+  # REDIS — Cache & session store
+  # ─────────────────────────────────────────────────────────────
   - type: redis
     name: academie-redis
-    plan: free
+    plan: pro
     ipAllowList: []
-    maxmemoryPolicy: noeviction
+    maxmemoryPolicy: allkeys-lru
 
+# ───────────────────────────────────────────────────────────────
+# BASES DE DONNÉES
+# ───────────────────────────────────────────────────────────────
 databases:
   - name: academie-db
-    plan: free
+    plan: pro
     databaseName: academie_numerique
     user: academie_user
+    postgresMajorVersion: "15"
