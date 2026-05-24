@@ -7,10 +7,7 @@ services:
     env: python
     region: frankfurt
     plan: pro
-    buildCommand: |
-      pip install -r requirements.txt && \
-      python manage.py collectstatic --noinput && \
-      python manage.py migrate --noinput
+    buildCommand: bash render-build.sh
     startCommand: daphne -b 0.0.0.0 -p 10000 academie_numerique.asgi:application
     healthCheckPath: /health/
     numInstances: 1
