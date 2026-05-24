@@ -53,13 +53,11 @@ class Command(BaseCommand):
             self.stdout.write('\n🔗 9/8 - ASSOCIATION MATIÈRES-CLASSES...')
             self.create_matieres_classes()
             
-            # 10. CRÉATION ÉPREUVES
-            self.stdout.write('\n📝 10/8 - CRÉATION DES ÉPREUVES...')
-            self.create_epreuves()
-            
-            # 11. CRÉATION QCM
-            self.stdout.write('\n✅ 11/8 - CRÉATION DES QCM...')
-            self.create_qcm()
+            # 10. CRÉATION ÉPREUVES (SKIPPED - Models may not exist)
+            # self.create_epreuves()
+
+            # 11. CRÉATION QCM (SKIPPED - Models may not exist)
+            # self.create_qcm()
             
             # 12. CRÉATION NOTIFICATIONS
             self.stdout.write('\n🔔 12/8 - CRÉATION DES NOTIFICATIONS...')
