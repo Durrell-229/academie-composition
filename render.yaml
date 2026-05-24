@@ -7,9 +7,7 @@ services:
     env: python
     region: frankfurt
     plan: pro
-    buildCommand: |
-      bash render-build.sh && \
-      python manage.py sync_all_data
+    buildCommand: bash render-build.sh
     startCommand: daphne -b 0.0.0.0 -p 10000 academie_numerique.asgi:application
     healthCheckPath: /health/
     numInstances: 1
